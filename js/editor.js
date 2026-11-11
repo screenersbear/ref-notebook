@@ -297,10 +297,10 @@ export async function boardScreen(view, id) {
     if (name) { board.name = name; persist(); drawPage(); }
   });
   const onResize = () => { const el = stage.querySelector('.page'); if (el) fit(el); };
-  window.addEventListener('resize', onResize);
+  window.addEventListener('ref-layout', onResize);
 
   paintUndo();
   await drawPage();
   drawTray();
-  return () => { destroyed = true; persist.flush(); window.removeEventListener('resize', onResize); };
+  return () => { destroyed = true; persist.flush(); window.removeEventListener('ref-layout', onResize); };
 }

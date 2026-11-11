@@ -6,20 +6,33 @@
 <title>ref, do something</title>
 <meta name="description" content="A reference notebook for your phone: folders of photos and mood boards made from them." />
 <link rel="manifest" href="manifest.json" />
-<meta name="theme-color" content="#175ba9" />
+<meta name="theme-color" content="#ffffff" />
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="mobile-web-app-capable" content="yes" />
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-status-bar-style" content="default" />
 <meta name="apple-mobile-web-app-title" content="ref" />
 <link rel="apple-touch-icon" href="icons/icon-180.png" />
 <link rel="icon" type="image/png" href="icons/icon-192.png" />
 <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-<div id="book" class="book">
+<div id="frame" class="frame">
   <div class="paper"><main id="view" tabindex="-1"></main></div>
-  <button type="button" id="cover" class="cover" aria-label="Open the notebook"></button>
   <div class="coils" aria-hidden="true"></div>
+</div>
+<div class="nb closed no-anim" id="book">
+  <div class="nb-ground"></div>
+  <div class="nb-float">
+    <div class="nb-book">
+      <div class="nb-stack" id="bookStack"></div>
+      <div class="nb-block"></div>
+      <div class="nb-leaf">
+        <div class="nb-front"></div>
+        <div class="nb-inside"></div>
+      </div>
+    </div>
+  </div>
+  <button type="button" class="nb-hit" id="bookHit" aria-label="Open the notebook"></button>
 </div>
 <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
 <noscript><p>This app needs JavaScript turned on.</p></noscript>

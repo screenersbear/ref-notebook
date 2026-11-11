@@ -64,7 +64,7 @@ export function screenGap(full = 0) {
 }
 let nudging = false;
 // For tests: `full` as in screenGap. Resolves with the gap left after it.
-export function nudgeScreen(tries = 5, full = 0) {
+export function nudgeScreen(tries = 2, full = 0) {
   return new Promise((done) => {
     const go = (left) => {
       if (!left || !screenGap(full) || typing()) {
@@ -92,17 +92,37 @@ export function nudgeScreen(tries = 5, full = 0) {
   });
 }
 if (iPhoneApp) {
-  const soon = (ms) => setTimeout(() => {
+  let soonTimer = 0; // load, pageshow and coming back can all land together
+  const soon = (ms) => clearTimeout(soonTimer) || (soonTimer = setTimeout(() => {
     nudgeScreen().then((gap) => {
       html.classList.toggle('is-short', gap > 0);
-      window.dispatchEvent(new Event('resize'));
     });
-  }, ms);
+  }, ms));
   window.addEventListener('load', () => soon(120));
   window.addEventListener('pageshow', () => soon(80));
   document.addEventListener('visibilitychange', () => { if (!document.hidden) soon(80); });
   window.addEventListener('orientationchange', () => soon(300));
 }
+// The height everything is laid out from. It only changes when the screen
+// really does (turning the phone), so the bottom of the page can't jump while
+// iOS measures itself or the keyboard comes and goes.
+let appH = 0;
+function setAppHeight() {
+  if (html.classList.contains('ios-nudge') || nudging || typing()) return;
+  const h = window.innerHeight;
+  if (Math.abs(h - appH) < 2) return;
+  appH = h;
+  html.style.setProperty('--app-h', `${h}px`);
+  window.dispatchEvent(new Event('ref-layout'));
+}
+setAppHeight();
+window.addEventListener('resize', setAppHeight);
+window.addEventListener('orientationchange', () => setTimeout(setAppHeight, 350));
+document.addEventListener('visibilitychange', () => { if (!document.hidden) setTimeout(setAppHeight, 900); });
+window.addEventListener('load', () => setTimeout(setAppHeight, 900));
+// A pinch on a photo should never zoom the whole page.
+document.addEventListener('gesturestart', (e) => e.preventDefault());
+
 // iOS zooms in on any field with text under 16px and leaves the page
 // zoomed. A scale limit stops that.
 if (/iP(hone|ad|od)/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)) {

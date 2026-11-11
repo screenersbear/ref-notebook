@@ -1,10 +1,10 @@
 // Bump CACHE_NAME with every deploy so installed copies pick up new files.
-const CACHE_NAME = 'ref-notebook-v1';
+const CACHE_NAME = 'ref-notebook-v2';
 const ASSETS = [
   './', './index.html', './style.css', './manifest.json',
   './js/app.js', './js/db.js', './js/editor.js', './js/filing.js', './js/icons.js', './js/library.js',
   './js/newboard.js', './js/pages.js', './js/pdf.js', './js/photos.js', './js/screens.js',
-  './js/templates.js', './js/ui.js', './js/util.js', './js/viewer.js',
+  './js/tagger.js', './js/tagger-worker.js', './js/templates.js', './js/ui.js', './js/undo.js', './js/util.js', './js/viewer.js',
   './art/cover.webp', './fonts/mansalva-latin.woff2',
   './icons/icon-180.png', './icons/icon-192.png', './icons/icon-512.png',
 ];
@@ -20,7 +20,9 @@ self.addEventListener('activate', (event) => {
 // Network first, so a fresh deploy shows up right away; the cache answers offline.
 self.addEventListener('fetch', (event) => {
   const req = event.request;
-  if (req.method !== 'GET' || new URL(req.url).origin !== self.location.origin) return;
+  const url = new URL(req.url);
+  if (req.method !== 'GET' || url.origin !== self.location.origin) return;
+  if (url.pathname.includes('/ml/')) return; // the big model files look after themselves
   event.respondWith(
     fetch(req, { cache: 'no-store' })
       .then((res) => {

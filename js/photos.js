@@ -1,7 +1,7 @@
 // Bringing photos in from the phone. Each is saved as one big JPEG (plenty for
 // boards and PDFs, far smaller than the original) and a small thumb. Colors
-// and shape are read once, here, so folders can filter and sort by them.
-import { addPhoto } from './db.js';
+// are read once, here, so folders can filter and sort by them.
+import { addPhoto, getFile } from './db.js';
 import { loadImage, canvasToBlob } from './util.js';
 
 const FULL_MAX = 2400;
@@ -81,19 +81,36 @@ async function importFile(file) {
     if (!width || !height) throw new Error('empty');
     const [fw, fh] = fit(width, height, FULL_MAX);
     const fc = downscale(img, width, height, fw, fh);
-    const full = await canvasToBlob(fc, 'image/jpeg', 0.86);
+    const full = await (await canvasToBlob(fc, 'image/jpeg', 0.86)).arrayBuffer();
     const [tw, th] = fit(width, height, THUMB_MAX);
     const tc = downscale(fc, fw, fh, tw, th);
-    const thumb = await canvasToBlob(tc, 'image/jpeg', 0.8);
+    const thumb = await (await canvasToBlob(tc, 'image/jpeg', 0.8)).arrayBuffer();
     const colors = readColors(tc);
     fc.width = fc.height = tc.width = tc.height = 0;
     img.src = '';
     return addPhoto({
       name: (file.name || 'photo').replace(/\.[^.]+$/, ''),
-      width: fw, height: fh, thumb,
+      width: fw, height: fh,
       shape: fw > fh * 1.1 ? 'wide' : fh > fw * 1.1 ? 'tall' : 'square',
       ...colors, folderIds: [], favorite: false,
-    }, full);
+    }, full, thumb);
+  } finally {
+    URL.revokeObjectURL(url);
+  }
+}
+
+// A new small picture made from the big one.
+export async function remakeThumb(id) {
+  const blob = await getFile(id);
+  if (!blob) return null;
+  const url = URL.createObjectURL(blob);
+  try {
+    const img = await loadImage(url);
+    const [tw, th] = fit(img.naturalWidth, img.naturalHeight, THUMB_MAX);
+    const tc = downscale(img, img.naturalWidth, img.naturalHeight, tw, th);
+    const bytes = await (await canvasToBlob(tc, 'image/jpeg', 0.8)).arrayBuffer();
+    tc.width = tc.height = 0;
+    return bytes;
   } finally {
     URL.revokeObjectURL(url);
   }
