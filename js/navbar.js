@@ -1,17 +1,15 @@
 // The bottom bar, the same idea as Callback's: the section you're in as one
-// icon with a little triangle each side. Tags is the left page, Mood boards the
-// right; past Mood boards, the right triangle shuts the notebook. A swipe on
+// icon with a little triangle each side. Mood boards is the left page, Tags the
+// right; before Mood boards, the left triangle shuts the notebook. A swipe on
 // the page does the same as one on the bar, and turns the mood boards' pages.
 import { ICONS } from './icons.js';
 import { showOther, dropOther, dragFrame, panOver, landOn, settleFrame, canTurn, turnPage, isPanning } from './spread.js';
 
 const SECTIONS = [
-  { href: '#/folders', name: 'Tags', icon: ICONS.folders },
   { href: '#/boards', name: 'Mood boards', icon: ICONS.boards },
+  { href: '#/folders', name: 'Tags', icon: ICONS.folders },
 ];
-const LAST = SECTIONS.length - 1;
 const STEP = 46; // px from one icon to the next on the strip
-const EDGE = 26; // the right edge belongs to the swipe that shuts the book
 const tri = '<svg viewBox="0 0 10 12" aria-hidden="true"><path d="M2.3 1.5Q5.6 3.8 8.7 6.1 5.5 8.3 2.2 10.5 2.5 6 2.3 1.5Z" fill="currentColor" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/></svg>';
 
 const bar = document.getElementById('navbar');
@@ -27,7 +25,7 @@ const now = bar.querySelector('.slide-now');
 const prev = bar.querySelector('.is-prev');
 const next = bar.querySelector('.is-next');
 
-let at = 1, busy = false, coming = -1, swiped = 0, onList = false, puller = null;
+let at = 0, busy = false, coming = -1, swiped = 0, onList = false, puller = null;
 export const setPuller = (p) => { puller = p; };
 const stripTo = (i, moving) => { strip.classList.toggle('is-moving', !!moving); strip.style.transform = `translateX(${-i * STEP}px)`; };
 
@@ -42,17 +40,17 @@ export function showSection(i, list = false) {
   const s = SECTIONS[i], p = SECTIONS[i - 1], n = SECTIONS[i + 1];
   now.setAttribute('href', s.href);
   now.setAttribute('aria-label', s.name);
-  prev.classList.toggle('is-off', !p);
-  prev.disabled = !p;
-  prev.setAttribute('aria-label', p ? `Previous: ${p.name}` : 'Nothing before this');
-  next.setAttribute('aria-label', n ? `Next: ${n.name}` : 'Shut the notebook');
+  prev.setAttribute('aria-label', p ? `Previous: ${p.name}` : 'Shut the notebook');
+  next.classList.toggle('is-off', !n);
+  next.disabled = !n;
+  next.setAttribute('aria-label', n ? `Next: ${n.name}` : 'Nothing after this');
   if (coming >= 0) { coming = -1; landOn(i); busy = false; }
   if (!busy) stripTo(i);
 }
 
 async function go(dir, from = 0) {
   if (busy) return settle(from);
-  if (dir > 0 && at === LAST) { settle(from); location.hash = '#/'; return; }
+  if (dir < 0 && at === 0) { settle(from); location.hash = '#/'; return; }
   const t = SECTIONS[at + dir];
   if (!t) return settle(from);
   busy = true;
@@ -79,7 +77,6 @@ function wire(el, fromPage) {
   el.addEventListener('pointerdown', (e) => {
     d = null;
     if (busy || e.button || (fromPage && (!onList || document.querySelector('.turn-leaf')))) return;
-    if (fromPage && at === LAST && e.clientX > window.innerWidth - EDGE) return;
     d = { id: e.pointerId, x0: e.clientX, y0: e.clientY, x: 0, moved: false, kind: '' };
   });
   el.addEventListener('pointermove', (e) => {
@@ -92,9 +89,9 @@ function wire(el, fromPage) {
       try { el.setPointerCapture(e.pointerId); } catch {}
       const dir = dx < 0 ? 1 : -1;
       d.dir = dir;
-      if (fromPage && at === LAST && canTurn(dir)) d.kind = 'turn';
+      if (fromPage && at === 0 && canTurn(dir)) d.kind = 'turn';
       else if (SECTIONS[at + dir]) { d.kind = 'pan'; showOther(at + dir); }
-      else if (!fromPage && dir > 0 && at === LAST) { d.kind = 'shut'; puller?.start(); }
+      else if (dir < 0 && at === 0) { d.kind = 'shut'; puller?.start(); }
       else d.kind = 'stop';
     }
     d.x = dx;
@@ -104,7 +101,7 @@ function wire(el, fromPage) {
       strip.classList.remove('is-moving');
       strip.style.transform = `translateX(${-at * STEP + (dx / frame.offsetWidth) * STEP}px)`;
     } else if (d.kind === 'stop') dragFrame(dx * 0.12);
-    else if (d.kind === 'shut') puller?.move(Math.max(0, -dx * 1.8));
+    else if (d.kind === 'shut') puller?.move(Math.max(0, dx * (fromPage ? 1.15 : 1.8)));
   });
   const end = (e) => {
     if (!d || e.pointerId !== d.id) return;

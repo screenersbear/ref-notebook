@@ -65,6 +65,7 @@ svg { display: block; }
 .frame[data-side="right"] .page-other { right: calc(100% + 8px); }
 .frame[data-side="left"] .page-other { left: calc(100% + 8px); }
 .turn-leaf { position: absolute; z-index: 1; top: 5px; right: 5px; bottom: 5px; left: 8px; background: #fff; overflow: hidden; transform-origin: -8px 50%; backface-visibility: hidden; -webkit-backface-visibility: hidden; }
+.turn-leaf.is-left { left: 5px; right: 8px; transform-origin: calc(100% + 8px) 50%; }
 .turn-leaf > i { position: absolute; inset: 0; background: #000; opacity: 0; pointer-events: none; }
 .frame-art > span:first-of-type { transform: scaleX(-1); margin-right: -2px; } /* overlapped, or the join shows as a nick */
 .paper { position: absolute; inset: 5px; background: #fff; border-radius: 5px; overflow: hidden; }
@@ -72,7 +73,7 @@ svg { display: block; }
 .frame[data-side="left"] .paper { right: 8px; border-radius: 5px 0 0 5px; }
 #view { position: absolute; inset: 0; outline: none; }
 /* The cover, coming in from the right edge as you swipe to shut the notebook. */
-.pull { position: fixed; right: 0; top: var(--nb-top); height: calc(var(--app-h) - var(--nb-top) - var(--nb-bar)); width: 0; z-index: 15; background: var(--ink) var(--book-cover) left center / auto 100% no-repeat; border-radius: 12px 0 0 12px; box-shadow: -6px 0 18px rgba(30, 50, 80, .25); }
+.pull { position: fixed; left: 0; top: var(--nb-top); height: calc(var(--app-h) - var(--nb-top) - var(--nb-bar)); width: 0; z-index: 15; background: var(--ink) var(--book-cover) right center / auto 100% no-repeat; border-radius: 0 12px 12px 0; box-shadow: 6px 0 18px rgba(30, 50, 80, .25); }
 .pull.back { transition: width .18s ease-out; }
 
 /* ---------- The notebook, shut: floating on white ---------- */

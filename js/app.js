@@ -112,11 +112,11 @@ async function route() {
   closeAllSheets();
   document.querySelectorAll('.viewer').forEach((v) => v.remove());
   const h = (location.hash || '#/').slice(1) || '/';
-  const section = h === '/boards' ? 1 : h === '/folders' || h.startsWith('/folder/') ? 0 : -1;
+  const section = h === '/boards' ? 0 : h === '/folders' || h.startsWith('/folder/') ? 1 : -1;
   if (h !== '/') {
     if (!isPanning()) frame.dataset.side = sideOf(section);
-    titleR.textContent = section === 1 ? 'Mood boards' : '';
-    titleL.textContent = section === 0 ? 'Tags' : '';
+    titleL.textContent = section === 0 ? 'Mood boards' : '';
+    titleR.textContent = section === 1 ? 'Tags' : '';
     if (!isOpen && h === '/boards') boardPager.page = 0;
   }
   setBook(h !== '/');
@@ -140,15 +140,12 @@ async function route() {
   }
 }
 
-// A big swipe in from the right edge shuts the notebook: the cover follows the
-// finger across the page, and letting go past the middle closes it.
+// Swiping right on Mood boards (or on the bar) shuts the notebook: the cover
+// follows the finger in from the left, and letting go past the middle closes it.
 const pull = document.getElementById('pull');
-const EDGE = 26;
-let edge = null;
-const canPull = () => isOpen && frame.dataset.side === 'right' && !document.querySelector('.viewer, .sheet-overlay');
 let pulled = 0;
 const pullStart = () => { pull.classList.remove('back'); pull.hidden = false; pulled = 0; };
-const pullMove = (w) => { pulled = w; pull.style.width = `${w}px`; };
+const pullMove = (w) => { pulled = Math.min(w, window.innerWidth); pull.style.width = `${pulled}px`; };
 function pullEnd() {
   if (pulled > window.innerWidth * 0.45) {
     pull.hidden = true;
@@ -161,35 +158,6 @@ function pullEnd() {
   }
 }
 setPuller({ start: pullStart, move: pullMove, end: pullEnd });
-document.addEventListener('touchstart', (e) => {
-  edge = null;
-  const t = e.touches[0];
-  if (e.touches.length !== 1 || t.clientX < window.innerWidth - EDGE || !canPull()) return;
-  edge = { id: t.identifier, x0: t.clientX, y0: t.clientY, on: false, w: 0 };
-}, { passive: true, capture: true });
-document.addEventListener('touchmove', (e) => {
-  if (!edge) return;
-  const t = [...e.touches].find((x) => x.identifier === edge.id);
-  if (!t) return;
-  const dx = edge.x0 - t.clientX, dy = Math.abs(t.clientY - edge.y0);
-  if (!edge.on) {
-    if (dx < 10 && dy < 10) return;
-    if (dy > dx) { edge = null; return; }
-    edge.on = true;
-    pullStart();
-  }
-  e.preventDefault();
-  e.stopPropagation();
-  pullMove(Math.max(0, window.innerWidth - t.clientX));
-}, { passive: false, capture: true });
-function endPull() {
-  if (!edge) return;
-  const { on } = edge;
-  edge = null;
-  if (on) pullEnd();
-}
-document.addEventListener('touchend', endPull, { capture: true });
-document.addEventListener('touchcancel', endPull, { capture: true });
 
 // Turning the shut notebook by hand, like the head in Callback: drag sideways
 // to spin it, up and down to tip it. Harder the further it goes; let go and it

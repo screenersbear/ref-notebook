@@ -1,5 +1,5 @@
-// The notebook lies open on two pages with a fold between them: Tags on the
-// left, Mood boards on the right. A phone shows one page at a time, with the
+// The notebook lies open on two pages with a fold between them: Mood boards
+// on the left, Tags on the right. A phone shows one page at a time, with the
 // fold and a sliver of the other page at the side.
 import { boardsScreen, foldersScreen, boardPager } from './screens.js';
 
@@ -25,7 +25,7 @@ export async function showOther(i) {
   other.className = 'page-other';
   frame.append(other);
   const el = other;
-  if (i === 0) foldersScreen(el); else await boardsScreen(el);
+  if (i === 0) await boardsScreen(el); else foldersScreen(el);
   el.querySelector('.screen')?.classList.add('still');
 }
 export function dropOther() { other?.remove(); other = null; }
@@ -66,7 +66,10 @@ export async function turnPage(dir) {
   leaf.className = 'turn-leaf';
   const shade = document.createElement('i');
   const target = boardPager.page + dir;
-  if (dir > 0) {
+  // On the left page the leaves swing over the fold on its right.
+  const left = frame.dataset.side === 'left';
+  if (left) leaf.classList.add('is-left');
+  if (left ? dir < 0 : dir > 0) {
     leaf.append(view.firstElementChild.cloneNode(true));
     leaf.append(shade);
     frame.append(leaf);
@@ -78,14 +81,15 @@ export async function turnPage(dir) {
     leaf.querySelector('.screen')?.classList.add('still');
     leaf.append(shade);
   }
-  const flat = 'perspective(1500px) rotateY(0deg)', over = 'perspective(1500px) rotateY(-180deg)';
-  const a = leaf.animate(dir > 0 ? [{ transform: flat }, { transform: over }] : [{ transform: over }, { transform: flat }], { duration: TURN_MS, easing: 'cubic-bezier(.45,.05,.35,1)', fill: 'forwards' });
+  const flat = 'perspective(1500px) rotateY(0deg)', over = `perspective(1500px) rotateY(${left ? 180 : -180}deg)`;
+  const oldOnLeaf = left ? dir < 0 : dir > 0;
+  const a = leaf.animate(oldOnLeaf ? [{ transform: flat }, { transform: over }] : [{ transform: over }, { transform: flat }], { duration: TURN_MS, easing: 'cubic-bezier(.45,.05,.35,1)', fill: 'forwards' });
   shade.animate([{ opacity: 0 }, { opacity: .3 }, { opacity: 0 }], { duration: TURN_MS });
   let gone = false;
   const off = async () => {
     if (gone) return;
     gone = true;
-    if (dir < 0) { await boardsScreen(view, target); view.querySelector('.screen')?.classList.add('still'); }
+    if (!oldOnLeaf) { await boardsScreen(view, target); view.querySelector('.screen')?.classList.add('still'); }
     a.cancel();
     leaf.remove();
     turning = false;
