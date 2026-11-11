@@ -185,7 +185,7 @@ html.settled .nb.closed:not(.placing) .nb-sun { opacity: 1; pointer-events: auto
 .slide-strip { display: flex; }
 .slide-strip.is-moving { transition: transform .19s cubic-bezier(.3,.6,.3,1); }
 .slide-icon { flex: 0 0 46px; height: 40px; display: grid; place-items: center; }
-.slide-icon svg { width: 27px; height: 27px; stroke-width: 2.4; }
+.slide-icon svg { width: 27px; height: 27px; stroke-width: 1.7; }
 .tool, .icon-btn { display: flex; align-items: center; justify-content: center; width: 46px; height: 46px; flex: none; }
 .tool svg, .icon-btn svg { width: 27px; height: 27px; }
 .tool.on svg { stroke-width: 2.8; }
