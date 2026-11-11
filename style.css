@@ -70,19 +70,16 @@ svg { display: block; }
 .turn-leaf.is-left { left: var(--pg-out); right: 0; border-radius: var(--pg-r) 0 0 var(--pg-r); transform-origin: 100% 50%; }
 .turn-leaf > i { position: absolute; inset: 0; background: #000; opacity: 0; pointer-events: none; }
 .frame-art > span:first-of-type { transform: scaleX(-1); margin-right: -2px; } /* overlapped, or the join shows as a nick */
-/* Each page lies on the notebook's color, a thin band of it showing between
-   the page and the edge, and has its own line that curves round its top and
-   bottom corners and fades off toward the fold. */
-.frame { --pg-tb: 5px; --pg-out: 5px; --pg-r: 12px; }
+/* Each page is a sheet of paper with rounded corners lying in the notebook:
+   the solid color at the very edge, a slightly deeper shade of it just inside,
+   next to the paper, for depth. */
+.frame { --pg-tb: 5px; --pg-out: 5px; --pg-r: 12px; --ink-deep: color-mix(in srgb, var(--ink) 78%, #000); }
 .frame-art > span { position: relative; }
 .frame-art > span::before { content: ''; position: absolute; top: -5px; bottom: -5px; right: -5px; left: 0; background: var(--ink); border-radius: 0 7px 7px 0; }
-.frame-art > span::after { content: ''; position: absolute; top: calc(var(--pg-tb) - var(--nb-rim)); bottom: calc(var(--pg-tb) - var(--nb-rim)); right: calc(var(--pg-out) - var(--nb-rim)); left: 0; background: #fff; border-radius: 0 var(--pg-r) var(--pg-r) 0; }
+.frame-art > span::after { content: ''; position: absolute; top: calc(var(--pg-tb) - var(--nb-rim)); bottom: calc(var(--pg-tb) - var(--nb-rim)); right: calc(var(--pg-out) - var(--nb-rim)); left: 0; background: #fff; border-radius: 0 var(--pg-r) var(--pg-r) 0; box-shadow: 0 0 0 2.5px var(--ink-deep); clip-path: inset(-4px -4px -4px 0); }
 .paper { position: absolute; top: var(--pg-tb); bottom: var(--pg-tb); background: #fff; overflow: hidden; }
 .frame[data-side="right"] .paper { left: 0; right: var(--pg-out); border-radius: 0 var(--pg-r) var(--pg-r) 0; }
 .frame[data-side="left"] .paper { right: 0; left: var(--pg-out); border-radius: var(--pg-r) 0 0 var(--pg-r); }
-.paper::after, .page-other::after { content: ''; position: absolute; inset: 0; z-index: 5; pointer-events: none; border: 1.6px solid var(--text); border-radius: inherit; }
-.frame[data-side="right"] .paper::after, .frame[data-side="left"] .page-other::after { -webkit-mask-image: linear-gradient(270deg, #000 0, #000 26px, transparent 64px); mask-image: linear-gradient(270deg, #000 0, #000 26px, transparent 64px); }
-.frame[data-side="left"] .paper::after, .frame[data-side="right"] .page-other::after { -webkit-mask-image: linear-gradient(90deg, #000 0, #000 26px, transparent 64px); mask-image: linear-gradient(90deg, #000 0, #000 26px, transparent 64px); }
 #view { position: absolute; inset: 0; outline: none; }
 /* The cover, coming in from the right edge as you swipe to shut the notebook. */
 .pull { position: fixed; left: 0; top: var(--nb-top); height: calc(var(--app-h) - var(--nb-top) - var(--nb-bar)); width: 0; z-index: 15; background: var(--ink) var(--book-cover) right center / auto 100% no-repeat; border-radius: 0 12px 12px 0; box-shadow: 6px 0 18px rgba(30, 50, 80, .25); }
