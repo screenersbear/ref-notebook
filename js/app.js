@@ -227,3 +227,9 @@ route().then(() => setTimeout(carryOn, 2500)); // once the notebook is on screen
 paintStickers().catch(console.error);
 
 if ('serviceWorker' in navigator && location.protocol !== 'file:') navigator.serviceWorker.register('./sw.js').catch(() => {});
+
+// Always upright. Where the browser allows a web app to hold the screen this
+// asks quietly, and says nothing if it can't.
+const holdUpright = () => { try { screen.orientation?.lock?.('portrait').catch(() => {}); } catch {} };
+holdUpright();
+document.addEventListener('visibilitychange', () => { if (!document.hidden) holdUpright(); });
