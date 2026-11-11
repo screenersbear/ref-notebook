@@ -25,7 +25,7 @@ export function newBoardScreen(view) {
           <label class="group"><span class="label">Name</span>
             <input class="hand-input" data-name value="${esc(W.name)}" placeholder="Name this board" maxlength="80" autocomplete="off" enterkeyhint="done" /></label>
           <div class="group"><span class="label">Pull from</span>
-            <p class="small">Each folder becomes a section with its title on the page.</p>
+            <p class="small">Each tag becomes a section with its title on the page.</p>
             <div class="pick-chips">${sources.map((f) => `<button type="button" class="pick${W.folders.includes(f.id) ? ' on' : ''}" data-folder="${esc(f.id)}">${esc(f.name)} ${photosIn(f.id).length}</button>`).join('')}</div>
             ${W.folders.length > 1 ? `<label class="check"><input type="checkbox" data-match${W.matchAll ? ' checked' : ''} /> Only photos in all of these (${matched().length})</label>` : ''}
           </div>

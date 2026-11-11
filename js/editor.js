@@ -221,7 +221,7 @@ export async function boardScreen(view, id) {
       ],
     });
     if (!key) return;
-    if (key === 'delete' && !(await confirmSheet({ title: 'Delete this page?', message: 'Its photos stay in your folders.', confirmLabel: 'Delete', danger: true }))) return;
+    if (key === 'delete' && !(await confirmSheet({ title: 'Delete this page?', message: 'Its photos stay in the notebook.', confirmLabel: 'Delete', danger: true }))) return;
     snapshot();
     if (key === 'up' || key === 'down') {
       const j = key === 'up' ? at - 1 : at + 1;

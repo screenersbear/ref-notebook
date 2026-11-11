@@ -6,7 +6,7 @@ import { remember } from './undo.js';
 import { esc } from './util.js';
 
 export async function newFolder() {
-  const name = await promptSheet({ title: 'New folder', label: 'Folder name', confirmLabel: 'Make it' });
+  const name = await promptSheet({ title: 'New tag', label: 'Tag name', confirmLabel: 'Make it' });
   if (!name) return null;
   const f = await db.saveFolder({ name });
   await refresh();
@@ -30,7 +30,7 @@ export function fileSheet(ids) {
     const changes = new Map(); // folder id -> true (put in) / false (take out)
     let saved = false;
     const s = openSheet({
-      title: photos.length === 1 ? 'File in' : `File ${photos.length} photos in`,
+      title: photos.length === 1 ? 'Tag this photo' : `Tag ${photos.length} photos`,
       onClose: () => resolve(saved),
     });
     const draw = () => {
@@ -41,7 +41,7 @@ export function fileSheet(ids) {
             const on = changes.has(f.id) ? changes.get(f.id) : inCount(f.id) === photos.length;
             return `<label class="tick" data-name="${esc(f.name.toLowerCase())}"><input type="checkbox" value="${esc(f.id)}"${on ? ' checked' : ''} /><span>${esc(f.name)}</span></label>`;
           }).join('')}
-          <button type="button" class="tick add" data-new>+ New folder</button>
+          <button type="button" class="tick add" data-new>+ New tag</button>
         </div>
         <div class="sheet-actions"><button type="button" class="btn secondary" data-close>Cancel</button><button type="button" class="btn primary" data-save>Save</button></div>`;
       s.body.querySelectorAll('.tick input').forEach((box) => {

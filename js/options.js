@@ -1,7 +1,7 @@
 // The sun on the shut notebook: how the app looks and where it opens.
 import { openSheet, toast } from './ui.js';
-import { pickFiles, stickerBytes } from './photos.js';
-import { stickers, placeSticker, removeSticker, stickerThumb } from './stickers.js';
+import { pickFiles } from './photos.js';
+import { stickers, cropSticker, placeSticker, removeSticker, stickerThumb } from './stickers.js';
 import { esc } from './util.js';
 
 const BOOK_KEY = 'ref-notebook-book'; // also read in index.html, before the first paint
@@ -58,6 +58,7 @@ function stickerSheet(options) {
       <div class="sticker-kinds">
         <button type="button" class="sticker-kind" data-shape="circle"><span class="shape circle"></span><span>Circle</span></button>
         <button type="button" class="sticker-kind" data-shape="square"><span class="shape square"></span><span>Square</span></button>
+        <button type="button" class="sticker-kind" data-shape="rect"><span class="shape rect"></span><span>Rectangle</span></button>
       </div>
       ${stickers.length ? '<button type="button" class="btn secondary opt-wide" data-remove>Remove sticker</button>' : ''}`,
   });
@@ -67,10 +68,10 @@ function stickerSheet(options) {
       pickFiles(false).then(async ([file]) => { // straight from the tap, or iOS blocks it
         if (!file) return;
         try {
-          const bytes = await stickerBytes(file);
           s.close();
           options.close();
-          placeSticker(k.dataset.shape, bytes);
+          const bytes = await cropSticker(file, k.dataset.shape);
+          if (bytes) placeSticker(k.dataset.shape, bytes);
         } catch (err) {
           console.error(err);
           toast('Could not read that photo');

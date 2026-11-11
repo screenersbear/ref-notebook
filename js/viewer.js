@@ -22,7 +22,7 @@ export function openViewer(ids, start, onChange) {
     <nav class="v-tools">
       <button type="button" data-v="close" aria-label="Close">${ICONS.back}</button>
       <button type="button" data-v="fav" aria-label="Favorite"></button>
-      <button type="button" data-v="file" aria-label="File in a folder">${ICONS.file}</button>
+      <button type="button" data-v="file" aria-label="Tag this photo">${ICONS.file}</button>
       <button type="button" data-v="undo" aria-label="Undo"${canUndo() ? '' : ' disabled'}>${ICONS.undo}</button>
       <button type="button" data-v="delete" aria-label="Delete">${ICONS.trash}</button>
     </nav>`;

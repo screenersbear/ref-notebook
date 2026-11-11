@@ -1,7 +1,7 @@
 {
   "name": "ref, do something",
   "short_name": "ref",
-  "description": "A reference notebook for your phone: folders of photos and mood boards made from them.",
+  "description": "A reference notebook for your phone: tagged photos and mood boards made from them.",
   "id": "./",
   "start_url": "./",
   "scope": "./",

@@ -11,7 +11,10 @@ import { ICONS } from './icons.js';
 import { esc, shortDate, isIOS, isStandalone } from './util.js';
 
 // ---------- Boards ----------
-export async function boardsScreen(view) {
+// Mood boards come a notebook page at a time.
+export const boardPager = { page: 0, pages: 1 };
+
+export async function boardsScreen(view, page = boardPager.page) {
   const boards = await db.listBoards();
   const firstPhoto = (b) => b.pages.flatMap((p) => p.images).map((im) => im && photoById(im.id)).find(Boolean);
   view.innerHTML = `
@@ -19,7 +22,7 @@ export async function boardsScreen(view) {
       <h1 class="head">Mood boards</h1>
       <div class="scroll rows">
         ${boards.map((b) => { const p = firstPhoto(b); return `
-          <div class="row">
+          <div class="row" data-b>
             <a class="row-open" href="#/board/${esc(b.id)}">
               <span class="thumb">${p ? `<img src="${thumbUrl(p)}" alt="" />` : ''}</span>
               <span class="row-text"><span class="row-name">${esc(b.name)}</span><span class="row-meta">${b.pages.length} ${b.pages.length === 1 ? 'page' : 'pages'}, ${esc(shortDate(b.updatedAt))}</span></span>
@@ -29,7 +32,18 @@ export async function boardsScreen(view) {
         <a class="row row-open" href="#/new"><span class="thumb add">${ICONS.plus}</span><span class="row-name">New board</span></a>
         ${!lib.photos.length ? '<p class="note">Start in <a href="#/folder/incoming">Incoming</a>: bring in the photos you want to work with, then make a board from them.</p>' : ''}
       </div>
+      <div class="page-foot" hidden></div>
     </div>`;
+  // As many as fit on the page, with New board always at the bottom of it.
+  const rows = [...view.querySelectorAll('[data-b]')], scroller = view.querySelector('.scroll'), foot = view.querySelector('.page-foot');
+  const rowH = rows[0]?.offsetHeight || 84, addH = view.querySelector('a[href="#/new"]').offsetHeight;
+  let per = Math.max(1, Math.floor((scroller.clientHeight - addH) / rowH));
+  if (rows.length > per) per = Math.max(1, Math.floor((scroller.clientHeight - addH - 26) / rowH));
+  boardPager.pages = Math.max(1, Math.ceil(rows.length / per));
+  boardPager.page = Math.min(Math.max(0, page), boardPager.pages - 1);
+  rows.forEach((r, i) => { r.hidden = Math.floor(i / per) !== boardPager.page; });
+  foot.hidden = boardPager.pages < 2;
+  foot.textContent = `${boardPager.page + 1} of ${boardPager.pages}`;
   view.querySelectorAll('[data-more]').forEach((btn) => btn.addEventListener('click', async () => {
     const b = boards.find((x) => x.id === btn.dataset.more);
     const key = await choiceSheet({ title: b.name, options: [{ key: 'rename', label: 'Rename' }, { key: 'delete', label: 'Delete', danger: true }] });
@@ -37,7 +51,7 @@ export async function boardsScreen(view) {
       const name = await promptSheet({ title: 'Rename board', value: b.name });
       if (name) { await db.saveBoard({ ...b, name }); boardsScreen(view); }
     } else if (key === 'delete') {
-      if (await confirmSheet({ title: 'Delete this board?', message: `<b>${esc(b.name)}</b> will be gone. Its photos stay in your folders.`, confirmLabel: 'Delete', danger: true })) {
+      if (await confirmSheet({ title: 'Delete this board?', message: `<b>${esc(b.name)}</b> will be gone. Its photos stay in the notebook.`, confirmLabel: 'Delete', danger: true })) {
         await db.deleteBoard(b.id);
         boardsScreen(view);
         const back = async () => { await db.saveBoard(b); };
@@ -60,14 +74,14 @@ export function foldersScreen(view) {
   };
   view.innerHTML = `
     <div class="screen">
-      <h1 class="head">Folders</h1>
+      <h1 class="head">Tags</h1>
       <div class="scroll rows">
         ${row(folderById('incoming'), 'marked')}
         ${row(folderById('favorites'))}
         ${row(folderById('all'))}
-        ${lib.folders.length > 8 ? '<input class="find" type="search" placeholder="Find a folder" autocomplete="off" />' : ''}
+        ${lib.folders.length > 8 ? '<input class="find" type="search" placeholder="Find a tag" autocomplete="off" />' : ''}
         ${lib.folders.map((f) => row(f, 'mine')).join('')}
-        <button type="button" class="row row-open" data-new><span class="thumb add">${ICONS.plus}</span><span class="row-name">New folder</span></button>
+        <button type="button" class="row row-open" data-new><span class="thumb add">${ICONS.plus}</span><span class="row-name">New tag</span></button>
       </div>
     </div>`;
   view.querySelector('[data-new]').addEventListener('click', async () => { if (await newFolder()) foldersScreen(view); });
@@ -152,7 +166,7 @@ export function folderScreen(view, id) {
     view.innerHTML = `
       <div class="screen${stay ? ' still' : ''}" data-folder="${esc(id)}">
         <header class="folder-head">
-          <a class="icon-btn" href="#/folders" aria-label="Back to folders">${ICONS.back}</a>
+          <a class="icon-btn" href="#/folders" aria-label="Back to tags">${ICONS.back}</a>
           <h1><span class="under">${esc(folder.name)}</span></h1>
           ${isSpecial(id) ? '<span class="icon-btn" aria-hidden="true"></span>' : `<button type="button" class="icon-btn" data-folder-more aria-label="Folder options">${ICONS.more}</button>`}
         </header>
@@ -169,7 +183,7 @@ export function folderScreen(view, id) {
         ${selecting ? `
           <nav class="tools" aria-label="Selection">
             <span class="sel-count">${sel.size} picked</span>
-            <button type="button" class="tool" data-act="file" aria-label="File in a folder"${sel.size ? '' : ' disabled'}>${ICONS.file}</button>
+            <button type="button" class="tool" data-act="file" aria-label="Tag these"${sel.size ? '' : ' disabled'}>${ICONS.file}</button>
             <button type="button" class="tool" data-act="fav" aria-label="Favorite"${sel.size ? '' : ' disabled'}>${ICONS.heart}</button>
             <button type="button" class="tool" data-act="delete" aria-label="Delete"${sel.size ? '' : ' disabled'}>${ICONS.trash}</button>
           </nav>` : ''}
@@ -231,19 +245,19 @@ export function folderScreen(view, id) {
       selecting = false; sel.clear(); draw();
     }));
     view.querySelector('[data-folder-more]')?.addEventListener('click', async () => {
-      const key = await choiceSheet({ title: folder.name, options: [{ key: 'rename', label: 'Rename' }, { key: 'delete', label: 'Delete folder', danger: true }] });
+      const key = await choiceSheet({ title: folder.name, options: [{ key: 'rename', label: 'Rename' }, { key: 'delete', label: 'Delete tag', danger: true }] });
       if (key === 'rename') {
-        const name = await promptSheet({ title: 'Rename folder', value: folder.name });
+        const name = await promptSheet({ title: 'Rename tag', value: folder.name });
         if (name) { await db.saveFolder({ ...folder, name }); await refresh(); folder.name = name; draw(); }
       } else if (key === 'delete') {
-        if (await confirmSheet({ title: 'Delete this folder?', message: `<b>${esc(folder.name)}</b> will be gone. Its photos stay in the notebook.`, confirmLabel: 'Delete', danger: true })) {
+        if (await confirmSheet({ title: 'Delete this tag?', message: `<b>${esc(folder.name)}</b> will be gone. Its photos stay in the notebook.`, confirmLabel: 'Delete', danger: true })) {
           const had = photosIn(id).map((p) => p.id);
           const copy = { ...folder };
           await db.deleteFolder(id);
           await refresh();
-          remember('deleting a folder', () => db.restoreFolder(copy, had));
+          remember('deleting a tag', () => db.restoreFolder(copy, had));
           location.hash = '#/folders';
-          toast('Folder deleted', { action: { label: 'Undo', run: () => undoLast().then(() => { location.hash = `#/folder/${encodeURIComponent(id)}`; }) } });
+          toast('Tag deleted', { action: { label: 'Undo', run: () => undoLast().then(() => { location.hash = `#/folder/${encodeURIComponent(id)}`; }) } });
         }
       }
     });
