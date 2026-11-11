@@ -11,7 +11,8 @@
   --mono: "Courier New", Courier, monospace;
   --safe-t: env(safe-area-inset-top, 0px);
   --safe-b: env(safe-area-inset-bottom, 0px);
-  --nb-top: max(var(--safe-t), 8px);
+  --nb-top: max(var(--safe-t), 10px);
+  --nb-rim: 10px; /* the slot Contact Sheet's notebook edge is drawn in; the line itself is about half */
   --nb-pad: max(4px, calc(var(--safe-b) - 18px)); /* the bar sits low, just over the home indicator */
   --nb-bar: calc(50px + var(--nb-pad));
   --app-h: 100vh;      /* set from the real height in ui.js */
@@ -33,10 +34,18 @@ svg { display: block; }
   position: fixed; top: var(--nb-top); height: calc(var(--app-h) - var(--nb-top) - var(--nb-bar));
   left: max(6px, calc(50% - 300px)); right: max(6px, calc(50% - 300px));
   z-index: 1; /* above the bar, so a screen's own tools show over it */
-  background: var(--ink); border-radius: 5px 18px 18px 5px;
-  box-shadow: 0 8px 22px rgba(30, 50, 80, .18), 0 2px 6px rgba(30, 50, 80, .12);
 }
-.paper { position: absolute; top: 9px; right: 10px; bottom: 9px; left: 12px; background: #fff; border-radius: 2px 12px 12px 2px; overflow: hidden; }
+/* The same edge as Contact Sheet's notebook: its art, two mirrored halves, so
+   the line and the corners match on all four sides. The shadow is here and not
+   on .frame: a filter there would drag the pinned tools along with it. */
+.frame-art { position: absolute; inset: 0; display: flex; pointer-events: none; filter: drop-shadow(0 8px 16px rgba(60, 40, 20, .16)); }
+.frame-art > span {
+  flex: 1; box-sizing: border-box; border-style: solid;
+  border-width: var(--nb-rim) var(--nb-rim) var(--nb-rim) 0;
+  border-image: url(art/block.webp) 46 46 46 1 fill / var(--nb-rim) var(--nb-rim) var(--nb-rim) 0 stretch;
+}
+.frame-art > span:first-of-type { transform: scaleX(-1); margin-right: -2px; } /* overlapped, or the join shows as a nick */
+.paper { position: absolute; inset: 5px; background: #fff; border-radius: 5px; overflow: hidden; }
 #view { position: absolute; inset: 0; outline: none; }
 /* The cover, coming in from the right edge as you swipe to shut the notebook. */
 .pull { position: fixed; right: 0; top: var(--nb-top); height: calc(var(--app-h) - var(--nb-top) - var(--nb-bar)); width: 0; z-index: 15; background: var(--ink) url(art/cover.webp) left 58% / 100vw auto no-repeat; border-radius: 12px 0 0 12px; box-shadow: -6px 0 18px rgba(30, 50, 80, .25); }
@@ -67,12 +76,12 @@ svg { display: block; }
 .nb.opened.zoom-r .nb-book { transform: rotateY(0deg) translate(var(--zoom-x), var(--zoom-y)) scale(var(--zoom-sx), var(--zoom-sy)); }
 .nb-block, .nb-leaf, .nb-front, .nb-inside { position: absolute; inset: 0; }
 .nb-block { background: var(--ink); border-radius: 0 calc(var(--W) * .044) calc(var(--W) * .044) 0; }
-.nb-block::after { content: ''; position: absolute; top: 1.1%; right: 2.9%; bottom: 1.1%; left: 3.5%; background: #fff; border-radius: 0 calc(var(--W) * .03) calc(var(--W) * .03) 0; }
+.nb-block::after { content: ''; position: absolute; top: .7%; right: 1.4%; bottom: .7%; left: 1.4%; background: #fff; border-radius: 0 calc(var(--W) * .03) calc(var(--W) * .03) 0; }
 .nb-leaf { transform: rotateY(0deg) translateZ(1px); transform-origin: 0 50%; transform-style: preserve-3d; transition: transform .82s cubic-bezier(.45,.05,.25,1); }
 .nb.opened .nb-leaf { transform: rotateY(-180deg) translateZ(1px); }
 .nb-front { background: var(--ink) url(art/cover.webp) center 62% / 100% auto no-repeat; border-radius: 0 calc(var(--W) * .044) calc(var(--W) * .044) 0; backface-visibility: hidden; -webkit-backface-visibility: hidden; }
 .nb-inside { transform: rotateY(180deg); backface-visibility: hidden; -webkit-backface-visibility: hidden; background: var(--ink); border-radius: calc(var(--W) * .044) 0 0 calc(var(--W) * .044); }
-.nb-inside::after { content: ''; position: absolute; top: 1.1%; left: 2.9%; bottom: 1.1%; right: 3.5%; background: #fff; border-radius: calc(var(--W) * .03) 0 0 calc(var(--W) * .03); }
+.nb-inside::after { content: ''; position: absolute; top: .7%; left: 1.4%; bottom: .7%; right: 1.4%; background: #fff; border-radius: calc(var(--W) * .03) 0 0 calc(var(--W) * .03); }
 .nb-side-tabs { position: absolute; inset: 0; transform-style: preserve-3d; pointer-events: none; transition: opacity .25s; }
 .nb-side-tabs i { position: absolute; left: 98%; top: calc(15% + var(--t) * 36%); width: 11%; height: 34%; display: flex; align-items: center; justify-content: center; font-style: normal; border-radius: 0 calc(var(--W) * .022) calc(var(--W) * .022) 0; transform: translateZ(calc(var(--i) * var(--W) * -0.0112)); }
 .nb-side-tabs i span { text-align: center; writing-mode: vertical-rl; white-space: nowrap; font-size: calc(var(--W) * .05); line-height: 1; }
