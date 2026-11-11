@@ -1,0 +1,17 @@
+{
+  "name": "ref, do something",
+  "short_name": "ref",
+  "description": "A reference notebook for your phone: folders of photos and mood boards made from them.",
+  "id": "./",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#175ba9",
+  "theme_color": "#175ba9",
+  "orientation": "any",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
