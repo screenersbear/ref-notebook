@@ -211,6 +211,11 @@ html.settled .nb.closed:not(.placing) .nb-sun { opacity: 1; pointer-events: auto
 .row { display: flex; align-items: center; border-bottom: 1px solid var(--line); flex: none; width: 100%; }
 .row-open { display: flex; align-items: center; gap: 12px; flex: 1; min-width: 0; padding: 9px 0; text-align: left; }
 .thumb { width: 58px; height: 74px; flex: none; background: #eef0f1; display: block; overflow: hidden; }
+.tag-rows .row-open { gap: 10px; padding: 6px 0; }
+.tag-rows .thumb { width: 39px; height: 50px; }
+.tag-rows .thumb.add svg { width: 18px; height: 18px; }
+.tag-rows .row-name { font-size: 20px; }
+.tag-rows .row-meta { font-size: 15px; }
 .thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .thumb.add { background: none; border: 2px dashed var(--ink); color: var(--ink); display: flex; align-items: center; justify-content: center; }
 .thumb.add svg { width: 24px; height: 24px; stroke-width: 2.4; }
@@ -273,6 +278,30 @@ html.settled .nb.closed:not(.placing) .nb-sun { opacity: 1; pointer-events: auto
 .stepper { display: flex; align-items: center; gap: 8px; }
 .stepper button { width: 40px; height: 40px; border: 2px solid var(--ink); font-size: 22px; }
 .stepper b { font: 400 24px var(--hand); width: 30px; text-align: center; }
+/* The new board wizard. */
+.wz-step { margin: 6px 0 4px; text-align: center; font-size: 17px; color: var(--dim); flex: none; }
+.wz-cards { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-top: 8px; }
+.wz-card { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 10px 8px 9px; border: 2px solid var(--line); text-align: center; font-size: 15px; line-height: 1.2; color: var(--dim); }
+.wz-card strong { font: 400 19px var(--hand); color: var(--text); }
+.wz-card.on { border-color: var(--mango); background: var(--mango); color: var(--text); }
+.wz-shape { display: block; border: 2px solid var(--ink); background: #fff; margin: 4px 0 6px; }
+.wz-shape.tall { width: 46px; height: 60px; }
+.wz-shape.wide { width: 80px; height: 45px; margin-top: 11px; margin-bottom: 10px; }
+.wz-pages { display: flex; gap: 3px; justify-content: center; margin-bottom: 4px; }
+.wz-pages svg, .wz-glyph svg { fill: var(--ink); display: block; }
+.wz-pages .paper-r, .wz-glyph .paper-r { fill: #fff; stroke: var(--line); stroke-width: 1; }
+.wz-glyph { margin: 2px 0 4px; }
+.wz-glyph:not(.wz-glyph-fill) svg rect:not(.paper-r) { fill: none; stroke: var(--ink); stroke-width: 1.2; stroke-dasharray: 2 2; }
+.wz-section { border: 2px solid var(--line); padding: 8px 10px 10px; }
+.wz-sechead { display: flex; align-items: center; gap: 8px; }
+.wz-secnum { flex: none; width: 26px; height: 26px; border-radius: 50%; background: var(--ink); color: var(--on-ink); display: grid; place-items: center; font-size: 16px; }
+.wz-secname { flex: 1; min-width: 0; font-size: 21px; }
+.wz-add { align-self: flex-start; }
+.wz-summary { display: flex; flex-direction: column; }
+.wz-sumrow { display: flex; justify-content: space-between; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--line); font-size: 19px; }
+.wz-dots { display: flex; gap: 6px; padding: 0 4px; }
+.wz-dots i { width: 7px; height: 7px; border-radius: 50%; background: var(--line); }
+.wz-dots i.on { background: var(--ink); }
 .foot { flex: none; display: flex; align-items: center; gap: 8px; padding: 6px 0 0; }
 .cta { flex: 1; height: 48px; background: var(--mango); font-size: 21px; }
 

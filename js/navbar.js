@@ -89,7 +89,7 @@ function wire(el, fromPage) {
       try { el.setPointerCapture(e.pointerId); } catch {}
       const dir = dx < 0 ? 1 : -1;
       d.dir = dir;
-      if (fromPage && at === 0 && canTurn(dir)) d.kind = 'turn';
+      if (fromPage && canTurn(dir)) d.kind = 'turn';
       else if (SECTIONS[at + dir]) { d.kind = 'pan'; d.far = Math.abs(panDistance()); showOther(at + dir); }
       else if (dir < 0 && at === 0) { d.kind = 'shut'; puller?.start(); }
       else d.kind = 'stop';

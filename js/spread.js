@@ -1,12 +1,12 @@
 // The notebook lies open on two pages with a fold between them: Mood boards
 // on the left, Tags on the right. A phone shows one page at a time, with the
 // fold and a sliver of the other page at the side.
-import { boardsScreen, foldersScreen, boardPager } from './screens.js';
+import { boardsScreen, foldersScreen, boardPager, tagPager } from './screens.js';
 
 const frame = document.getElementById('frame');
 const view = document.getElementById('view');
 const TURN_MS = 560, PAN_MS = 240;
-export const sideOf = (i) => (i === 0 ? 'left' : 'right');
+export const sideOf = (i) => (i === 1 ? 'right' : 'left'); // boards and their screens on the left, tags on the right
 
 let other = null, moving = null, settling = null;
 const stopSettling = () => { settling?.cancel(); settling = null; };
@@ -64,16 +64,18 @@ export function settleFrame(from) {
 }
 export const isPanning = () => !!moving;
 
-// Turns a page of the mood boards over the fold.
+// Turns a page of the mood boards (left page) or the tags (right page) over the fold.
 let turning = false;
-export const canTurn = (dir) => { const n = boardPager.page + dir; return n >= 0 && n < boardPager.pages; };
+const pagerHere = () => (frame.dataset.side === 'left' ? [boardPager, boardsScreen] : [tagPager, foldersScreen]);
+export const canTurn = (dir) => { const [pg] = pagerHere(); const n = pg.page + dir; return n >= 0 && n < pg.pages; };
 export async function turnPage(dir) {
   if (turning || !canTurn(dir)) return;
   turning = true;
   const leaf = document.createElement('div');
   leaf.className = 'turn-leaf';
   const shade = document.createElement('i');
-  const target = boardPager.page + dir;
+  const [pager, draw] = pagerHere();
+  const target = pager.page + dir;
   // On the left page the leaves swing over the fold on its right.
   const left = frame.dataset.side === 'left';
   if (left) leaf.classList.add('is-left');
@@ -81,11 +83,11 @@ export async function turnPage(dir) {
     leaf.append(view.firstElementChild.cloneNode(true));
     leaf.append(shade);
     frame.append(leaf);
-    await boardsScreen(view, target);
+    await draw(view, target);
     view.querySelector('.screen')?.classList.add('still');
   } else {
     frame.append(leaf);
-    await boardsScreen(leaf, target); // the page coming back, drawn on the leaf
+    await draw(leaf, target); // the page coming back, drawn on the leaf
     leaf.querySelector('.screen')?.classList.add('still');
     leaf.append(shade);
   }
@@ -97,7 +99,7 @@ export async function turnPage(dir) {
   const off = async () => {
     if (gone) return;
     gone = true;
-    if (!oldOnLeaf) { await boardsScreen(view, target); view.querySelector('.screen')?.classList.add('still'); }
+    if (!oldOnLeaf) { await draw(view, target); view.querySelector('.screen')?.classList.add('still'); }
     a.cancel();
     leaf.remove();
     turning = false;

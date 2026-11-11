@@ -62,12 +62,15 @@ export async function boardsScreen(view, page = boardPager.page) {
   }));
 }
 
-// ---------- Folders ----------
-export function foldersScreen(view) {
+// ---------- Folders (Tags) ----------
+// Tags come a notebook page at a time too; swipe to the next one.
+export const tagPager = { page: 0, pages: 1 };
+
+export function foldersScreen(view, page = tagPager.page) {
   const row = (f, cls = '') => {
     const list = sortList(photosIn(f.id), 'newest');
     return `
-      <a class="row row-open ${cls}" href="#/folder/${esc(f.id)}" data-name="${esc(f.name.toLowerCase())}">
+      <a class="row row-open ${cls}" href="#/folder/${esc(f.id)}" data-t data-name="${esc(f.name.toLowerCase())}">
         <span class="thumb">${list[0] ? `<img src="${thumbUrl(list[0])}" alt="" loading="lazy" />` : ''}</span>
         <span class="row-text"><span class="row-name">${esc(f.name)}</span><span class="row-meta">${list.length} ${list.length === 1 ? 'photo' : 'photos'}</span></span>
       </a>`;
@@ -75,19 +78,39 @@ export function foldersScreen(view) {
   view.innerHTML = `
     <div class="screen">
       <h1 class="head">Tags</h1>
-      <div class="scroll rows">
+      <div class="scroll rows tag-rows">
+        ${lib.folders.length > 8 ? '<input class="find" type="search" placeholder="Find a tag" autocomplete="off" />' : ''}
         ${row(folderById('incoming'), 'marked')}
         ${row(folderById('favorites'))}
         ${row(folderById('all'))}
-        ${lib.folders.length > 8 ? '<input class="find" type="search" placeholder="Find a tag" autocomplete="off" />' : ''}
         ${lib.folders.map((f) => row(f, 'mine')).join('')}
         <button type="button" class="row row-open" data-new><span class="thumb add">${ICONS.plus}</span><span class="row-name">New tag</span></button>
       </div>
+      <div class="page-foot" hidden></div>
     </div>`;
+  // As many as fit on the page, with New tag always at the bottom of it.
+  const rows = [...view.querySelectorAll('[data-t]')], scroller = view.querySelector('.scroll'), foot = view.querySelector('.page-foot');
+  const findH = view.querySelector('.find')?.offsetHeight || 0;
+  const rowH = rows[0]?.offsetHeight || 60, addH = view.querySelector('[data-new]').offsetHeight;
+  const room = scroller.clientHeight - addH - (findH ? findH + 12 : 0);
+  let per = Math.max(1, Math.floor(room / rowH));
+  if (rows.length > per) per = Math.max(1, Math.floor((room - 26) / rowH));
+  const paged = () => {
+    tagPager.pages = Math.max(1, Math.ceil(rows.length / per));
+    tagPager.page = Math.min(Math.max(0, page), tagPager.pages - 1);
+    rows.forEach((r, i) => { r.hidden = Math.floor(i / per) !== tagPager.page; });
+    foot.hidden = tagPager.pages < 2;
+    foot.textContent = `${tagPager.page + 1} of ${tagPager.pages}`;
+  };
+  paged();
   view.querySelector('[data-new]').addEventListener('click', async () => { if (await newFolder()) foldersScreen(view); });
+  // Finding shows every match on this page, scrolling if there are many.
   view.querySelector('.find')?.addEventListener('input', (e) => {
     const q = e.target.value.trim().toLowerCase();
-    view.querySelectorAll('.row.mine').forEach((r) => { r.hidden = !r.dataset.name.includes(q); });
+    if (!q) { paged(); return; }
+    tagPager.pages = 1;
+    foot.hidden = true;
+    rows.forEach((r) => { r.hidden = !r.dataset.name.includes(q); });
   });
 }
 

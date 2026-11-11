@@ -1,6 +1,6 @@
 // Routes: #/ shut, #/boards, #/folders, #/folder/<id>, #/new, #/board/<id>
 import { refresh } from './library.js';
-import { boardsScreen, foldersScreen, folderScreen, boardPager } from './screens.js';
+import { boardsScreen, foldersScreen, folderScreen, boardPager, tagPager } from './screens.js';
 import { newBoardScreen } from './newboard.js';
 import { boardScreen } from './editor.js';
 import { closeAllSheets } from './ui.js';
@@ -117,7 +117,7 @@ async function route() {
     if (!isPanning()) frame.dataset.side = sideOf(section);
     titleL.textContent = section === 0 ? 'Mood boards' : '';
     titleR.textContent = section === 1 ? 'Tags' : '';
-    if (!isOpen && h === '/boards') boardPager.page = 0;
+    if (!isOpen) { boardPager.page = 0; tagPager.page = 0; }
   }
   setBook(h !== '/');
   if (h === '/') { showSection(-1); return; }
