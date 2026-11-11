@@ -6,7 +6,7 @@ import { loadImage } from './util.js';
 
 export const MAX_ZOOM = 6;
 export const TEXT_SIZE = 0.0165;
-const FONT = '"Courier New", Courier, monospace';
+const FONT = '"Mansalva", "Bradley Hand", "Noteworthy", cursive';
 const pct = (v) => `${(v * 100).toFixed(4)}%`;
 
 export const pageTemplate = (board, page) =>
@@ -76,7 +76,6 @@ export async function renderPage(board, page, { selected = -1 } = {}) {
       const d = document.createElement('div');
       d.className = `pt-${p.kind}`;
       d.style.fontSize = `${p.scale}em`;
-      d.style.fontWeight = p.bold ? 'bold' : 'normal';
       d.textContent = p.text;
       tx.append(d);
     }
@@ -137,12 +136,13 @@ export async function pageToCanvas(board, page, pxWidth) {
   const base = W * TEXT_SIZE * (t.text.size || 1);
   const pad = t.text.overlay ? base * 0.6 : 0;
   const x = t.text.x * W, y = t.text.y * H, w = t.text.w * W;
+  try { await document.fonts.load('40px "Mansalva"'); } catch {} // a canvas won't wait for it
   ctx.textBaseline = 'top';
   const lines = [];
   let total = 0, widest = 0;
   parts.forEach((p, k) => {
     const fs = base * p.scale;
-    const font = `${p.bold ? 'bold ' : ''}${fs}px ${FONT}`;
+    const font = `${fs}px ${FONT}`;
     ctx.font = font;
     for (const l of wrapLines(ctx, p.text, w - pad * 2)) { lines.push({ l, font, y: total }); total += fs * 1.35; widest = Math.max(widest, ctx.measureText(l).width); }
     if (k < parts.length - 1) total += fs * 0.35;

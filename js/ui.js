@@ -96,6 +96,7 @@ if (iPhoneApp) {
   const soon = (ms) => clearTimeout(soonTimer) || (soonTimer = setTimeout(() => {
     nudgeScreen().then((gap) => {
       html.classList.toggle('is-short', gap > 0);
+      setAppHeight();
     });
   }, ms));
   window.addEventListener('load', () => soon(120));

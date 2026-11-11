@@ -5,6 +5,7 @@ import { newBoardScreen } from './newboard.js';
 import { boardScreen } from './editor.js';
 import { closeAllSheets } from './ui.js';
 import { carryOn } from './tagger.js';
+import { showSection } from './navbar.js';
 import { esc } from './util.js';
 
 const view = document.getElementById('view');
@@ -14,12 +15,15 @@ let destroyCurrent = null;
 let token = 0;
 
 document.getElementById('bookHit').addEventListener('click', () => { location.hash = '#/boards'; });
+const tabHits = document.getElementById('bookTabHits');
+tabHits.addEventListener('click', (e) => { const b = e.target.closest('[data-go]'); if (b) location.hash = b.dataset.go; });
 
 // The notebook floats shut on white, the same as Contact Sheet and Documenting
 // Fictions. Tapped, its cover swings open and the right page grows to fill the
 // frame behind it, then it leaves. Timers, not transition events: those don't
 // fire if the app is put away mid-swing.
-const RATIO = 1000 / 1360;
+const RATIO = 1000 / 1640; // taller than the other notebooks, to fill a phone
+const TAB_OUT = 0.08;      // how far the side tabs stick out, of the book's width
 const STACK = 16;
 const TURNED = (20 * Math.PI) / 180; // matches style.css
 const PERSPECTIVE = 1100;            // matches .nb in style.css
@@ -30,12 +34,12 @@ document.getElementById('bookStack').innerHTML =
 function measure() {
   const vw = window.innerWidth;
   const vh = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--app-h')) || window.innerHeight;
-  const W = Math.min(vw * 0.78, vh * 0.66 * RATIO, 460);
+  const W = Math.min(vw * 0.82, vh * 0.76 * RATIO, 460);
   const H = W / RATIO;
   const k = Math.min(1, (vw - 14) / (2 * W), (vh * 0.82) / H);
   const cos = Math.cos(TURNED), sin = Math.sin(TURNED);
   const depth = (STACK + 1) * W * 0.0112;
-  const seen = [[-W / 2, 0], [W / 2, 0], [-W / 2, -depth], [W / 2, -depth * 0.8]].map(
+  const seen = [[-W / 2, 0], [W / 2, 0], [-W / 2, -depth], [W / 2 + W * TAB_OUT, -depth * 0.8]].map(
     ([x, d]) => ((x * cos - d * sin) * PERSPECTIVE) / (PERSPECTIVE - (x * sin + d * cos)),
   );
   const f = frame.getBoundingClientRect();
@@ -47,9 +51,22 @@ function measure() {
   set('--zoom-sx', String(f.width / W));
   set('--zoom-sy', String(f.height / H));
 }
-window.addEventListener('ref-layout', measure);
+// Where the side tabs land on screen with the book shut, for the buttons laid
+// flat over them. Measured in that pose before anything paints.
+function placeTabHits() {
+  const before = book.className;
+  book.className = 'nb no-anim closed';
+  const rects = [...document.getElementById('bookSideTabs').children].map((el) => el.getBoundingClientRect());
+  [...tabHits.children].forEach((hit, i) => {
+    const r = rects[i];
+    hit.style.cssText = `left:${r.left - 14}px;right:0;top:${r.top - 3}px;height:${r.height + 6}px`;
+  });
+  book.className = before;
+  void book.offsetWidth;
+}
+window.addEventListener('ref-layout', () => { measure(); if (!book.hidden && book.classList.contains('closed')) placeTabHits(); });
 
-const place = (mode) => { book.hidden = false; book.className = `nb no-anim ${mode}`; void book.offsetWidth; };
+const place = (mode) => { book.hidden = false; placeTabHits(); book.className = `nb no-anim ${mode}`; void book.offsetWidth; };
 const setMode = (mode) => { book.className = `nb ${mode}`; };
 let firstRoute = true;
 let isOpen = false;
@@ -81,7 +98,7 @@ async function route() {
   document.querySelectorAll('.viewer').forEach((v) => v.remove());
   const h = (location.hash || '#/').slice(1) || '/';
   setBook(h !== '/');
-  if (h === '/') return;
+  if (h === '/') { showSection(-1); return; }
   try {
     await refresh();
     if (mine !== token) return;
@@ -94,6 +111,7 @@ async function route() {
       const destroy = await boardScreen(view, decodeURIComponent(m[1]));
       if (mine !== token) destroy(); else destroyCurrent = destroy;
     } else location.hash = '#/boards';
+    if (mine === token) showSection(h === '/boards' ? 0 : h === '/folders' || h.startsWith('/folder/') ? 1 : -1);
   } catch (e) {
     console.error(e);
     view.innerHTML = `<div class="screen"><p class="note center">Something went wrong. ${esc(e.message || 'Try reloading.')}</p></div>`;

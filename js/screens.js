@@ -10,13 +10,6 @@ import { choiceSheet, confirmSheet, promptSheet, toast } from './ui.js';
 import { ICONS } from './icons.js';
 import { esc, shortDate, isIOS, isStandalone } from './util.js';
 
-export const nav = (active) => `
-  <nav class="tools" aria-label="Sections">
-    <a href="#/boards" class="tool${active === 'boards' ? ' on' : ''}" aria-label="Mood boards">${ICONS.boards}</a>
-    <a href="#/folders" class="tool${active === 'folders' ? ' on' : ''}" aria-label="Folders">${ICONS.folders}</a>
-    <a href="#/" class="tool" aria-label="Close the notebook">${ICONS.sun}</a>
-  </nav>`;
-
 // ---------- Boards ----------
 export async function boardsScreen(view) {
   const boards = await db.listBoards();
@@ -36,7 +29,6 @@ export async function boardsScreen(view) {
         <a class="row row-open" href="#/new"><span class="thumb add">${ICONS.plus}</span><span class="row-name">New board</span></a>
         ${!lib.photos.length ? '<p class="note">Start in <a href="#/folder/incoming">Incoming</a>: bring in the photos you want to work with, then make a board from them.</p>' : ''}
       </div>
-      ${nav('boards')}
     </div>`;
   view.querySelectorAll('[data-more]').forEach((btn) => btn.addEventListener('click', async () => {
     const b = boards.find((x) => x.id === btn.dataset.more);
@@ -77,7 +69,6 @@ export function foldersScreen(view) {
         ${lib.folders.map((f) => row(f, 'mine')).join('')}
         <button type="button" class="row row-open" data-new><span class="thumb add">${ICONS.plus}</span><span class="row-name">New folder</span></button>
       </div>
-      ${nav('folders')}
     </div>`;
   view.querySelector('[data-new]').addEventListener('click', async () => { if (await newFolder()) foldersScreen(view); });
   view.querySelector('.find')?.addEventListener('input', (e) => {
@@ -184,7 +175,7 @@ export function folderScreen(view, id) {
             <button type="button" class="tool" data-act="file" aria-label="File in a folder"${sel.size ? '' : ' disabled'}>${ICONS.file}</button>
             <button type="button" class="tool" data-act="fav" aria-label="Favorite"${sel.size ? '' : ' disabled'}>${ICONS.heart}</button>
             <button type="button" class="tool" data-act="delete" aria-label="Delete"${sel.size ? '' : ' disabled'}>${ICONS.trash}</button>
-          </nav>` : nav('folders')}
+          </nav>` : ''}
       </div>`;
     const sc = view.querySelector('.scroll'); if (sc) sc.scrollTop = oldScroll;
     const ch = view.querySelector('.chips'); if (ch) ch.scrollLeft = oldChips;

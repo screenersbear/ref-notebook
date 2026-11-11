@@ -18,13 +18,18 @@
 <body>
 <div id="frame" class="frame">
   <div class="paper"><main id="view" tabindex="-1"></main></div>
-  <div class="coils" aria-hidden="true"></div>
+  <nav class="edge-tabs" aria-label="Sections of the notebook">
+    <a class="y" href="#/boards"><span>Mood boards</span></a>
+    <a class="n" href="#/folders"><span>Folders</span></a>
+  </nav>
 </div>
+<nav class="nav-bar" id="navbar" aria-label="Sections" hidden></nav>
 <div class="nb closed no-anim" id="book">
   <div class="nb-ground"></div>
   <div class="nb-float">
     <div class="nb-book">
       <div class="nb-stack" id="bookStack"></div>
+      <div class="nb-side-tabs" id="bookSideTabs"><i class="y" style="--t:0;--i:3"><span>Mood boards</span></i><i class="n" style="--t:1;--i:7"><span>Folders</span></i></div>
       <div class="nb-block"></div>
       <div class="nb-leaf">
         <div class="nb-front"></div>
@@ -33,6 +38,10 @@
     </div>
   </div>
   <button type="button" class="nb-hit" id="bookHit" aria-label="Open the notebook"></button>
+  <div id="bookTabHits">
+    <button type="button" class="nb-hit-tab" data-go="#/boards" aria-label="Open at Mood boards"></button>
+    <button type="button" class="nb-hit-tab" data-go="#/folders" aria-label="Open at Folders"></button>
+  </div>
 </div>
 <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
 <noscript><p>This app needs JavaScript turned on.</p></noscript>
