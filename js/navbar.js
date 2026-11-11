@@ -3,7 +3,7 @@
 // right; before Mood boards, the left triangle shuts the notebook. A swipe on
 // the page does the same as one on the bar, and turns the mood boards' pages.
 import { ICONS } from './icons.js';
-import { showOther, dropOther, dragFrame, panOver, landOn, settleFrame, canTurn, turnPage, isPanning } from './spread.js';
+import { panDistance, showOther, dropOther, dragFrame, panOver, landOn, settleFrame, canTurn, turnPage, isPanning } from './spread.js';
 
 const SECTIONS = [
   { href: '#/boards', name: 'Mood boards', icon: ICONS.boards },
@@ -90,17 +90,18 @@ function wire(el, fromPage) {
       const dir = dx < 0 ? 1 : -1;
       d.dir = dir;
       if (fromPage && at === 0 && canTurn(dir)) d.kind = 'turn';
-      else if (SECTIONS[at + dir]) { d.kind = 'pan'; showOther(at + dir); }
+      else if (SECTIONS[at + dir]) { d.kind = 'pan'; d.far = Math.abs(panDistance()); showOther(at + dir); }
       else if (dir < 0 && at === 0) { d.kind = 'shut'; puller?.start(); }
       else d.kind = 'stop';
     }
     d.x = dx;
     if (d.kind === 'pan') {
       if (dx * d.dir > 0) { d.x = 0; dragFrame(0); return; } // came back past where it started
-      dragFrame(dx);
+      if (Math.abs(dx) > d.far) d.x = Math.sign(dx) * d.far; // never past the other page
+      dragFrame(d.x);
       strip.classList.remove('is-moving');
-      strip.style.transform = `translateX(${-at * STEP + (dx / frame.offsetWidth) * STEP}px)`;
-    } else if (d.kind === 'stop') dragFrame(dx * 0.12);
+      strip.style.transform = `translateX(${-at * STEP + (d.x / frame.offsetWidth) * STEP}px)`;
+    }
     else if (d.kind === 'shut') puller?.move(Math.max(0, dx * (fromPage ? 1.15 : 1.8)));
   });
   const end = (e) => {
@@ -113,7 +114,7 @@ function wire(el, fromPage) {
     if (g.kind === 'turn') { if (up && Math.abs(g.x) > 36) turnPage(g.dir); }
     else if (g.kind === 'pan') { if (up && Math.abs(g.x) > w * 0.2) go(g.dir, g.x); else settle(g.x); }
     else if (g.kind === 'shut') puller?.end();
-    else settle(g.x * 0.12);
+    // nowhere to go that way: the page stays put
   };
   el.addEventListener('pointerup', end);
   el.addEventListener('pointercancel', end);

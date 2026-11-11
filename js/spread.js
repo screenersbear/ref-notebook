@@ -8,10 +8,11 @@ const view = document.getElementById('view');
 const TURN_MS = 560, PAN_MS = 240;
 export const sideOf = (i) => (i === 0 ? 'left' : 'right');
 
-let other = null, moving = null;
+let other = null, moving = null, settling = null;
+const stopSettling = () => { settling?.cancel(); settling = null; };
 
 // How far the page has to travel for the fold to reach the other side.
-function panDistance() {
+export function panDistance() {
   const r = frame.getBoundingClientRect();
   const m = new DOMMatrix(getComputedStyle(frame).transform).m41;
   const vw = window.innerWidth;
@@ -29,11 +30,12 @@ export async function showOther(i) {
   el.querySelector('.screen')?.classList.add('still');
 }
 export function dropOther() { other?.remove(); other = null; }
-export const dragFrame = (x) => { frame.style.transform = x ? `translate3d(${x}px, 0, 0)` : ''; };
+export const dragFrame = (x) => { stopSettling(); frame.style.transform = x ? `translate3d(${x}px, 0, 0)` : ''; };
 
 // Slides the book over, then leaves it there until the new screen is drawn.
 export function panOver(from, done) {
   const to = panDistance();
+  stopSettling();
   frame.style.transform = '';
   moving?.cancel();
   moving = frame.animate([{ transform: `translate3d(${from}px, 0, 0)` }, { transform: `translate3d(${to}px, 0, 0)` }], { duration: PAN_MS, easing: 'cubic-bezier(.25,.6,.3,1)', fill: 'forwards' });
@@ -46,12 +48,18 @@ export function panOver(from, done) {
 export function landOn(i) {
   frame.dataset.side = sideOf(i);
   moving?.cancel(); moving = null;
+  stopSettling();
   frame.style.transform = '';
   dropOther();
 }
 export function settleFrame(from) {
   frame.style.transform = '';
-  if (from) frame.animate([{ transform: `translate3d(${from}px, 0, 0)` }, { transform: 'none' }], { duration: 180, easing: 'ease-out' }).onfinish = dropOther;
+  stopSettling();
+  if (from) {
+    settling = frame.animate([{ transform: `translate3d(${from}px, 0, 0)` }, { transform: 'none' }], { duration: 180, easing: 'ease-out' });
+    const a = settling;
+    a.onfinish = () => { if (settling === a) settling = null; dropOther(); };
+  }
   else dropOther();
 }
 export const isPanning = () => !!moving;
