@@ -5,7 +5,7 @@ import { photoById, thumbUrl, fullUrl } from './library.js';
 import { loadImage } from './util.js';
 
 export const MAX_ZOOM = 6;
-export const TEXT_SIZE = 0.0165;
+export const TEXT_SIZE = 0.027; // of the page's width; was 0.0165, too small on a phone (11-11)
 const FONT = '"Mansalva", "Bradley Hand", "Noteworthy", cursive';
 const pct = (v) => `${(v * 100).toFixed(4)}%`;
 
@@ -42,7 +42,7 @@ const textParts = (page) => [
   { kind: 'body', text: page.text || '', scale: page.textSize ?? 1, bold: false },
 ].filter((p) => p.text.trim());
 
-export async function renderPage(board, page, { selected = -1 } = {}) {
+export async function renderPage(board, page, { selected = -1, editing = false } = {}) {
   const shape = SHAPES[board.shape];
   const t = pageTemplate(board, page);
   const el = document.createElement('div');
@@ -69,8 +69,12 @@ export async function renderPage(board, page, { selected = -1 } = {}) {
   if (parts.length || cols.length) {
     const tx = document.createElement('div');
     tx.className = `page-text${t.text.overlay ? ' overlay' : ''}${page.textFill === false ? ' nofill' : ''}`;
+    tx.dataset.box = 'main';
     if (t.text.size) tx.style.setProperty('--text-scale', t.text.size);
-    if (t.text.overlay) Object.assign(tx.style, { left: pct(t.text.x), bottom: pct(1 - t.text.y - t.text.h), maxWidth: pct(t.text.w) });
+    const g = page.textBox; // moved or resized by hand
+    if (g && t.text.overlay) Object.assign(tx.style, { left: pct(g.x), top: pct(g.y), maxWidth: pct(g.w) });
+    else if (g) Object.assign(tx.style, { left: pct(g.x), top: pct(g.y), width: pct(g.w), height: pct(g.h) });
+    else if (t.text.overlay) Object.assign(tx.style, { left: pct(t.text.x), bottom: pct(1 - t.text.y - t.text.h), maxWidth: pct(t.text.w) });
     else Object.assign(tx.style, { left: pct(t.text.x), top: pct(t.text.y), width: pct(t.text.w), height: pct(t.text.h) });
     for (const p of parts) {
       const d = document.createElement('div');
@@ -87,6 +91,18 @@ export async function renderPage(board, page, { selected = -1 } = {}) {
     }
     el.append(tx);
   }
+  // Text boxes added with the T button, anywhere on the page.
+  (page.notes || []).forEach((n, i) => {
+    if (!n.text?.trim() && !editing) return;
+    const d = document.createElement('div');
+    d.className = `page-note${n.text?.trim() ? '' : ' empty'}`;
+    d.dataset.box = String(i);
+    Object.assign(d.style, { left: pct(n.x), top: pct(n.y), width: pct(n.w), height: pct(n.h) });
+    d.style.setProperty('--note-scale', n.size || 1.6);
+    d.textContent = n.text?.trim() ? n.text : 'Text';
+    el.append(d);
+  });
+  if (editing) el.classList.add('editing');
   return el;
 }
 
@@ -130,14 +146,22 @@ export async function pageToCanvas(board, page, pxWidth) {
     drawCover(ctx, img, Math.round(s.x * W), Math.round(s.y * H), Math.round(s.w * W), Math.round(s.h * H), fx, fy, im.zoom);
     img.src = '';
   }
+  try { await document.fonts.load('40px "Mansalva"'); } catch {} // a canvas won't wait for it
+  ctx.textBaseline = 'top';
+  for (const n of page.notes || []) {
+    if (!n.text?.trim()) continue;
+    const fs = W * TEXT_SIZE * (n.size || 1.6);
+    ctx.font = `${fs}px ${FONT}`;
+    ctx.fillStyle = '#000';
+    wrapLines(ctx, n.text, n.w * W).forEach((l, k) => ctx.fillText(l, n.x * W, n.y * H + k * fs * 1.35));
+  }
   const parts = textParts(page);
   const cols = page.palette ? pagePalette(page, t) : [];
   if (!parts.length && !cols.length) return c;
   const base = W * TEXT_SIZE * (t.text.size || 1);
   const pad = t.text.overlay ? base * 0.6 : 0;
-  const x = t.text.x * W, y = t.text.y * H, w = t.text.w * W;
-  try { await document.fonts.load('40px "Mansalva"'); } catch {} // a canvas won't wait for it
-  ctx.textBaseline = 'top';
+  const box = page.textBox || t.text;
+  const x = box.x * W, y = box.y * H, w = box.w * W;
   const lines = [];
   let total = 0, widest = 0;
   parts.forEach((p, k) => {
@@ -153,7 +177,7 @@ export async function pageToCanvas(board, page, pxWidth) {
   let top = y;
   if (t.text.overlay) {
     const boxH = total + pad * 2;
-    top = y + t.text.h * H - boxH;
+    top = page.textBox ? y : y + t.text.h * H - boxH;
     if (page.textFill !== false) { ctx.fillStyle = '#fff'; ctx.fillRect(x, top, Math.min(w, widest + pad * 2), boxH); }
   }
   ctx.fillStyle = '#000';

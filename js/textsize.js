@@ -1,7 +1,7 @@
 // Page title and page text sizes, like the desktop app: each steps from 60% to
 // 400% of its normal size, stored per page as titleSize / textSize. "Save as
 // default" keeps a size for new pages; "Use default" puts a page back to it.
-export const KEYS = { title: { size: 'titleSize', def: 1.5 }, body: { size: 'textSize', def: 1 } };
+export const KEYS = { title: { size: 'titleSize', def: 1.5 }, body: { size: 'textSize', def: 1 }, note: { size: 'size', def: 1.6 } }; // note: a text box's own size, bigger than page text so it reads on a phone
 export const TEXT_STEPS = [0.6, 0.75, 0.9, 1, 1.15, 1.3, 1.5, 1.75, 2, 2.5, 3, 4];
 const STORE = 'ref-notebook-text-defaults';
 
@@ -32,7 +32,7 @@ export const isDefault = (page, kind) => Math.abs(sizeOf(page, kind) - defaultSi
 
 // A new page starts at your saved sizes (a cover keeps its own big title).
 export function withTextDefaults(page) {
-  for (const kind of Object.keys(KEYS)) {
+  for (const kind of ['title', 'body']) {
     if (page[KEYS[kind].size] !== undefined) continue;
     const d = defaultSize(kind);
     if (d !== 1) setSize(page, kind, d);
