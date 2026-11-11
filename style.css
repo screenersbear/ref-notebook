@@ -312,6 +312,9 @@ html.settled .nb.closed:not(.placing) .nb-sun { opacity: 1; pointer-events: auto
 .board-name { flex: 1; min-width: 0; padding-right: 8px; line-height: 1.3; font-size: 24px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: left; padding-left: 2px; }
 .editor .folder-head .count { margin-left: 0; padding-right: 2px; }
 .stage { flex: 1; min-height: 0; display: flex; align-items: center; justify-content: center; touch-action: none; user-select: none; -webkit-user-select: none; perspective: 1200px; }
+.show-row { flex: none; display: flex; justify-content: center; padding-top: 8px; }
+.show-open { display: inline-flex; align-items: center; gap: 6px; height: 34px; }
+.show-open svg { width: 18px; height: 18px; }
 .tray-head { padding-top: 8px; padding-bottom: 4px; }
 .tray { flex: none; display: flex; gap: 4px; height: 82px; overflow-x: auto; overflow-y: hidden; scrollbar-width: none; }
 .tray-photo { flex: none; width: 62px; height: 82px; position: relative; overflow: hidden; background: #eef0f1; }
@@ -418,3 +421,16 @@ html.settled .nb.closed:not(.placing) .nb-sun { opacity: 1; pointer-events: auto
 .toast { position: fixed; left: 50%; bottom: calc(70px + var(--safe-b)); transform: translateX(-50%); z-index: 90; max-width: 86vw; padding: 10px 16px; background: var(--text); color: #fff; font-size: 18px; display: flex; gap: 12px; align-items: center; white-space: nowrap; }
 .toast.show { animation: page-in .2s ease-out; }
 .toast-action { color: var(--mango); }
+
+/* A mood board full screen. */
+.show { position: fixed; inset: 0; z-index: 40; background: #1f272c; color: #fff; display: flex; flex-direction: column; touch-action: none; user-select: none; -webkit-user-select: none; }
+.show-top, .show-foot { flex: none; display: flex; align-items: center; justify-content: space-between; padding: 0 10px; }
+.show-top { padding-top: calc(var(--safe-t) + 4px); }
+.show-foot { padding-bottom: max(8px, var(--safe-b)); justify-content: center; gap: 48px; }
+.show-count { font-size: 18px; padding-right: 8px; color: rgba(255, 255, 255, .75); }
+.show-btn { width: 48px; height: 48px; display: grid; place-items: center; color: #fff; }
+.show-btn svg { width: 26px; height: 26px; }
+.show-btn.flip svg { transform: scaleX(-1); }
+.show-btn:disabled { opacity: .25; }
+.show-stage { flex: 1; min-height: 0; position: relative; display: flex; align-items: center; justify-content: center; margin: 4px 12px; overflow: hidden; }
+.show-page { position: absolute; box-shadow: none; }

@@ -1,5 +1,6 @@
 // A board's pages: swipe to turn, tap a spot, pull a photo in from the tray.
 import * as db from './db.js';
+import { showBoard } from './showboard.js';
 import { sizeOf, stepSize, useDefault, saveDefault, isDefault, withTextDefaults } from './textsize.js';
 import { lib, photoById, photosIn, thumbUrl, sortList, SPECIAL } from './library.js';
 import { TEMPLATES, SHAPES, templateFor, styleTemplate, defaultTemplate } from './templates.js';
@@ -26,6 +27,7 @@ export async function boardScreen(view, id) {
         <span class="count" data-at></span>
       </header>
       <div class="stage" data-stage></div>
+      <div class="show-row"><button type="button" class="label-btn show-open" data-show>${ICONS.expand}<span>Full screen</span></button></div>
       <div class="tray-head" data-tray-head></div>
       <div class="tray" data-tray></div>
       <nav class="tools" aria-label="Page tools">
@@ -310,6 +312,11 @@ export async function boardScreen(view, id) {
       sel = -1;
       paintUndo(); persist(); drawPage(); drawTray();
     }
+  });
+  // The whole board full screen; leaving it comes back on the page you ended on.
+  view.querySelector('[data-show]').addEventListener('click', () => {
+    persist.flush?.();
+    showBoard(board, at, (n) => { if (!destroyed && n !== at) goTo(n, n > at ? 1 : -1); });
   });
   view.querySelector('[data-tray-head]').addEventListener('click', (e) => {
     const b = e.target.closest('[data-source]');

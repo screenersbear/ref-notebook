@@ -4,6 +4,7 @@ export const ICONS = {
   back: svg('<path d="M14.5 5l-7 7 7 7"/>'),
   plus: svg('<path d="M12 5v14M5 12h14"/>'),
   x: svg('<path d="M6 6l12 12M18 6L6 18"/>'),
+  expand: svg('<path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/>'),
   more: svg('<circle cx="5" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="19" cy="12" r="1.5" fill="currentColor" stroke="none"/>'),
   boards: svg('<rect x="4" y="3.5" width="16" height="17"/><path d="M4 13.5h16M10 13.5v7"/>'),
   folders: svg('<path d="M3.5 12.5v-8h8l9 9-8 8z"/><circle cx="8" cy="9" r="1.2"/>'),
