@@ -91,7 +91,7 @@ function wire(el, fromPage) {
       d.dir = dir;
       if (fromPage && canTurn(dir)) d.kind = 'turn';
       else if (SECTIONS[at + dir]) { d.kind = 'pan'; d.far = Math.abs(panDistance()); showOther(at + dir); }
-      else if (dir < 0 && at === 0) { d.kind = 'shut'; puller?.start(); }
+      else if (dir < 0 && at === 0) d.kind = 'shut';
       else d.kind = 'stop';
     }
     d.x = dx;
@@ -102,7 +102,7 @@ function wire(el, fromPage) {
       strip.classList.remove('is-moving');
       strip.style.transform = `translateX(${-at * STEP + (d.x / frame.offsetWidth) * STEP}px)`;
     }
-    else if (d.kind === 'shut') puller?.move(Math.max(0, dx * (fromPage ? 1.15 : 1.8)));
+    else if (d.kind === 'shut') { d.x = Math.max(0, dx); dragFrame(Math.min(d.x * 0.3, 60)); } // a little give, then it shuts all the way
   });
   const end = (e) => {
     if (!d || e.pointerId !== d.id) return;
@@ -113,7 +113,7 @@ function wire(el, fromPage) {
     const up = e.type === 'pointerup', w = frame.offsetWidth;
     if (g.kind === 'turn') { if (up && Math.abs(g.x) > 36) turnPage(g.dir); }
     else if (g.kind === 'pan') { if (up && Math.abs(g.x) > w * 0.2) go(g.dir, g.x); else settle(g.x); }
-    else if (g.kind === 'shut') puller?.end();
+    else if (g.kind === 'shut') { if (up && g.x > 50) { dragFrame(0); location.hash = '#/'; } else settle(Math.min(g.x * 0.3, 60)); }
     // nowhere to go that way: the page stays put
   };
   el.addEventListener('pointerup', end);
