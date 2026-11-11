@@ -8,6 +8,7 @@ import * as db from './db.js';
 import { lib, photosIn, sortList, SPECIAL } from './library.js';
 import { STYLES, SHAPES, paginate, makeCover, templateFor, styleTemplate } from './templates.js';
 import { toast } from './ui.js';
+import { withTextDefaults } from './textsize.js';
 import { ICONS } from './icons.js';
 import { esc, clamp } from './util.js';
 
@@ -203,7 +204,7 @@ export function newBoardScreen(view) {
       });
     }
     if (W.cover) pages.unshift(makeCover({ shape: W.shape, name }, pages.flatMap((p) => p.images).find(Boolean) || null));
-    pages = pages.map((p) => ({ ...p, images: p.images.map((x) => (x ? { id: x } : null)) }));
+    pages = pages.map((p) => withTextDefaults({ ...p, images: p.images.map((x) => (x ? { id: x } : null)) }));
     const b = await db.saveBoard({ name, shape: W.shape, style: W.style, pages });
     location.hash = `#/board/${b.id}`;
   }

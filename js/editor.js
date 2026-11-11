@@ -1,5 +1,6 @@
 // A board's pages: swipe to turn, tap a spot, pull a photo in from the tray.
 import * as db from './db.js';
+import { sizeOf, stepSize, useDefault, saveDefault, isDefault, withTextDefaults } from './textsize.js';
 import { lib, photoById, photosIn, thumbUrl, sortList, SPECIAL } from './library.js';
 import { TEMPLATES, SHAPES, templateFor, styleTemplate, defaultTemplate } from './templates.js';
 import { renderPage, pageTemplate, pageToCanvas, applyCrop, MAX_ZOOM } from './pages.js';
@@ -189,7 +190,9 @@ export async function boardScreen(view, id) {
       title: 'Page text',
       body: `
         <label class="field"><span class="label">Title</span><input type="text" data-title value="${esc(p.title || '')}" maxlength="120" autocomplete="off" /></label>
+        ${sizeRow('title', 'title')}
         <label class="field"><span class="label">Text</span><textarea rows="4" data-body>${esc(p.text || '')}</textarea></label>
+        ${sizeRow('body', 'text')}
         ${t.text.overlay ? `<label class="check"><input type="checkbox" data-fill${p.textFill === false ? '' : ' checked'} /> Background behind text</label>` : ''}
         <label class="check"><input type="checkbox" data-palette${p.palette ? ' checked' : ''} /> Show this page's colors</label>
         <div class="sheet-actions one"><button type="button" class="btn primary" data-close>Done</button></div>`,
@@ -200,12 +203,36 @@ export async function boardScreen(view, id) {
     sh.body.querySelector('[data-body]').addEventListener('input', (e) => change(() => { p.text = e.target.value; }));
     sh.body.querySelector('[data-fill]')?.addEventListener('change', (e) => change(() => { p.textFill = e.target.checked; }));
     sh.body.querySelector('[data-palette]').addEventListener('change', (e) => change(() => { p.palette = e.target.checked; }));
+    const paintSizes = () => sh.body.querySelectorAll('[data-size]').forEach((row) => {
+      const kind = row.dataset.size;
+      row.querySelector('b').textContent = `${Math.round(sizeOf(p, kind) * 100)}%`;
+      row.querySelector('[data-usedef]').disabled = isDefault(p, kind);
+      row.querySelector('[data-savedef]').disabled = isDefault(p, kind);
+    });
+    paintSizes();
+    sh.body.addEventListener('click', (e) => {
+      const b = e.target.closest('button'), row = b?.closest('[data-size]');
+      if (!row) return;
+      const kind = row.dataset.size, word = kind === 'title' ? 'Title' : 'Text';
+      if (b.dataset.grow) change(() => stepSize(p, kind, +b.dataset.grow));
+      else if ('usedef' in b.dataset) { change(() => useDefault(p, kind)); toast(`${word} back to your default size`); }
+      else if ('savedef' in b.dataset) { saveDefault(p, kind); toast(`${word} size saved: new pages start with it`); }
+      paintSizes();
+    });
+  }
+  function sizeRow(kind, word) {
+    return `
+      <div class="size-row" data-size="${kind}">
+        <span class="label">Size</span>
+        <span class="stepper"><button type="button" data-grow="-1" aria-label="Smaller ${word}">A−</button><b>100%</b><button type="button" data-grow="1" aria-label="Larger ${word}">A+</button></span>
+        <span class="size-defs"><button type="button" class="label-btn" data-usedef>Use default</button><button type="button" class="label-btn" data-savedef>Save as default</button></span>
+      </div>`;
   }
   function addPage() {
     snapshot();
     const n = at + 1;
     const tid = styleTemplate(board.shape, board.style, n) || defaultTemplate(board.shape, 1).id;
-    board.pages.splice(n, 0, { template: tid, images: [], section: page().section });
+    board.pages.splice(n, 0, withTextDefaults({ template: tid, images: [], section: page().section }));
     persist();
     goTo(n, 1);
     drawPage(1);

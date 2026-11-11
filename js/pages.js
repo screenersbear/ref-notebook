@@ -39,7 +39,7 @@ export function pagePalette(page, t) {
 
 const textParts = (page) => [
   { kind: 'title', text: page.title || '', scale: page.titleSize ?? 1.5, bold: true },
-  { kind: 'body', text: page.text || '', scale: 1, bold: false },
+  { kind: 'body', text: page.text || '', scale: page.textSize ?? 1, bold: false },
 ].filter((p) => p.text.trim());
 
 export async function renderPage(board, page, { selected = -1 } = {}) {
