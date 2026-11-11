@@ -10,18 +10,19 @@
 // screen and could make the next save fail.
 //   folders  your folders. Incoming isn't stored: it's photos in no folder
 //   boards   mood boards and their pages
+//   stickers the stickers on the notebook's cover
 //   meta     small settings
 import { uuid, nowISO } from './util.js';
 
 const DB_NAME = 'ref-notebook';
-const STORES = ['photos', 'thumbs', 'files', 'folders', 'boards', 'meta'];
+const STORES = ['photos', 'thumbs', 'files', 'folders', 'boards', 'stickers', 'meta'];
 const KEY = { meta: 'key' };
 
 let dbPromise = null;
 function openDb() {
   if (dbPromise) return dbPromise;
   dbPromise = new Promise((resolve, reject) => {
-    const req = indexedDB.open(DB_NAME, 2);
+    const req = indexedDB.open(DB_NAME, 3);
     req.onupgradeneeded = () => {
       for (const s of STORES) if (!req.result.objectStoreNames.contains(s)) req.result.createObjectStore(s, { keyPath: KEY[s] || 'id' });
     };
@@ -154,4 +155,10 @@ export function restoreFolder(f, photoIds) {
     photoIds.forEach((id) => { s.get(id).onsuccess = (e) => { const p = e.target.result; if (p && !p.folderIds.includes(f.id)) s.put({ ...p, folderIds: [...p.folderIds, f.id] }); }; });
   });
 }
+export const listStickers = () => all('stickers');
+export function saveSticker(s) {
+  const r = stamp(s);
+  return tx(['stickers'], 'readwrite', (t, set) => { t.objectStore('stickers').put(r); set(r); });
+}
+export const deleteSticker = (id) => tx(['stickers'], 'readwrite', (t) => { t.objectStore('stickers').delete(id); });
 export const deleteBoard = (id) => tx(['boards'], 'readwrite', (t) => { t.objectStore('boards').delete(id); });

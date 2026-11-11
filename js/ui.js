@@ -110,6 +110,7 @@ if (iPhoneApp) {
       }
       html.classList.toggle('is-short', gap > 0);
       setAppHeight();
+      html.classList.add('settled');
     });
   }, ms));
   window.addEventListener('load', () => soon(120));
@@ -138,6 +139,8 @@ function setAppHeight() {
   window.dispatchEvent(new Event('ref-layout'));
 }
 setAppHeight();
+// Things pinned near the bottom wait until iOS has settled its measurement.
+setTimeout(() => html.classList.add('settled'), iPhoneApp ? 3500 : 0);
 window.addEventListener('resize', setAppHeight);
 window.addEventListener('orientationchange', () => setTimeout(setAppHeight, 350));
 document.addEventListener('visibilitychange', () => { if (!document.hidden) setTimeout(setAppHeight, 900); });

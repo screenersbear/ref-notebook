@@ -6,6 +6,9 @@ import { boardScreen } from './editor.js';
 import { closeAllSheets } from './ui.js';
 import { carryOn } from './tagger.js';
 import { showSection } from './navbar.js';
+import { paintStickers } from './stickers.js';
+import { openOptions, startPage } from './options.js';
+import { ICONS } from './icons.js';
 import { esc } from './util.js';
 
 const view = document.getElementById('view');
@@ -15,6 +18,9 @@ let destroyCurrent = null;
 let token = 0;
 
 document.getElementById('bookHit').addEventListener('click', () => { location.hash = '#/boards'; });
+const sun = document.getElementById('bookSun');
+sun.innerHTML = ICONS.sun;
+sun.addEventListener('click', openOptions);
 const tabHits = document.getElementById('bookTabHits');
 tabHits.addEventListener('click', (e) => { const b = e.target.closest('[data-go]'); if (b) location.hash = b.dataset.go; });
 
@@ -166,6 +172,8 @@ document.addEventListener('touchend', endPull, { capture: true });
 document.addEventListener('touchcancel', endPull, { capture: true });
 
 window.addEventListener('hashchange', route);
+if (startPage() && (location.hash || '#/') === '#/') history.replaceState(null, '', startPage());
 route().then(() => setTimeout(carryOn, 2500)); // once the notebook is on screen
+paintStickers().catch(console.error);
 
 if ('serviceWorker' in navigator && location.protocol !== 'file:') navigator.serviceWorker.register('./sw.js').catch(() => {});

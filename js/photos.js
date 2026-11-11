@@ -99,6 +99,25 @@ async function importFile(file) {
   }
 }
 
+// A sticker's picture: the middle of the photo, square.
+export async function stickerBytes(file) {
+  const url = URL.createObjectURL(file);
+  try {
+    const img = await loadImage(url);
+    const side = Math.min(img.naturalWidth, img.naturalHeight), out = Math.min(800, side);
+    const c = document.createElement('canvas');
+    c.width = c.height = out;
+    const g = c.getContext('2d', { colorSpace: 'srgb' });
+    g.imageSmoothingQuality = 'high';
+    g.drawImage(img, (img.naturalWidth - side) / 2, (img.naturalHeight - side) / 2, side, side, 0, 0, out, out);
+    const bytes = await (await canvasToBlob(c, 'image/jpeg', 0.88)).arrayBuffer();
+    c.width = c.height = 0;
+    return bytes;
+  } finally {
+    URL.revokeObjectURL(url);
+  }
+}
+
 // A new small picture made from the big one.
 export async function remakeThumb(id) {
   const blob = await getFile(id);
@@ -128,12 +147,12 @@ export async function importFiles(files, onProgress) {
 }
 
 // Opens the phone's photos. Must be called straight from a tap.
-export function pickFiles() {
+export function pickFiles(multiple = true) {
   return new Promise((resolve) => {
     const input = document.createElement('input');
     input.type = 'file';
     input.accept = 'image/*';
-    input.multiple = true;
+    input.multiple = multiple;
     input.style.display = 'none';
     input.addEventListener('change', () => { const f = [...(input.files || [])]; input.remove(); resolve(f); });
     input.addEventListener('cancel', () => { input.remove(); resolve([]); });
