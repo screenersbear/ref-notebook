@@ -91,7 +91,7 @@ svg { display: block; }
 .nb.closed { touch-action: none; }
 .nb-hit { position: absolute; left: calc(50% - var(--W) / 2); top: calc(50% - var(--H) / 2); width: var(--W); height: var(--H); z-index: 3; }
 .nb.placing .nb-hit { display: none; }
-.nb-sun { position: absolute; left: 50%; top: calc(var(--app-h) - max(14px, calc(var(--safe-b) - 6px)) - 48px); width: 48px; height: 48px; margin-left: -24px; padding: 10px; z-index: 5; color: var(--text); opacity: 0; pointer-events: none; transition: opacity .25s; }
+.nb-sun { position: absolute; left: 50%; top: calc(var(--app-h) - var(--nb-pad) - 49px); /* centred where the bar's icon is once the notebook is open */ width: 48px; height: 48px; margin-left: -24px; padding: 10px; z-index: 5; color: var(--text); opacity: 0; pointer-events: none; transition: opacity .25s; }
 .nb-sun svg { width: 28px; height: 28px; display: block; }
 html.settled .nb.closed:not(.placing) .nb-sun { opacity: 1; pointer-events: auto; }
 .nb.placing .nb-float, .nb.placing .nb-ground::before { animation: none; }
