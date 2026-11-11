@@ -1,5 +1,5 @@
 // Bump CACHE_NAME with every deploy so installed copies pick up new files.
-const CACHE_NAME = 'ref-notebook-v8';
+const CACHE_NAME = 'ref-notebook-v9';
 const ASSETS = [
   './', './index.html', './style.css', './manifest.json',
   './js/app.js', './js/db.js', './js/editor.js', './js/filing.js', './js/icons.js', './js/library.js',

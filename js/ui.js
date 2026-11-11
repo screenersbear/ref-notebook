@@ -121,6 +121,14 @@ if (iPhoneApp) {
 // really does (turning the phone), so the bottom of the page can't jump while
 // iOS measures itself or the keyboard comes and goes.
 let appH = 0;
+// The floating notebook centers on the real screen, known from the first
+// moment, so it can't jump when iOS corrects its measurement a second later.
+function setBookHeight() {
+  const portrait = Math.abs(window.innerWidth - screen.width) < 2;
+  html.style.setProperty('--book-h', `${iPhoneApp ? (portrait ? screen.height : screen.width) : window.innerHeight}px`);
+}
+setBookHeight();
+window.addEventListener('resize', setBookHeight);
 function setAppHeight() {
   if (html.classList.contains('ios-nudge') || nudging || typing()) return;
   const h = window.innerHeight;

@@ -33,7 +33,7 @@ document.getElementById('bookStack').innerHTML =
 
 function measure() {
   const vw = window.innerWidth;
-  const vh = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--app-h')) || window.innerHeight;
+  const vh = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--book-h')) || window.innerHeight;
   const W = Math.min(vw * 0.78, vh * 0.66 * RATIO, 460);
   const H = W / RATIO;
   const k = Math.min(1, (vw - 14) / (2 * W), (vh * 0.82) / H);
