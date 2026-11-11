@@ -22,7 +22,7 @@ tabHits.addEventListener('click', (e) => { const b = e.target.closest('[data-go]
 // Fictions. Tapped, its cover swings open and the right page grows to fill the
 // frame behind it, then it leaves. Timers, not transition events: those don't
 // fire if the app is put away mid-swing.
-const RATIO = 1000 / 1640; // taller than the other notebooks, to fill a phone
+const RATIO = 1000 / 1360; // same size as Documenting Fictions' notebook
 const TAB_OUT = 0.08;      // how far the side tabs stick out, of the book's width
 const STACK = 16;
 const TURNED = (20 * Math.PI) / 180; // matches style.css
@@ -34,7 +34,7 @@ document.getElementById('bookStack').innerHTML =
 function measure() {
   const vw = window.innerWidth;
   const vh = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--app-h')) || window.innerHeight;
-  const W = Math.min(vw * 0.82, vh * 0.76 * RATIO, 460);
+  const W = Math.min(vw * 0.78, vh * 0.66 * RATIO, 460);
   const H = W / RATIO;
   const k = Math.min(1, (vw - 14) / (2 * W), (vh * 0.82) / H);
   const cos = Math.cos(TURNED), sin = Math.sin(TURNED);
