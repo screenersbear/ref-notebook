@@ -32,6 +32,7 @@ svg { display: block; }
 .frame {
   position: fixed; top: var(--nb-top); height: calc(var(--app-h) - var(--nb-top) - var(--nb-bar));
   left: max(6px, calc(50% - 300px)); right: max(6px, calc(50% - 300px));
+  z-index: 1; /* above the bar, so a screen's own tools show over it */
   background: var(--ink); border-radius: 5px 18px 18px 5px;
   box-shadow: 0 8px 22px rgba(30, 50, 80, .18), 0 2px 6px rgba(30, 50, 80, .12);
 }
@@ -96,7 +97,7 @@ svg { display: block; }
 .scroll { flex: 1; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; scrollbar-width: none; }
 .scroll::-webkit-scrollbar { display: none; }
 .tools { position: fixed; left: 0; right: 0; top: calc(var(--app-h) - var(--nb-bar)); height: var(--nb-bar); max-width: 620px; margin: 0 auto; display: flex; justify-content: space-evenly; align-items: center; padding: 0 0 var(--nb-pad); background: #fff; z-index: 3; }
-.nav-bar { position: fixed; left: 0; right: 0; top: calc(var(--app-h) - var(--nb-bar)); height: var(--nb-bar); max-width: 620px; margin: 0 auto; padding: 0 0 var(--nb-pad); background: #fff; z-index: 2; touch-action: none; user-select: none; -webkit-user-select: none; }
+.nav-bar { position: fixed; left: 0; right: 0; top: calc(var(--app-h) - var(--nb-bar)); height: var(--nb-bar); max-width: 620px; margin: 0 auto; padding: 0 0 var(--nb-pad); background: #fff; z-index: 0; touch-action: none; user-select: none; -webkit-user-select: none; }
 .slider { display: flex; align-items: center; justify-content: center; gap: 6px; height: 50px; }
 .slide-arrow { width: 44px; height: 44px; display: grid; place-items: center; color: var(--text); }
 .slide-arrow:active { opacity: .5; }

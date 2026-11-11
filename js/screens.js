@@ -81,8 +81,6 @@ export function foldersScreen(view) {
 const filterMemory = {}; // per folder, for this visit
 let stopListening = null; // the folder on screen listens for tags arriving
 
-const SCAN_ASK = 'It needs a one-time download of about 120 MB, so use Wi-Fi. Your photos never leave your phone.';
-
 export function folderScreen(view, id) {
   const folder = folderById(id);
   if (!folder) { location.hash = '#/folders'; return; }
@@ -126,7 +124,6 @@ export function folderScreen(view, id) {
   const countText = () => { const total = photosIn(id).length; return current.length === total ? `${total}` : `${current.length} of ${total}`; };
   const scanHtml = () => {
     if (!photosIn(id).length) return '';
-    if (scan.state === 'off') return '<button type="button" class="scan-btn" data-scan>Find what\'s in these photos</button>';
     if (scan.state === 'failed') return '<button type="button" class="scan-btn" data-scan>This phone couldn\'t read them. Try again</button>';
     if (scan.state === 'loading') return `<span class="scan-text">Getting ready, ${scan.pct}%</span>`;
     if (scan.state === 'working') return `<span class="scan-text">Looking at your photos, ${scan.done} of ${scan.total}</span>`;
@@ -197,11 +194,7 @@ export function folderScreen(view, id) {
       else filterMemory[id] = on().includes(k) ? on().filter((x) => x !== k) : [...on(), k];
       paintList();
     });
-    view.querySelector('.scan')?.addEventListener('click', async (e) => {
-      if (!e.target.closest('[data-scan]')) return;
-      const ok = await confirmSheet({ title: 'Find what\'s in your photos?', message: SCAN_ASK, confirmLabel: 'Start' });
-      if (ok) turnOnTags();
-    });
+    view.querySelector('.scan')?.addEventListener('click', (e) => { if (e.target.closest('[data-scan]')) turnOnTags(); });
     view.querySelector('.scroll')?.addEventListener('click', (e) => {
       if (e.target.closest('[data-phone]')) { openPhone(); return; }
       const t = e.target.closest('[data-i]');

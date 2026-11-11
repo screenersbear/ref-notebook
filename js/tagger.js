@@ -1,8 +1,7 @@
-// Runs the worker that reads what's in each photo. The first time needs a big
-// download, so it only starts once it's asked to; after that it carries on by
-// itself for every new photo.
+// Runs the worker that reads what's in each photo, by itself, whenever there
+// are photos it hasn't seen. The first time downloads the model.
 import * as db from './db.js';
-import { lib } from './library.js';
+import { lib, refresh } from './library.js';
 
 const VERSION = 1;
 const ON = 'ref-notebook-tags';
@@ -95,10 +94,10 @@ async function run() {
 
 export function turnOnTags() { set(ON, 'on'); del(BUSY); run(); }
 // On opening, and after new photos come in.
-export function carryOn() {
-  const s = get(ON);
-  if (s === 'failed') { scan.state = 'failed'; return; }
-  if (s !== 'on') return;
+export async function carryOn() {
+  if (get(ON) === 'failed') { scan.state = 'failed'; emit(); return; }
+  if (running) return;
+  await refresh(); // the shut notebook hasn't loaded the photos yet
   if (get(BUSY)) { fail('the app closed while the model was loading'); return; } // it ran out of memory
   run();
 }

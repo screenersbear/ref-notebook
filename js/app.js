@@ -166,6 +166,6 @@ document.addEventListener('touchend', endPull, { capture: true });
 document.addEventListener('touchcancel', endPull, { capture: true });
 
 window.addEventListener('hashchange', route);
-route().then(carryOn);
+route().then(() => setTimeout(carryOn, 2500)); // once the notebook is on screen
 
 if ('serviceWorker' in navigator && location.protocol !== 'file:') navigator.serviceWorker.register('./sw.js').catch(() => {});
