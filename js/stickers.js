@@ -48,32 +48,46 @@ function creaseArt(seed, aspect) {
     g.fillStyle = shade;
     g.fillRect(0, 0, W, H);
   }
-  // Creases: from an edge, wandering a little, some only part of the way over.
+  // Creases: soft, wide bends rather than lines. Each one is a gentle curve
+  // from an edge, drawn only as blurred light and shade either side of it, so
+  // it reads as the paper rising and falling, not as a cut.
   const edgePoint = (side) => {
-    const t = 0.08 + r() * 0.84;
+    const t = 0.1 + r() * 0.8;
     return [[t * W, 0], [W, t * H], [t * W, H], [0, t * H]][side];
   };
-  for (let i = 0, n = 3 + Math.floor(r() * 3); i < n; i++) {
+  // Blurs a stroke by drawing it off the canvas and letting only its shadow land.
+  const soft = (path, width, blur, color, dx, dy) => {
+    const far = W * 4;
+    g.save();
+    g.lineCap = 'round'; g.lineJoin = 'round';
+    g.lineWidth = width;
+    g.strokeStyle = '#000';
+    g.shadowColor = color;
+    g.shadowBlur = blur;
+    g.shadowOffsetX = far + dx; g.shadowOffsetY = dy;
+    g.translate(-far, 0);
+    path();
+    g.stroke();
+    g.restore();
+  };
+  for (let i = 0, n = 2 + Math.floor(r() * 3); i < n; i++) {
     const side = Math.floor(r() * 4);
     const [ax, ay] = edgePoint(side);
     let [bx, by] = edgePoint((side + 1 + Math.floor(r() * 3)) % 4);
-    const reach = 0.3 + r() * 0.7;
+    const reach = 0.45 + r() * 0.55;
     bx = ax + (bx - ax) * reach; by = ay + (by - ay) * reach;
-    const pts = [[ax, ay]];
     const len = Math.hypot(bx - ax, by - ay), nx = -(by - ay) / len, ny = (bx - ax) / len;
-    for (let k = 1; k < 5; k++) {
-      const off = (r() - 0.5) * W * 0.022;
-      pts.push([ax + ((bx - ax) * k) / 5 + nx * off, ay + ((by - ay) * k) / 5 + ny * off]);
-    }
-    pts.push([bx, by]);
-    const line = (dx, dy) => { g.beginPath(); pts.forEach(([x, y], k) => (k ? g.lineTo(x + dx, y + dy) : g.moveTo(x + dx, y + dy))); };
-    g.lineCap = 'round'; g.lineJoin = 'round';
-    const depth = 0.6 + r() * 0.4;
+    const bow = (r() - 0.5) * len * 0.18;
+    const cx = (ax + bx) / 2 + nx * bow, cy = (ay + by) / 2 + ny * bow;
+    const path = () => { g.beginPath(); g.moveTo(ax, ay); g.quadraticCurveTo(cx, cy, bx, by); };
+    const depth = 0.55 + r() * 0.45;
+    const spread = W * (0.035 + r() * 0.035);
     // the shaded side falls away from the light, top left
     const sx = nx > 0 ? 1 : -1, sy = ny > 0 ? 1 : -1;
-    [[17, 0.035], [10, 0.05], [5, 0.07]].forEach(([w, a]) => { g.strokeStyle = `rgba(52, 44, 38, ${a * depth})`; g.lineWidth = w; line(sx * w * 0.35, sy * w * 0.35); g.stroke(); });
-    g.strokeStyle = `rgba(48, 40, 34, ${0.34 * depth})`; g.lineWidth = 1.3; line(0, 0); g.stroke();
-    g.strokeStyle = `rgba(255, 255, 255, ${0.55 * depth})`; g.lineWidth = 1.3; line(-sx * 1.5, -sy * 1.5); g.stroke();
+    const ox = sx * Math.abs(nx), oy = sy * Math.abs(ny);
+    soft(path, spread * 0.9, spread * 1.3, `rgba(52, 44, 38, ${0.16 * depth})`, ox * spread * 0.6, oy * spread * 0.6);
+    soft(path, spread * 0.35, spread * 0.6, `rgba(52, 44, 38, ${0.1 * depth})`, ox * spread * 0.25, oy * spread * 0.25);
+    soft(path, spread * 0.7, spread * 1.1, `rgba(255, 255, 255, ${0.32 * depth})`, -ox * spread * 0.55, -oy * spread * 0.55);
   }
   const url = c.toDataURL('image/png');
   c.width = c.height = 0;
