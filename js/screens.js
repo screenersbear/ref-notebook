@@ -36,14 +36,29 @@ export async function boardsScreen(view, page = boardPager.page) {
     </div>`;
   // As many as fit on the page, with New board always at the bottom of it.
   const rows = [...view.querySelectorAll('[data-b]')], scroller = view.querySelector('.scroll'), foot = view.querySelector('.page-foot');
-  const rowH = rows[0]?.offsetHeight || 84, addH = view.querySelector('a[href="#/new"]').offsetHeight;
-  let per = Math.max(1, Math.floor((scroller.clientHeight - addH) / rowH));
-  if (rows.length > per) per = Math.max(1, Math.floor((scroller.clientHeight - addH - 26) / rowH));
-  boardPager.pages = Math.max(1, Math.ceil(rows.length / per));
-  boardPager.page = Math.min(Math.max(0, page), boardPager.pages - 1);
-  rows.forEach((r, i) => { r.hidden = Math.floor(i / per) !== boardPager.page; });
-  foot.hidden = boardPager.pages < 2;
-  foot.textContent = `${boardPager.page + 1} of ${boardPager.pages}`;
+  const paged = () => {
+    const rowH = rows.find((r) => !r.hidden)?.offsetHeight || rows[0]?.offsetHeight || 84, addH = view.querySelector('a[href="#/new"]').offsetHeight;
+    const room = scroller.clientHeight + (foot.hidden ? 0 : foot.offsetHeight) - addH;
+    let per = Math.max(1, Math.floor(room / rowH));
+    if (rows.length > per) per = Math.max(1, Math.floor((room - 26) / rowH));
+    boardPager.pages = Math.max(1, Math.ceil(rows.length / per));
+    boardPager.page = Math.min(Math.max(0, page), boardPager.pages - 1);
+    rows.forEach((r, i) => { r.hidden = Math.floor(i / per) !== boardPager.page; });
+    foot.hidden = boardPager.pages < 2;
+    foot.textContent = `${boardPager.page + 1} of ${boardPager.pages}`;
+  };
+  paged();
+  // Measured again if the page changes height (the phone settling its screen size).
+  let lastH = scroller.clientHeight + (foot.hidden ? 0 : foot.offsetHeight);
+  const recheck = () => {
+    if (!scroller.isConnected) { window.removeEventListener('resize', recheck); window.removeEventListener('ref-layout', recheck); return; }
+    const h = scroller.clientHeight + (foot.hidden ? 0 : foot.offsetHeight);
+    if (Math.abs(h - lastH) < 2) return;
+    lastH = h; page = boardPager.page; paged();
+  };
+  new ResizeObserver(recheck).observe(view.querySelector('.screen'));
+  window.addEventListener('resize', recheck);
+  window.addEventListener('ref-layout', recheck);
   view.querySelectorAll('[data-more]').forEach((btn) => btn.addEventListener('click', async () => {
     const b = boards.find((x) => x.id === btn.dataset.more);
     const key = await choiceSheet({ title: b.name, options: [{ key: 'rename', label: 'Rename' }, { key: 'delete', label: 'Delete', danger: true }] });
@@ -77,24 +92,27 @@ export function foldersScreen(view, page = tagPager.page) {
   };
   view.innerHTML = `
     <div class="screen">
-      <h1 class="head">Tags</h1>
+      <h1 class="head head-add">Tags<button type="button" class="icon-btn head-plus" data-new aria-label="New tag">${ICONS.plus}</button></h1>
       <div class="scroll rows tag-rows">
         ${lib.folders.length > 8 ? '<input class="find" type="search" placeholder="Find a tag" autocomplete="off" />' : ''}
         ${row(folderById('incoming'), 'marked')}
         ${row(folderById('favorites'))}
         ${row(folderById('all'))}
         ${lib.folders.map((f) => row(f, 'mine')).join('')}
-        <button type="button" class="row row-open" data-new><span class="thumb add">${ICONS.plus}</span><span class="row-name">New tag</span></button>
       </div>
       <div class="page-foot" hidden></div>
     </div>`;
-  // As many as fit on the page, with New tag always at the bottom of it.
+  // As many as fit on the page.
   const rows = [...view.querySelectorAll('[data-t]')], scroller = view.querySelector('.scroll'), foot = view.querySelector('.page-foot');
-  const findH = view.querySelector('.find')?.offsetHeight || 0;
-  const rowH = rows[0]?.offsetHeight || 60, addH = view.querySelector('[data-new]').offsetHeight;
-  const room = scroller.clientHeight - addH - (findH ? findH + 12 : 0);
-  let per = Math.max(1, Math.floor(room / rowH));
-  if (rows.length > per) per = Math.max(1, Math.floor((room - 26) / rowH));
+  let per = 1;
+  const measure = () => {
+    const findH = view.querySelector('.find')?.offsetHeight || 0;
+    const rowH = rows.find((r) => !r.hidden)?.offsetHeight || rows[0]?.offsetHeight || 60;
+    const room = scroller.clientHeight + (foot.hidden ? 0 : foot.offsetHeight) - (findH ? findH + 12 : 0);
+    per = Math.max(1, Math.floor(room / rowH));
+    if (rows.length > per) per = Math.max(1, Math.floor((room - 26) / rowH));
+  };
+  measure();
   const paged = () => {
     tagPager.pages = Math.max(1, Math.ceil(rows.length / per));
     tagPager.page = Math.min(Math.max(0, page), tagPager.pages - 1);
@@ -103,6 +121,18 @@ export function foldersScreen(view, page = tagPager.page) {
     foot.textContent = `${tagPager.page + 1} of ${tagPager.pages}`;
   };
   paged();
+  // Measured again if the page changes height (the phone settling its screen size).
+  let lastH = scroller.clientHeight + (foot.hidden ? 0 : foot.offsetHeight);
+  const recheck = () => {
+    if (!scroller.isConnected) { window.removeEventListener('resize', recheck); window.removeEventListener('ref-layout', recheck); return; }
+    if (view.querySelector('.find')?.value) return;
+    const h = scroller.clientHeight + (foot.hidden ? 0 : foot.offsetHeight);
+    if (Math.abs(h - lastH) < 2) return;
+    lastH = h; page = tagPager.page; measure(); paged();
+  };
+  new ResizeObserver(recheck).observe(view.querySelector('.screen'));
+  window.addEventListener('resize', recheck);
+  window.addEventListener('ref-layout', recheck);
   view.querySelector('[data-new]').addEventListener('click', async () => { if (await newFolder()) foldersScreen(view); });
   // Finding shows every match on this page, scrolling if there are many.
   view.querySelector('.find')?.addEventListener('input', (e) => {

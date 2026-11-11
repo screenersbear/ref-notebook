@@ -178,6 +178,9 @@ html.settled .nb.closed:not(.placing) .nb-sun { opacity: 1; pointer-events: auto
 .screen.still { animation: none; }
 @keyframes page-in { from { opacity: 0; } }
 .head { margin: 0; padding: 4px 0 10px; border-bottom: 1px solid var(--line); font: 400 32px var(--hand); text-align: center; flex: none; }
+.head-add { position: relative; padding-left: 44px; padding-right: 44px; }
+.head-plus { position: absolute; right: -4px; top: 50%; margin-top: -27px; width: 44px; height: 44px; display: grid; place-items: center; color: var(--text); }
+.head-plus svg { width: 26px; height: 26px; stroke-width: 2.2; }
 .scroll { flex: 1; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; scrollbar-width: none; }
 .scroll::-webkit-scrollbar { display: none; }
 .tools { position: fixed; left: 0; right: 0; top: calc(var(--app-h) - var(--nb-bar)); height: var(--nb-bar); max-width: 620px; margin: 0 auto; display: flex; justify-content: space-evenly; align-items: center; padding: 0 0 var(--nb-pad); background: #fff; z-index: 3; }
