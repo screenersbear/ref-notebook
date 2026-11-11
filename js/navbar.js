@@ -1,7 +1,6 @@
 // The bottom bar, the same idea as Callback's: the section you're in as one
 // icon with a little triangle on each side that has another section. Tap a
-// triangle or swipe along the bar and the page slides over. The sun, on the
-// left, shuts the notebook.
+// triangle or swipe along the bar and the page slides over.
 import { ICONS } from './icons.js';
 
 const SECTIONS = [
@@ -15,7 +14,6 @@ const tri = '<svg viewBox="0 0 10 12" aria-hidden="true"><path d="M2.3 1.5Q5.6 3
 const bar = document.getElementById('navbar');
 const view = document.getElementById('view');
 bar.innerHTML = `
-  <a href="#/" class="tool nav-sun" aria-label="Close the notebook">${ICONS.sun}</a>
   <div class="slider">
     <button type="button" class="slide-arrow is-prev">${tri}</button>
     <a class="slide-now"><span class="slide-strip" aria-hidden="true">${SECTIONS.map((s) => `<span class="slide-icon">${s.icon}</span>`).join('')}</span></a>

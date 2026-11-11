@@ -64,7 +64,7 @@ export function screenGap(full = 0) {
 }
 let nudging = false;
 // For tests: `full` as in screenGap. Resolves with the gap left after it.
-export function nudgeScreen(tries = 2, full = 0) {
+export function nudgeScreen(tries = 3, full = 0) {
   return new Promise((done) => {
     const go = (left) => {
       if (!left || !screenGap(full) || typing()) {
@@ -94,7 +94,20 @@ export function nudgeScreen(tries = 2, full = 0) {
 if (iPhoneApp) {
   let soonTimer = 0; // load, pageshow and coming back can all land together
   const soon = (ms) => clearTimeout(soonTimer) || (soonTimer = setTimeout(() => {
-    nudgeScreen().then((gap) => {
+    nudgeScreen().then(async (gap) => {
+      // This page doesn't scroll, and iOS can fall short again the moment it
+      // can't. If so, leave it scrollable: everything on screen is pinned,
+      // so nothing shows, and holdStill below keeps a finger from moving it.
+      if (gap > 0) {
+        html.classList.add('ios-hold');
+        await new Promise((r) => setTimeout(r, 40));
+        window.scrollTo(0, 1);
+        await new Promise((r) => setTimeout(r, 60));
+        window.scrollTo(0, 0);
+        await new Promise((r) => setTimeout(r, 200));
+        gap = screenGap();
+        if (gap > 0) html.classList.remove('ios-hold');
+      }
       html.classList.toggle('is-short', gap > 0);
       setAppHeight();
     });
@@ -121,6 +134,16 @@ window.addEventListener('resize', setAppHeight);
 window.addEventListener('orientationchange', () => setTimeout(setAppHeight, 350));
 document.addEventListener('visibilitychange', () => { if (!document.hidden) setTimeout(setAppHeight, 900); });
 window.addEventListener('load', () => setTimeout(setAppHeight, 900));
+// While the page is left scrollable, only things that really scroll may move.
+document.addEventListener('touchmove', (e) => {
+  if (!html.classList.contains('ios-hold') || e.touches.length > 1) return;
+  for (let el = e.target; el && el !== document.body; el = el.parentElement) {
+    const st = getComputedStyle(el);
+    if ((/auto|scroll/.test(st.overflowY) && el.scrollHeight > el.clientHeight) || (/auto|scroll/.test(st.overflowX) && el.scrollWidth > el.clientWidth)) return;
+    if (st.touchAction === 'none') return;
+  }
+  e.preventDefault();
+}, { passive: false });
 // A pinch on a photo should never zoom the whole page.
 document.addEventListener('gesturestart', (e) => e.preventDefault());
 

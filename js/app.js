@@ -118,6 +118,53 @@ async function route() {
   }
 }
 
+// A big swipe in from the right edge shuts the notebook: the cover follows the
+// finger across the page, and letting go past the middle closes it.
+const pull = document.getElementById('pull');
+const EDGE = 26;
+let edge = null;
+const canPull = () => isOpen && !document.querySelector('.viewer, .sheet-overlay');
+document.addEventListener('touchstart', (e) => {
+  edge = null;
+  const t = e.touches[0];
+  if (e.touches.length !== 1 || t.clientX < window.innerWidth - EDGE || !canPull()) return;
+  edge = { id: t.identifier, x0: t.clientX, y0: t.clientY, on: false, w: 0 };
+}, { passive: true, capture: true });
+document.addEventListener('touchmove', (e) => {
+  if (!edge) return;
+  const t = [...e.touches].find((x) => x.identifier === edge.id);
+  if (!t) return;
+  const dx = edge.x0 - t.clientX, dy = Math.abs(t.clientY - edge.y0);
+  if (!edge.on) {
+    if (dx < 10 && dy < 10) return;
+    if (dy > dx) { edge = null; return; }
+    edge.on = true;
+    pull.classList.remove('back');
+    pull.hidden = false;
+  }
+  e.preventDefault();
+  e.stopPropagation();
+  edge.w = Math.max(0, window.innerWidth - t.clientX);
+  pull.style.width = `${edge.w}px`;
+}, { passive: false, capture: true });
+function endPull() {
+  if (!edge) return;
+  const { on, w } = edge;
+  edge = null;
+  if (!on) return;
+  if (w > window.innerWidth * 0.45) {
+    pull.hidden = true;
+    pull.style.width = '0';
+    location.hash = '#/';
+  } else {
+    pull.classList.add('back');
+    pull.style.width = '0';
+    setTimeout(() => { pull.hidden = true; }, 200);
+  }
+}
+document.addEventListener('touchend', endPull, { capture: true });
+document.addEventListener('touchcancel', endPull, { capture: true });
+
 window.addEventListener('hashchange', route);
 route().then(carryOn);
 
