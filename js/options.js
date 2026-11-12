@@ -3,6 +3,7 @@ import { openSheet, toast } from './ui.js';
 import { pickFiles } from './photos.js';
 import { stickers, cropSticker, placeSticker, removeSticker, stickerThumb } from './stickers.js';
 import { esc } from './util.js';
+import { openIntro } from './intro.js';
 
 const BOOK_KEY = 'ref-notebook-book'; // also read in index.html, before the first paint
 const START_KEY = 'ref-notebook-start';
@@ -34,7 +35,8 @@ export function openOptions() {
       <div class="seg opt-seg">
         <button type="button" data-start="shut"${startsOpen() ? '' : ' class="on"'}>In the notebook</button>
         <button type="button" data-start="open"${startsOpen() ? ' class="on"' : ''}>On the first page</button>
-      </div>`,
+      </div>
+      <button type="button" class="btn secondary opt-wide opt-gap" data-intro>How it works</button>`,
   });
   s.body.addEventListener('click', (e) => {
     const c = e.target.closest('[data-color]');
@@ -48,6 +50,7 @@ export function openOptions() {
       s.body.querySelectorAll('[data-start]').forEach((b) => b.classList.toggle('on', b === st));
     }
     if (e.target.closest('[data-stickers]')) stickerSheet(s);
+    if (e.target.closest('[data-intro]')) { s.close(); openIntro(); }
   });
 }
 

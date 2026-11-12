@@ -9,6 +9,7 @@ import { showSection, setPuller } from './navbar.js';
 import { sideOf } from './spread.js';
 import { paintStickers } from './stickers.js';
 import { openOptions, startPage } from './options.js';
+import { introSeen, openIntro } from './intro.js';
 import { ICONS } from './icons.js';
 import { esc } from './util.js';
 
@@ -234,6 +235,7 @@ book.addEventListener('click', (e) => { if (performance.now() - held.ended < 350
 window.addEventListener('hashchange', route);
 if (startPage() && (location.hash || '#/') === '#/') history.replaceState(null, '', startPage());
 route().then(() => setTimeout(carryOn, 2500)); // once the notebook is on screen
+if (!introSeen()) setTimeout(() => { if (!document.querySelector('.sheet-overlay')) openIntro(); }, 1200); // the first launch
 paintStickers().catch(console.error);
 
 if ('serviceWorker' in navigator && location.protocol !== 'file:') navigator.serviceWorker.register('./sw.js').catch(() => {});

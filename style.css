@@ -371,6 +371,8 @@ html.settled .nb.closed:not(.placing) .nb-sun { opacity: 1; pointer-events: auto
 .sheet-message { margin: 0 0 14px; font-size: 19px; line-height: 1.4; }
 .sheet-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 16px; }
 .sheet-actions.one { grid-template-columns: 1fr; }
+.intro-dots { justify-content: center; }
+.intro .sheet-message { min-height: 5.6em; }
 .btn { height: 48px; font-size: 21px; }
 .btn.primary { background: var(--mango); }
 .btn.secondary { border: 2px solid var(--ink); }

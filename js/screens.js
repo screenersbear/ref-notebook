@@ -219,7 +219,7 @@ export function folderScreen(view, id) {
           const turnOn = !ids.every((x) => photoById(x).favorite);
           await changePhotos(ids.map(photoById), () => ({ favorite: turnOn }), 'favorites');
         } else {
-          const ok = await confirmSheet({ title: `Delete ${ids.length} ${ids.length === 1 ? 'photo' : 'photos'}?`, message: 'They leave this notebook and any boards they\'re on. The ones on your phone stay.', confirmLabel: 'Delete', danger: true });
+          const ok = await confirmSheet({ title: `Delete ${ids.length} ${ids.length === 1 ? 'photo' : 'photos'}?`, message: 'They leave this notebook and any boards they\'re on. Ref Notebook keeps its own copies, so any that are no longer on your phone will be gone for good.', confirmLabel: 'Delete', danger: true });
           if (!ok) return;
           const kept = await db.keepForUndo(ids);
           await db.deletePhotos(ids);

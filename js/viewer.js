@@ -81,7 +81,7 @@ export function openViewer(ids, start, onChange) {
     } else if (b.dataset.v === 'file') {
       if (await fileSheet([p.id])) { changed = true; show(); }
     } else if (b.dataset.v === 'delete') {
-      const ok = await confirmSheet({ title: 'Delete this photo?', message: 'It leaves this notebook and any boards it\'s on. The one on your phone stays.', confirmLabel: 'Delete', danger: true });
+      const ok = await confirmSheet({ title: 'Delete this photo?', message: 'It leaves this notebook and any boards it\'s on. Ref Notebook keeps its own copy, so if it\'s no longer on your phone, this is the last one.', confirmLabel: 'Delete', danger: true });
       if (!ok) return;
       const kept = await db.keepForUndo([p.id]);
       await db.deletePhotos([p.id]);
