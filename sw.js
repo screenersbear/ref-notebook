@@ -1,5 +1,5 @@
 // Bump CACHE_NAME with every deploy so installed copies pick up new files.
-const CACHE_NAME = 'ref-notebook-v37';
+const CACHE_NAME = 'ref-notebook-v39';
 // The same notebook can live twice on one website (inside the Documenting
 // Fictions suite and as its own app), and both workers see every cache there:
 // each name carries the folder this copy lives in, and each copy only ever
@@ -13,7 +13,7 @@ const ASSETS = [
   './js/app.js', './js/db.js', './js/editor.js', './js/filing.js', './js/icons.js', './js/library.js',
   './js/navbar.js', './js/newboard.js', './js/options.js', './js/stickers.js', './js/spread.js', './js/textsize.js', './js/showboard.js', './js/intro.js', './js/pages.js', './js/pdf.js', './js/photos.js', './js/screens.js', './js/sendshoot.js',
   './js/tagger.js', './js/tagger-worker.js', './js/templates.js', './js/ui.js', './js/undo.js', './js/util.js', './js/viewer.js', './js/welcome.js',
-  ...['orange', 'mango', 'berry', 'fern', 'ocean', 'ink'].flatMap((c) => [`./art/${c}-cover.webp`, `./art/${c}-block.webp`]), './fonts/klee-one-latin.woff', './fonts/kaisei-decol-500-latin.woff2',
+  ...['orange', 'mango', 'berry', 'fern', 'ocean', 'ink'].flatMap((c) => [`./art/${c}-cover.webp`, `./art/${c}-block.webp`]), './fonts/klee-one-latin.woff', './fonts/kaisei-decol-500-latin.woff2', './fonts/inter-latin.woff2', './fonts/archivo-black-latin.woff2',
   './icons/icon-180.png', './icons/icon-192.png', './icons/icon-512.png',
 ];
 

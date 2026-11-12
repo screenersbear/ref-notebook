@@ -13,15 +13,19 @@
   "art/orange-block.webp": "d42df2ec4af2615b5fe071c8463992afdf1291570200f832b6bff31b72ae9ee2",
   "art/orange-cover.webp": "c6432866813aba06a94e743c7166f0ac1c432d7d02221d970c6da5770534dcff",
   "df-data.js": "1cad9ae40b73e73e84ea309cfeac24f1d480bf248ddfc04feda5f23912955f09",
+  "fonts/ArchivoBlack-OFL.txt": "3173acd82f8c6159b5b1037b539fcbd4edff68e65c2ea8b9412b5a5ca97b08ff",
+  "fonts/Inter-OFL.txt": "5b9321a4298cfeb6b34354164a1c3afc3db114569984c502b9b35d988fd58c57",
   "fonts/KaiseiDecol-OFL.txt": "6c5445d4febbf6d84025b874a85c51e7e4bfa7495279eccdb4c317a6de857b46",
   "fonts/KleeOne-OFL.txt": "e376b0df8e8a2345a9533db6f0a5333a1107975569ad9d1973a7ee557161ca38",
+  "fonts/archivo-black-latin.woff2": "4eca2abdbbc1998c3a286e2e83a2256be5263ccb801aa93b00c64fea891efd3a",
+  "fonts/inter-latin.woff2": "c940764593d0fe5d596be327ca7558855e018039fb78509aa21921fd3644c3e4",
   "fonts/kaisei-decol-500-latin.woff2": "2f00d1bb96cacdc475812bdae1bb29f3e65196a2f62a6a598619682d10c90759",
   "fonts/klee-one-latin.woff": "01bf56463a14928517b79628e2a3925fd0444940643c21b0f14d12f635ee8b6c",
   "icons/icon-180.png": "789d90047d7e5f121e16cfbc31de3569c8b24766c236c1367b43096e8a5080d8",
   "icons/icon-192.png": "ea65371e099c606d99a1e384ad0604044aaa673c1392d4af058c782afd8c8486",
   "icons/icon-512.png": "6a4dec5363413d6cb540bb08536904501881afe876f557b7f936f12bfe9eaacc",
   "index.html": "5f9e1f12c50c6c0828496efd49f8a466ee9f8cc45bc6c60c701127910072511c",
-  "js/app.js": "931c9f43a949e0fcd389f67c232bbcbc02bbedafd3c92c0d2b382bbf7bf0ee30",
+  "js/app.js": "d30c317527e7b98b1f4d789bde59367fa770896473648928f0257acd3a6e69ae",
   "js/db.js": "4c248d7e0d60847dbe1489bad6be3ac594f653f385e548abc1ae340580e39b40",
   "js/editor.js": "9194e91a463eab95c0967f258172b9446ab2257a8acacb529846c97b6a13b6ac",
   "js/filing.js": "7b412ffb67c287a5d46f2f97e66fc8144ed7f8ba016daf51f148e4e855b60fb4",
@@ -57,8 +61,8 @@
   "ml/ort-wasm-simd-threaded.jsep.mjs": "08fb86ec433c78bfb032c5d84a68b8e8e5a8d81268fa39e24314179a5767a5b9",
   "ml/ort-wasm-simd-threaded.jsep.wasm": "c46655e8a94afc45338d4cb2b840475f88e5012d524509916e505079c00bfa39",
   "ml/transformers.min.js": "aa5002b70e789798da263f5f99c62bd3e8fcd0c119258a493c40c180648365fa",
-  "style.css": "b403250db522bda075f009e1b61a5fdeb65bbcbc1f91f526610df866afbe9bff",
-  "sw.js": "ee093859111058442536695b1bef2843d7be287b8cbd3d524b424834a2e39c2b"
+  "style.css": "89007a68522a2d259a582428968062cb2f372cfa767db8de1f40c9300667044a",
+  "sw.js": "0527244a84a318cbde3b7102eb730c56a0c62de7b48a6e14a9c567e7d2002b55"
  },
  "keep": [
   ".DS_Store",
@@ -75,6 +79,6 @@
  ],
  "name": "Ref",
  "notebook": "ref",
- "suite": "ef03e4e + changes not committed",
+ "suite": "9679f87",
  "suite_folder": "../Documenting Fictions"
 }

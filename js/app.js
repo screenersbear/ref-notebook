@@ -74,7 +74,7 @@ function measure() {
   set('--zoom-sy', String(sy));
   // The title on the blank page ends up exactly over the screen's own heading,
   // in the middle of the frame, its letters 12px down it.
-  set('--title-fs', `${32 / sx}px`);
+  set('--title-fs', `${24 / sx}px`);
   set('--title-top', `${(f.top + 12 - (vh - ph) / 2) / sy}px`);
   set('--title-sq', String(sx / sy));
   // The page is a little wider than the screen, so the title is pushed in from
