@@ -1,11 +1,11 @@
 // Bump CACHE_NAME with every deploy so installed copies pick up new files.
-const CACHE_NAME = 'ref-notebook-v28';
+const CACHE_NAME = 'ref-notebook-v29';
 const ASSETS = [
   './', './index.html', './style.css', './manifest.json',
-  './js/app.js', './js/db.js', './js/editor.js', './js/filing.js', './js/icons.js', './js/library.js',
+  './js/app.js', './js/db.js', './js/editor.js', './js/filing.js', './js/icons.js', './js/library.js', './js/lines.js',
   './js/navbar.js', './js/newboard.js', './js/options.js', './js/stickers.js', './js/spread.js', './js/textsize.js', './js/showboard.js', './js/pages.js', './js/pdf.js', './js/photos.js', './js/screens.js',
   './js/tagger.js', './js/tagger-worker.js', './js/templates.js', './js/ui.js', './js/undo.js', './js/util.js', './js/viewer.js',
-  ...['orange', 'mango', 'berry', 'fern', 'ocean', 'ink'].flatMap((c) => [`./art/${c}-cover.webp`, `./art/${c}-block.webp`]), './fonts/klee-one-latin.woff',
+  ...['orange', 'mango', 'berry', 'fern', 'ocean', 'ink'].flatMap((c) => [`./art/${c}-cover.webp`, `./art/${c}-block.webp`]), './fonts/klee-one-latin.woff', './fonts/kaisei-decol-500-latin.woff2',
   './icons/icon-180.png', './icons/icon-192.png', './icons/icon-512.png',
 ];
 

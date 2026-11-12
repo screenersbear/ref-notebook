@@ -1,4 +1,5 @@
 // Routes: #/ shut, #/boards, #/folders, #/folder/<id>, #/new, #/board/<id>
+import './lines.js'; // writing sits on the ruled lines
 import { refresh } from './library.js';
 import { boardsScreen, foldersScreen, folderScreen, boardPager, tagPager } from './screens.js';
 import { newBoardScreen } from './newboard.js';
