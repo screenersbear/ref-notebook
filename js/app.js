@@ -10,6 +10,7 @@ import { sideOf } from './spread.js';
 import { paintStickers } from './stickers.js';
 import { openOptions, startPage } from './options.js';
 import { introSeen, openIntro } from './intro.js';
+import { welcome } from './welcome.js';
 import { ICONS } from './icons.js';
 import { esc } from './util.js';
 import { keepUp } from './sendshoot.js';
@@ -19,9 +20,10 @@ const book = document.getElementById('book');
 const frame = document.getElementById('frame');
 let destroyCurrent = null;
 let token = 0;
-// Inside Documenting Fictions (../suite.js) the shelf is the shut notebook.
+// Inside Documenting Fictions (../suite.js) the shelf is the shut notebook,
+// and Options are in the menu at the top of Mood boards.
 const suite = window.DF_SUITE;
-let suiteOpened = !(suite && suite.options);
+document.addEventListener('click', (e) => { if (e.target.closest('[data-app-menu]')) openOptions(); });
 
 document.getElementById('bookHit').addEventListener('click', () => { location.hash = '#/boards'; });
 const sun = document.getElementById('bookSun');
@@ -128,8 +130,7 @@ async function route() {
   closeAllSheets();
   document.querySelectorAll('.viewer').forEach((v) => v.remove());
   const h = (location.hash || '#/').slice(1) || '/';
-  if (suite && h === '/' && suiteOpened) { suite.home(); return; }
-  if (h !== '/') suiteOpened = true;
+  if (suite && h === '/') { suite.home(); return; }
   const section = h === '/boards' ? 0 : h === '/folders' || h.startsWith('/folder/') ? 1 : -1;
   if (h !== '/') {
     frame.dataset.side = sideOf(section);
@@ -240,14 +241,14 @@ book.addEventListener('click', (e) => { if (performance.now() - held.ended < 350
 
 window.addEventListener('hashchange', route);
 // ?board=<id>: The Eye's Open in Ref, straight to that board.
-if (suite && !suite.options && suite.get('board')) history.replaceState(null, '', `#/board/${encodeURIComponent(suite.get('board'))}`);
-else if (suite && !suite.options && (location.hash || '#/') === '#/') history.replaceState(null, '', suite.at === 'tags' ? '#/folders' : '#/boards');
+if (suite && suite.get('board')) history.replaceState(null, '', `#/board/${encodeURIComponent(suite.get('board'))}`);
+else if (suite && (location.hash || '#/') === '#/') history.replaceState(null, '', suite.at === 'tags' ? '#/folders' : '#/boards');
 else if (!suite && startPage() && (location.hash || '#/') === '#/') history.replaceState(null, '', startPage());
 route().then(() => { setTimeout(carryOn, 2500); setTimeout(() => keepUp(), 4000); }); // once the notebook is on screen; then any sent board changed elsewhere is drawn again
-if (suite && suite.options) {
-  setTimeout(openOptions, 60);
-  suite.whenOptionsDone(() => !!document.querySelector('.crop-layer, .place-layer') || book.classList.contains('placing') || (location.hash || '#/') !== '#/');
-} else if (!introSeen()) setTimeout(() => { if (!document.querySelector('.sheet-overlay')) openIntro(); }, 1200); // the first launch
+// The first launch: the cards on how it works. Inside Documenting Fictions,
+// first how to get back to the shelf, and the cards only if they're wanted.
+if (suite) { if (suite.firstVisit) setTimeout(() => { if (!document.querySelector('.sheet-overlay')) welcome('Ref', openIntro); }, 900); }
+else if (!introSeen()) setTimeout(() => { if (!document.querySelector('.sheet-overlay')) openIntro(); }, 1200);
 paintStickers().catch(console.error);
 
 if ('serviceWorker' in navigator && location.protocol !== 'file:') navigator.serviceWorker.register('./sw.js').catch(() => {});

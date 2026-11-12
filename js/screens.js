@@ -19,7 +19,7 @@ export async function boardsScreen(view) {
   const firstPhoto = (b) => b.pages.flatMap((p) => p.images).map((im) => im && photoById(im.id)).find(Boolean);
   view.innerHTML = `
     <div class="screen">
-      <h1 class="head">Mood boards</h1>
+      ${window.DF_SUITE ? `<h1 class="head head-add"><button type="button" class="icon-btn head-plus head-menu" data-app-menu aria-label="Menu">${ICONS.menu}</button>Mood boards</h1>` : '<h1 class="head">Mood boards</h1>'}
       <div class="scroll rows">
         ${boards.map((b) => { const p = firstPhoto(b); return `
           <div class="row" data-b>

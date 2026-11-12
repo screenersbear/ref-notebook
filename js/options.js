@@ -1,4 +1,5 @@
-// The sun on the shut notebook: how the app looks and where it opens.
+// The sun on the shut notebook (inside Documenting Fictions, the menu at the
+// top of Mood boards): how the app looks and where it opens.
 import { openSheet, confirmSheet, toast } from './ui.js';
 import { pickFiles } from './photos.js';
 import { stickers, cropSticker, placeSticker, removeSticker, stickerThumb } from './stickers.js';
@@ -29,8 +30,8 @@ export function openOptions() {
             <span>${name}</span>
           </button>`).join('')}
       </div>
-      <span class="field-label opt-gap">Stickers</span>
-      <button type="button" class="btn secondary opt-wide" data-stickers>Stickers</button>
+      ${window.DF_SUITE ? '' : `<span class="field-label opt-gap">Stickers</span>
+      <button type="button" class="btn secondary opt-wide" data-stickers>Stickers</button>`}
       ${window.DF_SUITE ? '' : `<span class="field-label opt-gap">Always start</span>
       <div class="seg opt-seg">
         <button type="button" data-start="shut"${startsOpen() ? '' : ' class="on"'}>In the notebook</button>

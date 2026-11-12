@@ -18,7 +18,7 @@
   --safe-b: env(safe-area-inset-bottom, 0px);
   --nb-top: max(var(--safe-t), 10px);
   --nb-rim: 10px; /* the slot Contact Sheet's notebook edge is drawn in; the line itself is about half */
-  --nb-pad: max(4px, calc(var(--safe-b) - 6px)); /* the bar stays clear of the strip iOS keeps for swiping between apps */
+  --nb-pad: max(10px, var(--safe-b)); /* the bar's icon 25px + this above the screen's edge: the same height in all four notebooks and on the shelf */
   --nb-bar: calc(50px + var(--nb-pad));
   --app-h: 100vh;      /* set from the real height in ui.js */
 }
@@ -34,7 +34,7 @@ html, body { height: 100%; margin: 0; background: #fff; color: var(--text); font
 html, body { overflow-x: clip; }
 body { overflow: hidden; -webkit-text-size-adjust: 100%; }
 html.ios-nudge body, html.ios-hold body { min-height: calc(var(--screen-h, 100vh) + 160px); overflow-x: clip; overflow-y: visible; }
-html.is-short { --nb-pad: 4px; } /* the bottom edge is already above the home indicator */
+html.is-short { --nb-pad: 10px; } /* the bottom edge is already above the home indicator */
 button, input, textarea { font: inherit; color: inherit; }
 button { background: none; border: 0; padding: 0; cursor: pointer; }
 button:disabled { opacity: .35; cursor: default; }
@@ -155,6 +155,8 @@ html.settled .nb.closed:not(.placing) .nb-sun { opacity: 1; pointer-events: auto
 .head-add { position: relative; padding-left: 44px; padding-right: 44px; }
 .head-plus { position: absolute; right: -4px; top: 50%; margin-top: -27px; width: 44px; height: 44px; display: grid; place-items: center; color: var(--text); }
 .head-plus svg { width: 26px; height: 26px; stroke-width: 2.2; }
+.head-menu { right: auto; left: -4px; } /* inside Documenting Fictions: Options, at the top of Mood boards */
+.head-menu svg { stroke-width: 1.9; }
 .scroll { flex: 1; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; scrollbar-width: none; }
 .scroll::-webkit-scrollbar { display: none; }
 .tools { position: fixed; left: 0; right: 0; top: calc(var(--app-h) - var(--nb-bar)); height: var(--nb-bar); max-width: 620px; margin: 0 auto; display: flex; justify-content: space-evenly; align-items: center; padding: 0 0 var(--nb-pad); background: #fff; z-index: 3; }
