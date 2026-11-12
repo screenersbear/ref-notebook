@@ -1,5 +1,5 @@
 /* ref, do something as a phone notebook: floating shut on white, open in a frame with white around it. */
-@font-face { font-family: "Klee One"; src: url("fonts/klee-one-latin.woff2") format("woff2"); font-display: swap; size-adjust: 89%; } /* 89%: as wide as Mansalva was, so no layout changed */
+@font-face { font-family: "Klee One"; src: url("fonts/klee-one-latin.woff") format("woff"); font-display: swap; } /* Klee One, resized inside the file to Mansalva's width and line height (Safari has no ascent-override), so no layout moved */
 
 :root {
   --ink: #175ba9;      /* the notebook's color */
