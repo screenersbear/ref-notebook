@@ -7,7 +7,7 @@ const SEEN = 'ref-notebook-intro-seen';
 const CARDS = [
   ['Bring your photos in', 'Open Incoming and pick photos from your phone. Tag them to sort them, then make mood boards from your tags.'],
   ['It keeps its own copy', 'Everything you add is saved inside Ref Notebook. Once a photo is in, you can delete it from your phone’s Photos to free up space, and it stays here in your boards and tags.'],
-  ['Good to know', 'Photos are kept at a size made for boards and PDFs, not the full original. They live in the app itself, so keep Ref Notebook on your home screen: removing it from there can remove its photos too.'],
+  ['Good to know', 'Photos are kept at a size made for boards and PDFs, not the full original. Your photos are saved inside the app, not in Photos. If you delete Ref Notebook from your home screen, its photos are deleted with it.'],
 ];
 
 export const introSeen = () => { try { return localStorage.getItem(SEEN) === '1'; } catch { return true; } };

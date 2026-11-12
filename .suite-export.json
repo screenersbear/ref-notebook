@@ -26,7 +26,7 @@
   "js/editor.js": "9194e91a463eab95c0967f258172b9446ab2257a8acacb529846c97b6a13b6ac",
   "js/filing.js": "7b412ffb67c287a5d46f2f97e66fc8144ed7f8ba016daf51f148e4e855b60fb4",
   "js/icons.js": "fbbf55b5f9e44d3b3a726eaf3cb3068bfc971f6a6142ec2ee73dba536bcd22de",
-  "js/intro.js": "72f4a6f9c64b53902e08ccb27f74238c8921c6d32d753ce88680e7021f180a17",
+  "js/intro.js": "4cc488f7a262852fe087b002d2632a2ab2367c03dd942be824bf2f1db9b686ac",
   "js/library.js": "ef31adf1bd2e51abee339f27066b289191ce353063567191a7834431f4cf522c",
   "js/navbar.js": "4b796337288597c63d8ffd5ac7993a61ee6d33fe81b214c4ff2306ff238bd161",
   "js/newboard.js": "dfff831e88adfa38809f8ccf6070c25dcfb9d49f4e46e967331da0c5400425ad",
@@ -57,7 +57,7 @@
   "ml/ort-wasm-simd-threaded.jsep.wasm": "c46655e8a94afc45338d4cb2b840475f88e5012d524509916e505079c00bfa39",
   "ml/transformers.min.js": "aa5002b70e789798da263f5f99c62bd3e8fcd0c119258a493c40c180648365fa",
   "style.css": "a8c5a7340c041c43194eca5307ea530e18beef792e89b8683e30fa720a49bb99",
-  "sw.js": "11d9d71e539e1b807fd942153b45f990135daeb108118804dc83705101ba926f"
+  "sw.js": "453cf6913fb3893e9fcead5b1590db74eed4573eebcf9794d3f5ae9b210b2d5e"
  },
  "keep": [
   ".DS_Store",
@@ -74,6 +74,6 @@
  ],
  "name": "Ref",
  "notebook": "ref",
- "suite": "e945955 + changes not committed",
+ "suite": "c30b61c + changes not committed",
  "suite_folder": "../Documenting Fictions"
 }
