@@ -1,5 +1,5 @@
 /* ref, do something as a phone notebook: floating shut on white, open in a frame with white around it. */
-@font-face { font-family: "Mansalva"; src: url("fonts/mansalva-latin.woff2") format("woff2"); font-display: swap; }
+@font-face { font-family: "Klee One"; src: url("fonts/klee-one-latin.woff2") format("woff2"); font-display: swap; size-adjust: 89%; } /* 89%: as wide as Mansalva was, so no layout changed */
 
 :root {
   --ink: #175ba9;      /* the notebook's color */
@@ -10,7 +10,7 @@
   --text: #313d45;     /* berry blade black */
   --dim: #5c666d;
   --line: #d6dadd;
-  --hand: "Mansalva", "Bradley Hand", "Noteworthy", cursive;
+  --hand: "Klee One", "Bradley Hand", "Noteworthy", cursive;
   --mono: "Courier New", Courier, monospace;
   --safe-t: env(safe-area-inset-top, 0px);
   --safe-b: env(safe-area-inset-bottom, 0px);

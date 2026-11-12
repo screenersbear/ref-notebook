@@ -6,7 +6,7 @@ import { loadImage } from './util.js';
 
 export const MAX_ZOOM = 6;
 export const TEXT_SIZE = 0.027; // of the page's width; was 0.0165, too small on a phone (11-11)
-const FONT = '"Mansalva", "Bradley Hand", "Noteworthy", cursive';
+const FONT = '"Klee One", "Bradley Hand", "Noteworthy", cursive';
 const pct = (v) => `${(v * 100).toFixed(4)}%`;
 
 export const pageTemplate = (board, page) =>
@@ -146,7 +146,7 @@ export async function pageToCanvas(board, page, pxWidth) {
     drawCover(ctx, img, Math.round(s.x * W), Math.round(s.y * H), Math.round(s.w * W), Math.round(s.h * H), fx, fy, im.zoom);
     img.src = '';
   }
-  try { await document.fonts.load('40px "Mansalva"'); } catch {} // a canvas won't wait for it
+  try { await document.fonts.load('40px "Klee One"'); } catch {} // a canvas won't wait for it
   ctx.textBaseline = 'top';
   for (const n of page.notes || []) {
     if (!n.text?.trim()) continue;
