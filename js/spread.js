@@ -1,109 +1,65 @@
-// The notebook lies open on two pages with a fold between them: Mood boards
-// on the left, Tags on the right. A phone shows one page at a time, with the
-// fold and a sliver of the other page at the side.
-import { boardsScreen, foldersScreen, boardPager, tagPager } from './screens.js';
+// Open, the notebook is plain pages the size of the screen. Going between its
+// two sections, Mood boards and Tags, turns a page over at its left edge: the
+// only page turn once the book is open. Everything in a section scrolls.
+import { boardsScreen, foldersScreen } from './screens.js';
 
 const frame = document.getElementById('frame');
 const view = document.getElementById('view');
-const TURN_MS = 560, PAN_MS = 240;
-export const sideOf = (i) => (i === 1 ? 'right' : 'left'); // boards and their screens on the left, tags on the right
+const TURN_MS = 560;
+export const sideOf = (i) => (i === 1 ? 'right' : 'left'); // which page of the shut book opens: Mood boards left, Tags right
 
-let other = null, moving = null, settling = null;
-const stopSettling = () => { settling?.cancel(); settling = null; };
-
-// How far the page has to travel for the fold to reach the other side.
-export function panDistance() {
-  const r = frame.getBoundingClientRect();
-  const m = new DOMMatrix(getComputedStyle(frame).transform).m41;
-  const vw = window.innerWidth;
-  return frame.dataset.side === 'left' ? vw - 2 * (r.right - m) : vw - 2 * (r.left - m);
-}
-
-// Draws the section on the facing page, so it's there as the book slides over.
-export async function showOther(i) {
-  if (other) return;
-  other = document.createElement('div');
-  other.className = 'page-other';
-  frame.append(other);
-  const el = other;
-  if (i === 0) await boardsScreen(el); else foldersScreen(el);
-  el.querySelector('.screen')?.classList.add('still');
-}
-export function dropOther() { other?.remove(); other = null; }
-export const dragFrame = (x) => { stopSettling(); frame.style.transform = x ? `translate3d(${x}px, 0, 0)` : ''; };
-
-// Slides the book over, then leaves it there until the new screen is drawn.
-export function panOver(from, done) {
-  const to = panDistance();
-  stopSettling();
-  frame.style.transform = '';
-  moving?.cancel();
-  moving = frame.animate([{ transform: `translate3d(${from}px, 0, 0)` }, { transform: `translate3d(${to}px, 0, 0)` }], { duration: PAN_MS, easing: 'cubic-bezier(.25,.6,.3,1)', fill: 'forwards' });
-  let gone = false;
-  const off = () => { if (!gone) { gone = true; done(); } };
-  moving.onfinish = off;
-  setTimeout(off, PAN_MS + 120); // the phone can hold an animation up
-}
-// The new screen is in place: show it where it belongs, in the same moment.
-export function landOn(i) {
-  frame.dataset.side = sideOf(i);
-  moving?.cancel(); moving = null;
-  stopSettling();
-  frame.style.transform = '';
-  dropOther();
-}
+// A little give when a swipe has nowhere to go, or before it shuts the book.
+let settling = null;
+export const dragFrame = (x) => { settling?.cancel(); settling = null; frame.style.transform = x ? `translate3d(${x}px, 0, 0)` : ''; };
 export function settleFrame(from) {
   frame.style.transform = '';
-  stopSettling();
-  if (from) {
-    settling = frame.animate([{ transform: `translate3d(${from}px, 0, 0)` }, { transform: 'none' }], { duration: 180, easing: 'ease-out' });
-    const a = settling;
-    a.onfinish = () => { if (settling === a) settling = null; dropOther(); };
-  }
-  else dropOther();
+  settling?.cancel();
+  settling = from ? frame.animate([{ transform: `translate3d(${from}px, 0, 0)` }, { transform: 'none' }], { duration: 180, easing: 'ease-out' }) : null;
 }
-export const isPanning = () => !!moving;
 
-// Turns a page of the mood boards (left page) or the tags (right page) over the fold.
 let turning = false;
-const pagerHere = () => (frame.dataset.side === 'left' ? [boardPager, boardsScreen] : [tagPager, foldersScreen]);
-export const canTurn = (dir) => { const [pg] = pagerHere(); const n = pg.page + dir; return n >= 0 && n < pg.pages; };
-export async function turnPage(dir) {
-  if (turning || !canTurn(dir)) return;
+export const isTurning = () => turning;
+
+// Turns to section i. Forward (dir 1) the page you're on turns away to the
+// left with the next section under it; back (dir -1) the section before comes
+// back over from the left. go() changes the route and resolves once the new
+// screen is drawn.
+export async function turnTo(i, dir, go) {
+  if (turning) return;
+  const still = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (still) { await go(); return; }
   turning = true;
   const leaf = document.createElement('div');
   leaf.className = 'turn-leaf';
   const shade = document.createElement('i');
-  const [pager, draw] = pagerHere();
-  const target = pager.page + dir;
-  // On the left page the leaves swing over the fold on its right.
-  const left = frame.dataset.side === 'left';
-  if (left) leaf.classList.add('is-left');
-  if (left ? dir < 0 : dir > 0) {
-    leaf.append(view.firstElementChild.cloneNode(true));
+  if (dir > 0) {
+    const old = view.firstElementChild;
+    if (old) leaf.append(old.cloneNode(true));
     leaf.append(shade);
     frame.append(leaf);
-    await draw(view, target);
-    view.querySelector('.screen')?.classList.add('still');
+    // A copy doesn't keep where its lists were scrolled to.
+    const from = old ? [...old.querySelectorAll('.scroll')] : [];
+    leaf.querySelectorAll('.scroll').forEach((el, k) => { el.scrollTop = from[k]?.scrollTop || 0; });
+    leaf.querySelector('.screen')?.classList.add('still');
+    await go();
   } else {
-    frame.append(leaf);
-    await draw(leaf, target); // the page coming back, drawn on the leaf
+    if (i === 0) await boardsScreen(leaf); else foldersScreen(leaf);
     leaf.querySelector('.screen')?.classList.add('still');
     leaf.append(shade);
+    leaf.style.transform = 'perspective(1500px) rotateY(-180deg)';
+    frame.append(leaf);
   }
-  const flat = 'perspective(1500px) rotateY(0deg)', over = `perspective(1500px) rotateY(${left ? 180 : -180}deg)`;
-  const oldOnLeaf = left ? dir < 0 : dir > 0;
-  const a = leaf.animate(oldOnLeaf ? [{ transform: flat }, { transform: over }] : [{ transform: over }, { transform: flat }], { duration: TURN_MS, easing: 'cubic-bezier(.45,.05,.35,1)', fill: 'forwards' });
-  shade.animate([{ opacity: 0 }, { opacity: .3 }, { opacity: 0 }], { duration: TURN_MS });
-  let gone = false;
-  const off = async () => {
-    if (gone) return;
-    gone = true;
-    if (!oldOnLeaf) { await draw(view, target); view.querySelector('.screen')?.classList.add('still'); }
-    a.cancel();
-    leaf.remove();
-    turning = false;
-  };
-  a.onfinish = off;
-  setTimeout(off, TURN_MS + 300);
+  const flat = 'perspective(1500px) rotateY(0deg)', over = 'perspective(1500px) rotateY(-180deg)';
+  const a = leaf.animate(dir > 0 ? [{ transform: flat }, { transform: over }] : [{ transform: over }, { transform: flat }], { duration: TURN_MS, easing: 'cubic-bezier(.45,.05,.3,1)', fill: 'forwards' });
+  shade.animate([{ opacity: 0 }, { opacity: 0.25 }, { opacity: 0 }], { duration: TURN_MS });
+  await new Promise((done) => {
+    let gone = false;
+    const off = () => { if (!gone) { gone = true; done(); } };
+    a.onfinish = off;
+    setTimeout(off, TURN_MS + 300); // the phone can hold an animation up
+  });
+  if (dir < 0) await go();
+  view.querySelector('.screen')?.classList.add('still');
+  leaf.remove();
+  turning = false;
 }

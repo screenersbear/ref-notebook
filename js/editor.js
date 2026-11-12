@@ -24,8 +24,8 @@ export async function boardScreen(view, id) {
     <div class="screen editor">
       <header class="folder-head">
         <a class="icon-btn" href="#/boards" aria-label="Back to boards">${ICONS.back}</a>
-        <button type="button" class="hand board-name" data-sit="ename" data-rename></button>
-        <span class="count" data-sit="ecount" data-at></span>
+        <button type="button" class="hand board-name" data-rename></button>
+        <span class="count" data-at></span>
       </header>
       <div class="stage" data-stage></div>
       <div class="show-row"><button type="button" class="label-btn show-open" data-show>${ICONS.expand}<span>Full screen</span></button></div>
@@ -68,7 +68,7 @@ export async function boardScreen(view, id) {
   }
   function drawTray() {
     const sources = [{ id: 'all', name: 'All' }, SPECIAL[0], SPECIAL[1], ...lib.folders];
-    view.querySelector('[data-tray-head]').innerHTML = sources.map((f) => `<button type="button" class="chip${tray === f.id ? ' on' : ''}" data-sit="chip" data-source="${esc(f.id)}">${esc(f.name)}</button>`).join('');
+    view.querySelector('[data-tray-head]').innerHTML = sources.map((f) => `<button type="button" class="chip${tray === f.id ? ' on' : ''}" data-source="${esc(f.id)}">${esc(f.name)}</button>`).join('');
     const list = sortList(photosIn(tray), 'newest');
     const onPage = new Set(page().images.filter(Boolean).map((x) => x.id));
     view.querySelector('[data-tray]').innerHTML = list.length

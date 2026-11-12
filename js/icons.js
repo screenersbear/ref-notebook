@@ -19,10 +19,3 @@ export const ICONS = {
   share: svg('<path d="M12 15V3M8 7l4-4 4 4M6 11H4.5v10h15V11H18"/>'),
   page: svg('<rect x="5" y="3.5" width="14" height="17"/><path d="M12 8.5v7M8.5 12h7"/>'),
 };
-
-// The "add" spots: a box drawn by hand in pen. It stretches to fill its spot
-// and the line stays the same width. PEN has a plus in it, PEN_BOX is just the box.
-const penSvg = (d) => `<svg class="pen-box" viewBox="0 0 44 56" preserveAspectRatio="none" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
-const BOX = '<path vector-effect="non-scaling-stroke" d="M4 5.5 C14 4.6 28 4.9 40.2 4.4 C40.6 18 39.8 36 40.5 51.6 C28 52.3 15 51.5 3.6 52 C3.9 38 4.4 20 4 5.5 Z"/>';
-export const PEN_BOX = penSvg(BOX);
-export const PEN = penSvg(`${BOX}<path vector-effect="non-scaling-stroke" d="M22 20.5 C22.2 25 21.8 31 22.1 36 M15.2 28.3 C19.5 28 24.5 28.4 29 28.1"/>`);

@@ -1,9 +1,9 @@
 // The bottom bar, the same idea as Callback's: the section you're in as one
-// icon with a little triangle each side. Mood boards is the left page, Tags the
-// right; before Mood boards, the left triangle shuts the notebook. A swipe on
-// the page does the same as one on the bar, and turns the mood boards' pages.
+// icon with a little triangle each side. Mood boards comes first, then Tags;
+// before Mood boards, the left triangle shuts the notebook. A swipe on the page
+// does the same as one on the bar, and going between the two turns a page.
 import { ICONS } from './icons.js';
-import { panDistance, showOther, dropOther, dragFrame, panOver, landOn, settleFrame, canTurn, turnPage, isPanning } from './spread.js';
+import { dragFrame, settleFrame, turnTo, isTurning } from './spread.js';
 
 const SECTIONS = [
   { href: '#/boards', name: 'Mood boards', icon: ICONS.boards },
@@ -25,7 +25,7 @@ const now = bar.querySelector('.slide-now');
 const prev = bar.querySelector('.is-prev');
 const next = bar.querySelector('.is-next');
 
-let at = 0, busy = false, coming = -1, swiped = 0, onList = false, puller = null;
+let at = 0, busy = false, swiped = 0, onList = false, puller = null, landed = null;
 export const setPuller = (p) => { puller = p; };
 const stripTo = (i, moving) => { strip.classList.toggle('is-moving', !!moving); strip.style.transform = `translateX(${-i * STEP}px)`; };
 
@@ -35,7 +35,8 @@ export function showSection(i, list = false) {
   bar.hidden = i < 0;
   onList = list;
   frame.dataset.swipe = list ? '1' : '';
-  if (i < 0) { if (isPanning()) landOn(at); dropOther(); frame.style.transform = ''; coming = -1; busy = false; return; }
+  if (landed) { landed(); landed = null; }
+  if (i < 0) { frame.style.transform = ''; busy = false; return; }
   at = i;
   const s = SECTIONS[i], p = SECTIONS[i - 1], n = SECTIONS[i + 1];
   now.setAttribute('href', s.href);
@@ -44,24 +45,28 @@ export function showSection(i, list = false) {
   next.classList.toggle('is-off', !n);
   next.disabled = !n;
   next.setAttribute('aria-label', n ? `Next: ${n.name}` : 'Nothing after this');
-  if (coming >= 0) { coming = -1; landOn(i); busy = false; }
   if (!busy) stripTo(i);
 }
 
+// Changes the route; resolves once the new screen is on the page.
+const navigate = (href) => new Promise((done) => {
+  landed = done;
+  location.hash = href;
+  setTimeout(() => { if (landed === done) { landed = null; done(); } }, 1500);
+});
+
 async function go(dir, from = 0) {
-  if (busy) return settle(from);
+  if (busy || isTurning()) return settle(from);
   if (dir < 0 && at === 0) { settle(from); location.hash = '#/'; return; }
-  const t = SECTIONS[at + dir];
+  const target = at + dir;
+  const t = SECTIONS[target];
   if (!t) return settle(from);
   busy = true;
-  stripTo(at + dir, true);
-  await showOther(at + dir);
-  const target = at + dir;
-  panOver(from, () => {
-    coming = target;
-    location.hash = t.href;
-    setTimeout(() => { if (coming >= 0) { coming = -1; landOn(at); busy = false; stripTo(at); } }, 900);
-  });
+  dragFrame(0);
+  stripTo(target, true);
+  await turnTo(target, dir, () => navigate(t.href));
+  busy = false;
+  stripTo(at);
 }
 function settle(from) {
   settleFrame(from);
@@ -76,7 +81,7 @@ function wire(el, fromPage) {
   let d = null;
   el.addEventListener('pointerdown', (e) => {
     d = null;
-    if (busy || e.button || (fromPage && (!onList || document.querySelector('.turn-leaf')))) return;
+    if (busy || isTurning() || e.button || (fromPage && !onList)) return;
     d = { id: e.pointerId, x0: e.clientX, y0: e.clientY, x: 0, moved: false, kind: '' };
   });
   el.addEventListener('pointermove', (e) => {
@@ -89,18 +94,15 @@ function wire(el, fromPage) {
       try { el.setPointerCapture(e.pointerId); } catch {}
       const dir = dx < 0 ? 1 : -1;
       d.dir = dir;
-      if (fromPage && canTurn(dir)) d.kind = 'turn';
-      else if (SECTIONS[at + dir]) { d.kind = 'pan'; d.far = Math.abs(panDistance()); showOther(at + dir); }
+      if (SECTIONS[at + dir]) d.kind = 'turn';
       else if (dir < 0 && at === 0) d.kind = 'shut';
       else d.kind = 'stop';
     }
     d.x = dx;
-    if (d.kind === 'pan') {
-      if (dx * d.dir > 0) { d.x = 0; dragFrame(0); return; } // came back past where it started
-      if (Math.abs(dx) > d.far) d.x = Math.sign(dx) * d.far; // never past the other page
-      dragFrame(d.x);
+    if (d.kind === 'turn') { // the bar's icons follow the finger; the page turns when you let go
+      const x = dx * d.dir > 0 ? 0 : Math.max(-frame.offsetWidth, Math.min(frame.offsetWidth, dx));
       strip.classList.remove('is-moving');
-      strip.style.transform = `translateX(${-at * STEP + (d.x / frame.offsetWidth) * STEP}px)`;
+      strip.style.transform = `translateX(${-at * STEP + (x / frame.offsetWidth) * STEP}px)`;
     }
     else if (d.kind === 'shut') { d.x = Math.max(0, dx); dragFrame(Math.min(d.x * 0.3, 60)); } // a little give, then it shuts all the way
   });
@@ -111,8 +113,7 @@ function wire(el, fromPage) {
     if (!g.moved) return;
     swiped = performance.now();
     const up = e.type === 'pointerup', w = frame.offsetWidth;
-    if (g.kind === 'turn') { if (up && Math.abs(g.x) > 36) turnPage(g.dir); }
-    else if (g.kind === 'pan') { if (up && Math.abs(g.x) > w * 0.2) go(g.dir, g.x); else settle(g.x); }
+    if (g.kind === 'turn') { if (up && g.x * g.dir < 0 && Math.abs(g.x) > Math.min(60, w * 0.15)) go(g.dir); else stripTo(at, true); }
     else if (g.kind === 'shut') { if (up && g.x > 50) { dragFrame(0); location.hash = '#/'; } else settle(Math.min(g.x * 0.3, 60)); }
     // nowhere to go that way: the page stays put
   };

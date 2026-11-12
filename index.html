@@ -12,15 +12,13 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default" />
 <meta name="apple-mobile-web-app-title" content="ref" />
 <link rel="apple-touch-icon" href="icons/icon-180.png" />
+<link rel="preload" href="fonts/kaisei-decol-500-latin.woff2" as="font" type="font/woff2" crossorigin />
 <link rel="icon" type="image/png" href="icons/icon-192.png" />
 <script>try { var book = localStorage.getItem('ref-notebook-book'); if (book) document.documentElement.dataset.book = book; } catch (e) {}</script>
-<link rel="preload" href="fonts/kaisei-decol-500-latin.woff2" as="font" type="font/woff2" crossorigin />
 <link rel="stylesheet" href="style.css" />
 </head>
 <body>
 <div id="frame" class="frame" data-side="right">
-  <div class="frame-art" aria-hidden="true"><span></span><span></span></div>
-  <div class="frame-fold" aria-hidden="true"></div>
   <div class="paper"><main id="view" tabindex="-1"></main></div>
 </div>
 <div class="pull" id="pull" aria-hidden="true" hidden></div>

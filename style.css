@@ -12,6 +12,7 @@
   --dim: #5c666d;
   --line: #d6dadd;
   --hand: "Klee One", "Bradley Hand", "Noteworthy", cursive;
+  --head: "Kaisei Decol", "Klee One", Georgia, serif; /* headers, always in capitals */
   --mono: "Courier New", Courier, monospace;
   --safe-t: env(safe-area-inset-top, 0px);
   --safe-b: env(safe-area-inset-bottom, 0px);
@@ -20,16 +21,6 @@
   --nb-pad: max(4px, calc(var(--safe-b) - 6px)); /* the bar stays clear of the strip iOS keeps for swiping between apps */
   --nb-bar: calc(50px + var(--nb-pad));
   --app-h: 100vh;      /* set from the real height in ui.js */
-  --head: "Kaisei Decol", "Klee One", Georgia, serif; /* headers, always in capitals */
-  /* Notebook paper: warm, with a faint grain; blue ruled lines with a red double margin. */
-  --paper: #fcfaf4;
-  --grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .42 0 0 0 0 .36 0 0 0 0 .27 .16 0 0 0 -.04'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-  --sheet-1: #ebe5d6;  /* the two sheets under each page */
-  --sheet-2: #f3eee2;
-  --rule: rgba(64, 118, 190, .26);
-  --margin: rgba(214, 64, 64, .62);
-  --lh: 32px;          /* one ruled line: every line height and gap on a page is a whole number of these */
-  --sit-gap: 2px;      /* writing rests this far above a line (js/lines.js) */
 }
 :root[data-book="orange"] { --ink: #d9641a; --book-cover: url(art/orange-cover.webp); --book-block: url(art/orange-block.webp); }
 :root[data-book="mango"] { --ink: #e0b012; --on-ink: #313d45; --book-cover: url(art/mango-cover.webp); --book-block: url(art/mango-block.webp); }
@@ -50,54 +41,17 @@ button:disabled { opacity: .35; cursor: default; }
 a { color: inherit; text-decoration: none; }
 svg { display: block; }
 
-/* ---------- The notebook, open: a frame with white all around it ---------- */
+/* ---------- The notebook, open: plain white pages the size of the screen ---------- */
 .frame {
   position: fixed; top: var(--nb-top); height: calc(var(--app-h) - var(--nb-top) - var(--nb-bar));
-  left: max(6px, calc(50% - 300px)); right: max(6px, calc(50% - 300px));
+  left: max(0px, calc(50% - 310px)); right: max(0px, calc(50% - 310px));
   z-index: 1; /* above the bar, so a screen's own tools show over it */
 }
-/* The same edge as Contact Sheet's notebook: its art, two mirrored halves, so
-   the line and the corners match on all four sides. The shadow is here and not
-   on .frame: a filter there would drag the pinned tools along with it. */
-.frame-art { position: absolute; inset: 0; display: flex; pointer-events: none; filter: drop-shadow(0 8px 16px rgba(60, 40, 20, .16)); }
-.frame-art > span {
-  flex: 1; box-sizing: border-box; border-style: solid;
-  border-width: var(--nb-rim) var(--nb-rim) var(--nb-rim) 0;
-  border-image: var(--book-block) 46 46 46 1 fill / var(--nb-rim) var(--nb-rim) var(--nb-rim) 0 stretch;
-}
-.frame[data-side="right"] { left: calc(max(6px, 50% - 300px) + 14px); }
-.frame[data-side="left"] { right: calc(max(6px, 50% - 300px) + 14px); }
-/* The frame is one page: the art is both, with the fold on the frame's inner edge. */
-.frame[data-side="right"] .frame-art { left: -100%; }
-.frame[data-side="left"] .frame-art { right: -100%; }
-/* A real crease: each page darkens into the spine, with a thin hard line where the pages meet. */
-.frame-fold { position: absolute; top: 0; bottom: 0; width: 40px; z-index: 2; pointer-events: none; background: linear-gradient(90deg, rgba(70, 50, 30, 0) 0, rgba(70, 50, 30, .05) 30%, rgba(70, 50, 30, .2) 49.2%, rgba(50, 35, 20, .42) 50%, rgba(70, 50, 30, .12) 50.8%, rgba(70, 50, 30, .03) 70%, rgba(70, 50, 30, 0) 100%); }
-.frame[data-side="right"] .frame-fold { left: -20px; }
-.frame[data-side="left"] .frame-fold { right: -20px; }
 .frame[data-swipe="1"] #view { touch-action: pan-y; }
-.page-other { position: absolute; top: var(--pg-tb); bottom: var(--pg-tb); width: calc(100% - var(--pg-out)); background: #fff; overflow: hidden; }
-.frame[data-side="right"] .page-other { right: 100%; border-radius: var(--pg-r) 0 0 var(--pg-r); }
-.frame[data-side="left"] .page-other { left: 100%; border-radius: 0 var(--pg-r) var(--pg-r) 0; }
-.turn-leaf { position: absolute; z-index: 1; top: var(--pg-tb); right: var(--pg-out); bottom: var(--pg-tb); left: 0; background: #fff; overflow: hidden; border-radius: 0 var(--pg-r) var(--pg-r) 0; transform-origin: 0 50%; backface-visibility: hidden; -webkit-backface-visibility: hidden; }
-.turn-leaf.is-left { left: var(--pg-out); right: 0; border-radius: var(--pg-r) 0 0 var(--pg-r); transform-origin: 100% 50%; }
+/* Going between Mood boards and Tags: the page turns over at its left edge. */
+.turn-leaf { position: absolute; z-index: 1; inset: 0; background: #fff; overflow: hidden; transform-origin: 0 50%; backface-visibility: hidden; -webkit-backface-visibility: hidden; box-shadow: 0 0 18px rgba(0, 0, 0, .12); }
 .turn-leaf > i { position: absolute; inset: 0; background: #000; opacity: 0; pointer-events: none; }
-.frame-art > span:first-of-type { transform: scaleX(-1); margin-right: -2px; } /* overlapped, or the join shows as a nick */
-/* Each page is a sheet of paper with rounded corners lying in the notebook,
-   with two more sheets under it showing toward the outer edge and the bottom
-   for thickness; the deeper shade of the color hugs the stack. The art's paper
-   is the other page wherever .page-other isn't drawn. */
-.frame { --pg-tb: 7px; --pg-out: 7px; --pg-r: 12px; --ink-deep: color-mix(in srgb, var(--ink) 78%, #000); }
-.frame-art > span { position: relative; }
-.frame-art > span::before { content: ''; position: absolute; top: -5px; bottom: -5px; right: -5px; left: 0; background: var(--ink); border-radius: 0 7px 7px 0; }
-.frame-art > span::after { content: ''; position: absolute; top: calc(var(--pg-tb) - var(--nb-rim)); bottom: calc(var(--pg-tb) - var(--nb-rim)); right: calc(var(--pg-out) - var(--nb-rim)); left: 0; border-radius: 0 var(--pg-r) var(--pg-r) 0; clip-path: inset(-9px -9px -9px 0);
-  background: repeating-linear-gradient(180deg, transparent 0 calc(var(--lh) - 1px), var(--rule) calc(var(--lh) - 1px) var(--lh)), var(--grain), var(--paper);
-  /* in the span's own frame, +x is always toward the outer edge (the left half is mirrored) */
-  box-shadow: 0 0 0 1px rgba(90, 70, 40, .16), 1px 1px 2px rgba(60, 40, 20, .12),
-    2.5px 1.6px 0 0 var(--sheet-2), 2.5px 1.6px 0 .6px rgba(90, 70, 40, .3),
-    4.5px 3px 0 0 var(--sheet-1), 4.5px 3px 0 1.5px var(--ink-deep); }
-.paper { position: absolute; top: var(--pg-tb); bottom: var(--pg-tb); background: #fff; overflow: hidden; }
-.frame[data-side="right"] .paper { left: 0; right: var(--pg-out); border-radius: 0 var(--pg-r) var(--pg-r) 0; }
-.frame[data-side="left"] .paper { right: 0; left: var(--pg-out); border-radius: var(--pg-r) 0 0 var(--pg-r); }
+.paper { position: absolute; inset: 0; background: #fff; overflow: hidden; }
 #view { position: absolute; inset: 0; outline: none; }
 /* The cover, coming in from the right edge as you swipe to shut the notebook. */
 .pull { position: fixed; left: 0; top: var(--nb-top); height: calc(var(--app-h) - var(--nb-top) - var(--nb-bar)); width: 0; z-index: 15; background: var(--ink) var(--book-cover) right center / auto 100% no-repeat; border-radius: 0 12px 12px 0; box-shadow: 6px 0 18px rgba(30, 50, 80, .25); }
@@ -119,8 +73,10 @@ html.settled .nb.closed:not(.placing) .nb-sun { opacity: 1; pointer-events: auto
 .nb.opened .nb-spine3d, .nb.opened .sticker-flap { visibility: hidden; }
 .sticker-flap { position: absolute; left: 100%; top: 0; width: calc(var(--W) * .1904); height: 100%; overflow: hidden; transform-origin: 0 50%; transform: translateZ(1px) rotateY(90deg); pointer-events: none; }
 .sticker-flap .sticker { filter: brightness(.84); box-shadow: none; }
-.nb-title { position: absolute; z-index: 1; left: 0; right: 0; top: var(--title-top); text-align: center; font: 400 var(--title-fs) var(--hand); color: var(--text); transform-origin: 50% 0; transition: transform .72s cubic-bezier(.45,.05,.25,1); }
+.nb-title { position: absolute; z-index: 1; left: 0; right: 0; top: var(--title-top); text-align: center; font: 500 var(--title-fs) var(--head); text-transform: uppercase; letter-spacing: .08em; color: var(--text); transform-origin: 50% 0; transition: transform .72s cubic-bezier(.45,.05,.25,1); }
 .nb.opened.zoom-r .nb-title, .nb.opened.zoom-l .nb-title { transform: scaleY(var(--title-sq)); }
+#titleL { padding-left: var(--title-out, 0px); }
+#titleR { padding-right: var(--title-out, 0px); }
 .sticker { position: absolute; aspect-ratio: 1; transform: translate(-50%, -50%); padding: calc(var(--W) * .012); background: #f1eee6; box-shadow: 0 1px 2px rgba(0, 0, 0, .35), 0 calc(var(--W) * .008) calc(var(--W) * .02) rgba(0, 0, 0, .18); overflow: hidden; }
 .sticker.square { border-radius: calc(var(--W) * .012); }
 .sticker.circle { border-radius: 50%; }
@@ -192,7 +148,7 @@ html.settled .nb.closed:not(.placing) .nb-sun { opacity: 1; pointer-events: auto
 .nb.opened .nb-stack i, .nb.opened .nb-stack b { transform: translateZ(-1px); visibility: hidden; }
 
 /* ---------- Screens ---------- */
-.screen { position: absolute; inset: 0; display: flex; flex-direction: column; padding: 8px 10px 8px 10px; animation: page-in .16s ease-out; }
+.screen { position: absolute; inset: 0; display: flex; flex-direction: column; padding: 8px 16px; animation: page-in .16s ease-out; }
 .screen.still { animation: none; }
 @keyframes page-in { from { opacity: 0; } }
 .head { margin: 0; padding: 4px 0 10px; border-bottom: 1px solid var(--line); font: 500 32px var(--head); text-transform: uppercase; letter-spacing: .08em; text-align: center; flex: none; }
@@ -406,7 +362,7 @@ html.settled .nb.closed:not(.placing) .nb-sun { opacity: 1; pointer-events: auto
 
 /* ---------- Sheets ---------- */
 .sheet-overlay { position: fixed; left: 0; right: 0; top: var(--vv-top, 0px); height: var(--vv-height, 100%); background: rgba(49, 61, 69, .42); display: flex; align-items: flex-end; justify-content: center; }
-.sheet { width: 100%; max-width: 620px; max-height: calc(var(--vv-height, 100svh) * .9); background: var(--grain), var(--paper); /* plain paper: no lines over the page */ display: flex; flex-direction: column; outline: none; border-radius: 14px 14px 0 0; }
+.sheet { width: 100%; max-width: 620px; max-height: calc(var(--vv-height, 100svh) * .9); background: #fff; display: flex; flex-direction: column; outline: none; border-radius: 14px 14px 0 0; }
 .sheet-header { display: flex; align-items: center; justify-content: space-between; padding: 12px 10px 10px 18px; border-bottom: 1px solid var(--line); flex: none; }
 .sheet-header h2 { margin: 0; font: 500 26px var(--head); text-transform: uppercase; letter-spacing: .08em; }
 .close-btn { width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; }
@@ -476,102 +432,3 @@ html.settled .nb.closed:not(.placing) .nb-sun { opacity: 1; pointer-events: auto
 .show-btn:disabled { opacity: .25; }
 .show-stage { flex: 1; min-height: 0; position: relative; display: flex; align-items: center; justify-content: center; margin: 4px 12px; overflow: hidden; }
 .show-page { position: absolute; box-shadow: none; }
-
-/* ---------- Ruled notebook paper ----------
-   Blue lines every --lh and a red double margin 23px and 26px in from the
-   page's outer edge: the left edge of a left page (Mood boards), the right edge
-   of a right page (Tags). Writing starts 34px in from the outer edge. Every
-   height and gap on a page is a whole number of lines, and js/lines.js nudges
-   each kind of text (data-sit) so it rests just above a line. The lines start
-   at the top of the page, and a scrolling list carries its own, so they move
-   with the writing. Pop-ups keep plain paper. */
-.frame[data-side="left"] .paper, .frame[data-side="right"] .page-other, .turn-leaf.is-left { --mdir: 90deg; --pad-l: 34px; --pad-r: 12px; }
-.frame[data-side="right"] .paper, .frame[data-side="left"] .page-other, .turn-leaf:not(.is-left) { --mdir: 270deg; --pad-l: 12px; --pad-r: 34px; }
-.paper, .page-other, .turn-leaf, .frame .scroll {
-  background:
-    linear-gradient(var(--mdir), transparent 23px, var(--margin) 23px 24.2px, transparent 24.2px 26px, var(--margin) 26px 27px, transparent 27px),
-    repeating-linear-gradient(180deg, transparent 0 calc(var(--lh) - 1px), var(--rule) calc(var(--lh) - 1px) var(--lh)),
-    var(--grain), var(--paper);
-}
-/* The page itself: a faint paper edge and a small shadow toward the outer side. */
-.paper { box-shadow: 0 0 0 1px rgba(90, 70, 40, .16), 1px 1px 2px rgba(60, 40, 20, .12); }
-.frame[data-side="left"] .paper { box-shadow: 0 0 0 1px rgba(90, 70, 40, .16), -1px 1px 2px rgba(60, 40, 20, .12); }
-.nb-block::after, .nb-inside::after { background: var(--grain), var(--paper); }
-[data-sit] { position: relative; }
-
-/* A page is a whole number of lines tall, so the last line of writing still sits on one. */
-.frame .screen { padding: var(--lh) var(--pad-r) 0 var(--pad-l); bottom: auto; height: 100%; height: round(down, 100%, var(--lh)); }
-/* A scroller reaches both edges of the page and carries its own lines. */
-.frame .scroll { margin-left: calc(-1 * var(--pad-l)); margin-right: calc(-1 * var(--pad-r)); padding-left: var(--pad-l); padding-right: var(--pad-r); background-attachment: local; }
-
-.frame .head { height: calc(var(--lh) * 2); padding: 0; line-height: calc(var(--lh) * 2); border-bottom: 0; white-space: nowrap; }
-.frame .head > [data-sit] { display: inline-block; }
-.frame .head-plus { top: 31px; margin-top: 0; right: -10px; }
-.frame .note { margin: var(--lh) 2px 0; font-size: 18px; line-height: var(--lh); }
-.frame .note.center { margin-top: calc(var(--lh) * 6); }
-.frame .page-foot { height: var(--lh); line-height: var(--lh); }
-
-/* rows: two lines each, the ruled lines in place of the dividers */
-.frame .row { height: calc(var(--lh) * 2); align-items: flex-start; border-bottom: 0; }
-.frame .row-open, .frame .tag-rows .row-open { height: calc(var(--lh) * 2); padding: 0; align-items: flex-start; gap: 12px; }
-.frame .row-text { gap: 0; }
-.frame .row-name { line-height: var(--lh); }
-.frame .row-meta { line-height: var(--lh); }
-.frame .row > .icon-btn { margin-top: 9px; }
-/* list thumbnails: taped-in photos */
-.frame .rows .thumb { width: 38px; height: 50px; margin-top: 7px; border: 2px solid #fff; border-radius: 1px; box-shadow: 0 1px 2px rgba(60, 40, 20, .25); transform: rotate(-1.2deg); }
-.frame .rows > :nth-child(odd) .thumb { transform: rotate(1deg); }
-/* add boxes: drawn by hand in pen */
-.thumb.add, .tile.add, .open-phone { position: relative; border: 0; background: none; }
-.frame .rows .thumb.add { border: 0; box-shadow: none; transform: none; background: none; }
-.pen-box { position: absolute; inset: -3px; width: calc(100% + 6px); height: calc(100% + 6px); color: var(--ink); pointer-events: none; overflow: visible; }
-.find { height: var(--lh); line-height: var(--lh); margin: 0; padding: 0 2px; border-bottom: 0; }
-
-/* a folder */
-.frame .folder-head { height: calc(var(--lh) * 2); align-items: flex-start; }
-.frame .folder-head .icon-btn { margin-top: 30px; } /* level with the capitals on the second line */
-.frame .folder-head h1 { font-size: 26px; line-height: calc(var(--lh) * 2); }
-.frame .bar { height: var(--lh); padding: 0; }
-.frame .label-btn { height: var(--lh); }
-.frame .undo-btn { width: var(--lh); height: var(--lh); }
-.frame .count { line-height: var(--lh); }
-.frame .chips { height: var(--lh); padding: 0; align-items: flex-start; }
-.frame .chip { padding: 0; line-height: var(--lh); border-bottom: 0; }
-.frame .chip.on { text-decoration: underline 2.5px var(--ink); text-underline-offset: 1.5px; text-decoration-skip-ink: none; }
-.frame .scan { padding: 0; }
-.frame .scan-btn, .frame .scan-text { display: block; line-height: var(--lh); }
-.frame .open-phone { height: calc(var(--lh) * 10); min-height: 0; margin-top: var(--lh); }
-.thumb.add svg.pen-box, .tile.add svg.pen-box, .open-phone svg.pen-box { width: calc(100% + 6px); height: calc(100% + 6px); stroke-width: 1.5; }
-.tile.add svg.pen-box, .open-phone svg.pen-box { stroke-width: 2; }
-/* the highlighter stays behind the lower half of the letters, wherever the line puts them */
-.frame .marked .row-name { background: linear-gradient(transparent calc(var(--lh) - 11px - var(--sit-tname, 0px)), var(--mango) 0 calc(var(--lh) - 2px - var(--sit-tname, 0px)), transparent 0); }
-
-/* the new board wizard */
-.frame .wz-step { height: var(--lh); margin: 0; line-height: var(--lh); }
-.frame .form-page { padding-top: 0; padding-bottom: var(--lh); gap: var(--lh); }
-.frame .label { display: block; line-height: var(--lh); }
-.frame .small { margin: 0; line-height: var(--lh); }
-.frame .check { display: block; margin: 0; line-height: var(--lh); }
-.frame .check input { display: inline-block; vertical-align: -3px; margin-right: 6px; }
-/* a field is one line, written on the line; its pen line is drawn over the ruled one */
-.frame .hand-input { height: var(--lh); padding: 0; line-height: var(--lh); border-bottom: 0;
-  background: linear-gradient(var(--ink), var(--ink)) 0 calc(var(--lh) - 2.5px - var(--sit-input, 0px)) / 100% 2px no-repeat; }
-.frame .wz-secname { background-position-y: calc(var(--lh) - 2.5px - var(--sit-secname, 0px)); }
-.frame .row-group { height: var(--lh); align-items: flex-start; }
-.frame .row-group .label { flex: 1; }
-.frame .stepper button { width: var(--lh); height: var(--lh); }
-.frame .stepper b { line-height: var(--lh); }
-.frame .wz-cards { margin-top: 0; align-content: start; }
-.frame .wz-section { border: 0; outline: 2px solid var(--line); outline-offset: -2px; padding: 0 10px; }
-.frame .wz-sechead { height: calc(var(--lh) * 2); align-items: flex-start; }
-.frame .wz-secnum { margin-top: 3px; }
-.frame .wz-section .hand-input { margin-top: 0; }
-.frame .pick-chips { margin-top: 0; align-content: flex-start; }
-.frame .wz-sumrow { height: var(--lh); padding: 0; border-bottom: 0; line-height: var(--lh); }
-
-/* the board editor: the board page stays white; around it, the head and the tray sit on lines */
-.frame .editor .folder-head .board-name, .frame .editor .folder-head .count { height: calc(var(--lh) * 2); line-height: calc(var(--lh) * 2); }
-.frame .show-row { height: var(--lh); padding: 0; }
-.frame .show-open { height: var(--lh); }
-.frame .tray-head { height: var(--lh); padding: 0; align-items: flex-start; }
-.frame .tray { height: calc(var(--lh) * 3); padding: 7px 0; }

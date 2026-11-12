@@ -1,13 +1,12 @@
 // Routes: #/ shut, #/boards, #/folders, #/folder/<id>, #/new, #/board/<id>
-import './lines.js'; // writing sits on the ruled lines
 import { refresh } from './library.js';
-import { boardsScreen, foldersScreen, folderScreen, boardPager, tagPager } from './screens.js';
+import { boardsScreen, foldersScreen, folderScreen } from './screens.js';
 import { newBoardScreen } from './newboard.js';
 import { boardScreen } from './editor.js';
 import { closeAllSheets } from './ui.js';
 import { carryOn } from './tagger.js';
 import { showSection, setPuller } from './navbar.js';
-import { isPanning, sideOf } from './spread.js';
+import { sideOf } from './spread.js';
 import { paintStickers } from './stickers.js';
 import { openOptions, startPage } from './options.js';
 import { ICONS } from './icons.js';
@@ -29,8 +28,8 @@ const tabHits = document.getElementById('bookTabHits');
 tabHits.addEventListener('click', (e) => { const b = e.target.closest('[data-go]'); if (b) location.hash = b.dataset.go; });
 
 // The notebook floats shut on white, the same as Contact Sheet and Documenting
-// Fictions. Tapped, its cover swings open and the right page grows to fill the
-// frame behind it, then it leaves. Timers, not transition events: those don't
+// Fictions. Tapped, its cover swings open and the page grows until its paper
+// covers the whole screen, then it leaves. Timers, not transition events: those don't
 // fire if the app is put away mid-swing.
 const RATIO = 1000 / 1360; // same size as Documenting Fictions' notebook
 const TAB_OUT = 0.08;      // how far the side tabs stick out, of the book's width
@@ -38,6 +37,7 @@ const STACK = 16;
 const TURNED = (20 * Math.PI) / 180; // matches style.css
 const PERSPECTIVE = 1100;            // matches .nb in style.css
 const OPEN_MS = 900, ZOOM_MS = 760;
+const OVER = 12; // zoomed in, the white of the page reaches this far past the screen's edges
 document.getElementById('bookStack').innerHTML =
   Array.from({ length: STACK }, (_, i) => `<i style="--i:${i + 1}"></i>`).join('') + `<b style="--i:${STACK + 1}"></b>`;
 
@@ -56,14 +56,24 @@ function measure() {
   const set = (n, v) => book.style.setProperty(n, v);
   set('--W', `${W}px`); set('--H', `${H}px`); set('--k', String(k));
   set('--shut-x', `${-(Math.min(...seen) + Math.max(...seen)) / 2 / cos}px`);
-  set('--zoom-x', `${(frame.dataset.side === 'left' ? f.right : f.left) - vw / 2}px`); // the fold lands on the frame's fold
-  set('--zoom-y', `${(f.top + f.bottom) / 2 - vh / 2}px`);
-  set('--zoom-sx', String(f.width / W));
-  set('--zoom-sy', String(f.height / H));
-  // The title on the blank page ends up exactly over the screen's own heading.
-  set('--title-fs', `${32 / (f.width / W)}px`);
-  set('--title-top', `${17 / (f.height / H)}px`);
-  set('--title-sq', String((f.width / W) / (f.height / H)));
+  // Zoomed in, the spine lies along one side of the screen and the page's
+  // white (inside its coloured edge: 1.4% out, 0.7% top and bottom) covers the
+  // rest, OVER past the edges so even its round corners are off the screen.
+  const pw = (vw + OVER) / 0.986, ph = (vh + 2 * OVER) / 0.986;
+  const sx = pw / W, sy = ph / H;
+  set('--zoom-x', `${frame.dataset.side === 'left' ? vw / 2 : -vw / 2}px`);
+  set('--zoom-y', '0px');
+  set('--zoom-sx', String(sx));
+  set('--zoom-sy', String(sy));
+  // The title on the blank page ends up exactly over the screen's own heading,
+  // in the middle of the frame, its letters 12px down it.
+  set('--title-fs', `${32 / sx}px`);
+  set('--title-top', `${(f.top + 12 - (vh - ph) / 2) / sy}px`);
+  set('--title-sq', String(sx / sy));
+  // The page is a little wider than the screen, so the title is pushed in from
+  // the page's outer edge to sit over the middle of the frame.
+  const c = (f.left + f.right) / 2;
+  set('--title-out', `${Math.max(0, frame.dataset.side === 'left' ? 2 * c - 2 * vw + pw : pw - 2 * c) / sx}px`);
 }
 // Where the side tabs land on screen with the book shut, for the buttons laid
 // flat over them. Measured in that pose before anything paints.
@@ -115,10 +125,9 @@ async function route() {
   const h = (location.hash || '#/').slice(1) || '/';
   const section = h === '/boards' ? 0 : h === '/folders' || h.startsWith('/folder/') ? 1 : -1;
   if (h !== '/') {
-    if (!isPanning()) frame.dataset.side = sideOf(section);
+    frame.dataset.side = sideOf(section);
     titleL.textContent = section === 0 ? 'Mood boards' : '';
     titleR.textContent = section === 1 ? 'Tags' : '';
-    if (!isOpen) { boardPager.page = 0; tagPager.page = 0; }
   }
   setBook(h !== '/');
   if (h === '/') { showSection(-1); return; }
