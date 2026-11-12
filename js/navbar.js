@@ -26,6 +26,7 @@ const prev = bar.querySelector('.is-prev');
 const next = bar.querySelector('.is-next');
 
 let at = 0, busy = false, swiped = 0, onList = false, puller = null, landed = null;
+let docked = null; // the row of every section, while a finger holds the icon (below)
 export const setPuller = (p) => { puller = p; };
 const stripTo = (i, moving) => { strip.classList.toggle('is-moving', !!moving); strip.style.transform = `translateX(${-i * STEP}px)`; };
 
@@ -64,7 +65,7 @@ async function go(dir, from = 0) {
   busy = true;
   dragFrame(0);
   stripTo(target, true);
-  await turnTo(target, dir, () => navigate(t.href));
+  await turnTo(target, Math.sign(dir), () => navigate(t.href));
   busy = false;
   stripTo(at);
 }
@@ -86,6 +87,7 @@ function wire(el, fromPage) {
   });
   el.addEventListener('pointermove', (e) => {
     if (!d || e.pointerId !== d.id) return;
+    if (docked) { d = null; return; } // the held icon's row has the finger now
     const dx = e.clientX - d.x0, dy = e.clientY - d.y0;
     if (!d.moved) {
       if (Math.hypot(dx, dy) < 10) return;
@@ -124,3 +126,83 @@ function wire(el, fromPage) {
 }
 wire(bar, false);
 wire(frame, true);
+
+// Held still for a moment, the icon swells into a row of every section, the
+// way the Mac's Dock grows under the pointer (as in The Eye). Slide along it
+// and let go on one to go there; let go without sliding and nothing changes.
+// No card around the row (user, 11-12): only the icons, on a soft white haze
+// so they still read over a photo.
+const DOCK_SLOT = 46; // px from one icon to the next
+const DOCK_PAD = 10;  // the row's padding, each side
+const dock = document.createElement('div');
+dock.className = 'nav-dock';
+dock.setAttribute('aria-hidden', 'true');
+dock.innerHTML = SECTIONS.map((s) => `<span class="nav-dock-slot"><span class="nav-dock-icon">${s.icon}</span></span>`).join('')
+  + '<span class="nav-dock-label"></span>';
+bar.appendChild(dock);
+const dockSlots = [...dock.querySelectorAll('.nav-dock-slot')];
+const dockIcons = [...dock.querySelectorAll('.nav-dock-icon')];
+const dockLabel = dock.querySelector('.nav-dock-label');
+let hold = null;
+// Biggest under the finger, its neighbours a little, the rest as they are.
+function dockShow(x) {
+  const fx = x === null ? docked.centers[at] : x;
+  let near = at;
+  if (x !== null) {
+    let best = Infinity;
+    docked.centers.forEach((c, i) => { if (Math.abs(fx - c) < best) { best = Math.abs(fx - c); near = i; } });
+  }
+  docked.at = near;
+  dockIcons.forEach((icon, i) => {
+    const grow = Math.max(0, 1 - Math.abs(fx - docked.centers[i]) / (DOCK_SLOT * 1.8));
+    icon.style.transform = `scale(${(1 + 0.55 * grow).toFixed(3)})`;
+  });
+  dockLabel.textContent = SECTIONS[near].name;
+  dockLabel.style.left = `${(docked.centers[near] - docked.left).toFixed(1)}px`;
+}
+function openDock(h) {
+  hold = null;
+  if (busy || isTurning() || bar.hidden) return;
+  const r = bar.getBoundingClientRect();
+  const w = SECTIONS.length * DOCK_SLOT + DOCK_PAD * 2;
+  const vw = window.innerWidth;
+  // The section you're on sits right over the finger, as far as the screen allows.
+  const left = Math.max(8, Math.min(vw - 8 - w, h.x - DOCK_PAD - (at + 0.5) * DOCK_SLOT));
+  docked = { id: h.id, x0: h.x, y0: h.y, moved: false, at, left, centers: SECTIONS.map((s, i) => left + DOCK_PAD + (i + 0.5) * DOCK_SLOT) };
+  stripTo(at, true); // the bar's own icon goes back if a slide had nudged it
+  dock.style.left = `${(left - r.left).toFixed(1)}px`;
+  dock.style.transformOrigin = `${(h.x - left).toFixed(1)}px 100%`;
+  dockSlots.forEach((slot, i) => slot.classList.toggle('is-here', i === at));
+  dockShow(null);
+  dock.classList.add('is-open');
+  bar.classList.add('is-docked');
+  try { bar.setPointerCapture(h.id); } catch {}
+}
+now.addEventListener('pointerdown', (e) => {
+  if (e.button || !e.isPrimary) return;
+  if (hold) clearTimeout(hold.timer);
+  const h = { id: e.pointerId, x: e.clientX, y: e.clientY };
+  h.timer = setTimeout(() => { if (hold === h) openDock(h); }, 380);
+  hold = h;
+});
+// A long press on a link would bring up iOS's preview of it.
+now.addEventListener('contextmenu', (e) => e.preventDefault());
+bar.addEventListener('pointermove', (e) => {
+  if (hold && e.pointerId === hold.id && Math.hypot(e.clientX - hold.x, e.clientY - hold.y) >= 8) { clearTimeout(hold.timer); hold = null; }
+  if (!docked || e.pointerId !== docked.id) return;
+  if (!docked.moved && Math.hypot(e.clientX - docked.x0, e.clientY - docked.y0) < 10) return;
+  docked.moved = true;
+  dockShow(e.clientX);
+});
+const dockEnd = (e) => {
+  if (hold && e.pointerId === hold.id) { clearTimeout(hold.timer); hold = null; }
+  if (!docked || e.pointerId !== docked.id) return;
+  const { moved, at: to } = docked;
+  docked = null;
+  dock.classList.remove('is-open');
+  bar.classList.remove('is-docked');
+  swiped = performance.now(); // the icon's own tap stands down
+  if (e.type === 'pointerup' && moved && to !== at) go(to - at);
+};
+bar.addEventListener('pointerup', dockEnd);
+bar.addEventListener('pointercancel', dockEnd);
