@@ -12,7 +12,7 @@
   "art/ocean-cover.webp": "b4c5cecc86bccc3020f01633760d9ecb31172074c0126473e45bbd90977aa004",
   "art/orange-block.webp": "d42df2ec4af2615b5fe071c8463992afdf1291570200f832b6bff31b72ae9ee2",
   "art/orange-cover.webp": "c6432866813aba06a94e743c7166f0ac1c432d7d02221d970c6da5770534dcff",
-  "df-data.js": "1cad9ae40b73e73e84ea309cfeac24f1d480bf248ddfc04feda5f23912955f09",
+  "df-data.js": "37a17549bcfbd0d7b22ddf4eac29fca4b85c41637a455142cd08290340d02d15",
   "fonts/ArchivoBlack-OFL.txt": "3173acd82f8c6159b5b1037b539fcbd4edff68e65c2ea8b9412b5a5ca97b08ff",
   "fonts/Inter-OFL.txt": "5b9321a4298cfeb6b34354164a1c3afc3db114569984c502b9b35d988fd58c57",
   "fonts/KaiseiDecol-OFL.txt": "6c5445d4febbf6d84025b874a85c51e7e4bfa7495279eccdb4c317a6de857b46",
@@ -34,7 +34,7 @@
   "js/library.js": "ef31adf1bd2e51abee339f27066b289191ce353063567191a7834431f4cf522c",
   "js/navbar.js": "d9ba1e8260788f033ee5e7157be0e5de1dfdf1cf2ca11688751a209e740a101e",
   "js/newboard.js": "dfff831e88adfa38809f8ccf6070c25dcfb9d49f4e46e967331da0c5400425ad",
-  "js/options.js": "d9bdfd41708925cd3be50cbed7f7dfe4e2d927e1ba798808c1c3df9ae67daa63",
+  "js/options.js": "435919592191cafdab48b7ceb10de6e1649accec9efb25537b0c46aed7b54efe",
   "js/pages.js": "90b8a9f8ba0b44711fe643fb7cc5982b213717ea70f96184adaf3ab4af82c9f8",
   "js/pdf.js": "603c91d551dd334cb77d1749c70994163b85a0b71681bcc76e5c6fe7f720e2a5",
   "js/photos.js": "e7f32adfc06b37af98ca24b672e197fa2d8092b8d382178b7c397a6ecb864a8f",
@@ -62,7 +62,7 @@
   "ml/ort-wasm-simd-threaded.jsep.wasm": "c46655e8a94afc45338d4cb2b840475f88e5012d524509916e505079c00bfa39",
   "ml/transformers.min.js": "aa5002b70e789798da263f5f99c62bd3e8fcd0c119258a493c40c180648365fa",
   "style.css": "89007a68522a2d259a582428968062cb2f372cfa767db8de1f40c9300667044a",
-  "sw.js": "0527244a84a318cbde3b7102eb730c56a0c62de7b48a6e14a9c567e7d2002b55"
+  "sw.js": "669a5f405e234ebea31edb547eb26236be0d664269f22c426784c78d28ac2d14"
  },
  "keep": [
   ".DS_Store",
@@ -79,6 +79,6 @@
  ],
  "name": "Ref",
  "notebook": "ref",
- "suite": "9679f87",
- "suite_folder": "../Documenting Fictions"
+ "suite": "0d58a51",
+ "suite_folder": "../../../../../../../../private/tmp/claude-501/-Users-starkyproductions-Library-CloudStorage-OneDrive-SharedLibraries-Onedrive-Documents-Claude/eb4d2f99-11c2-4f78-82fd-4869b227ac5f/scratchpad/dfclean"
 }
