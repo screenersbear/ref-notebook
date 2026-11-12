@@ -91,6 +91,16 @@ export function nudgeScreen(tries = 3, full = 0) {
     else go(tries);
   });
 }
+// How far short iOS has the screen, kept up to date: the bar comes down by
+// that much less, so its icon sits where it does in the other notebooks.
+// Measured again whenever the height changes, since iOS can give the strip
+// back later (a class left on from before put the icon below everyone else's).
+let measured = false;
+function markShort(gap) {
+  html.classList.toggle('is-short', gap > 0);
+  if (gap > 0) html.style.setProperty('--short-by', `${gap}px`);
+  else html.style.removeProperty('--short-by');
+}
 if (iPhoneApp) {
   let soonTimer = 0; // load, pageshow and coming back can all land together
   const soon = (ms) => clearTimeout(soonTimer) || (soonTimer = setTimeout(() => {
@@ -108,7 +118,8 @@ if (iPhoneApp) {
         gap = screenGap();
         if (gap > 0) html.classList.remove('ios-hold');
       }
-      html.classList.toggle('is-short', gap > 0);
+      measured = true;
+      markShort(gap);
       setAppHeight();
       html.classList.add('settled');
     });
@@ -136,6 +147,7 @@ function setAppHeight() {
   if (Math.abs(h - appH) < 2) return;
   appH = h;
   html.style.setProperty('--app-h', `${h}px`);
+  if (measured) markShort(screenGap());
   window.dispatchEvent(new Event('ref-layout'));
 }
 setAppHeight();

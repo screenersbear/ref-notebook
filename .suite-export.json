@@ -43,7 +43,7 @@
   "js/tagger.js": "907745a6a0e4533211334fe29a097948114fc2f06e212b09994b12aa9f10f7a0",
   "js/templates.js": "dccd26a7e607e04fad37be604a3fe36f34dbd06b28286918f4594a875889e3d8",
   "js/textsize.js": "0b24176fe569d72abb11c1968798105e225d582e5ecb99660fe0ac54fe38cbf2",
-  "js/ui.js": "fb2f9471063160091432e67db077fad26347657a501f8e96b67e1b7afa8788bf",
+  "js/ui.js": "460901c0f7667d4ef0c76256d5e3b4d311cc7c2349955c3129189bdfc1922f12",
   "js/undo.js": "53b0f61fc901f3b3ceed44d778dffff379b07a9bd59dd7d4922f947870a200f0",
   "js/util.js": "82b8d150ea6304e722581c66b69dd4690f9e61bc8beff3d8e08cb2e15a956e08",
   "js/viewer.js": "e7af6ed08989fbca1bea6381de357407e6d5f0755f3ed337d4abb7526df9a884",
@@ -57,8 +57,8 @@
   "ml/ort-wasm-simd-threaded.jsep.mjs": "08fb86ec433c78bfb032c5d84a68b8e8e5a8d81268fa39e24314179a5767a5b9",
   "ml/ort-wasm-simd-threaded.jsep.wasm": "c46655e8a94afc45338d4cb2b840475f88e5012d524509916e505079c00bfa39",
   "ml/transformers.min.js": "aa5002b70e789798da263f5f99c62bd3e8fcd0c119258a493c40c180648365fa",
-  "style.css": "65cdd3c61e398d6220518b53547c55b98c36d45cb0de03d850d714751666a3fd",
-  "sw.js": "22dd5d4f4db9b6dd6739789a8468764934622a0647d168304d15cd49c2098391"
+  "style.css": "f08b2672108dbe59380cb5d9e570dab3301d2c5f5b00a4f521fd8c06420244b2",
+  "sw.js": "1101ec2f783634353f8f5d25058de2140d65bf29f2e16c8fa929d3e1cd4b3f4f"
  },
  "keep": [
   ".DS_Store",
@@ -75,6 +75,6 @@
  ],
  "name": "Ref",
  "notebook": "ref",
- "suite": "68c2595 + changes not committed",
+ "suite": "b27898d + changes not committed",
  "suite_folder": "../Documenting Fictions"
 }

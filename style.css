@@ -34,7 +34,7 @@ html, body { height: 100%; margin: 0; background: #fff; color: var(--text); font
 html, body { overflow-x: clip; }
 body { overflow: hidden; -webkit-text-size-adjust: 100%; }
 html.ios-nudge body, html.ios-hold body { min-height: calc(var(--screen-h, 100vh) + 160px); overflow-x: clip; overflow-y: visible; }
-html.is-short { --nb-pad: 10px; } /* the bottom edge is already above the home indicator */
+html.is-short { --nb-pad: max(10px, calc(var(--safe-b) - var(--short-by, 0px))); } /* the bottom edge is already --short-by above the screen's: the icon ends up at the same height as everywhere else */
 button, input, textarea { font: inherit; color: inherit; }
 button { background: none; border: 0; padding: 0; cursor: pointer; }
 button:disabled { opacity: .35; cursor: default; }
