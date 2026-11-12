@@ -6,6 +6,7 @@ import { fileSheet, newFolder, changePhotos } from './filing.js';
 import { remember, canUndo, undoLast } from './undo.js';
 import { scan, turnOnTags, carryOn } from './tagger.js';
 import { openViewer } from './viewer.js';
+import { sendToShoot, boardShoots, keepUp } from './sendshoot.js';
 import { choiceSheet, confirmSheet, promptSheet, toast } from './ui.js';
 import { ICONS } from './icons.js';
 import { esc, shortDate, isIOS, isStandalone } from './util.js';
@@ -14,6 +15,7 @@ import { esc, shortDate, isIOS, isStandalone } from './util.js';
 // Every mood board on one page that scrolls.
 export async function boardsScreen(view) {
   const boards = await db.listBoards();
+  const onShoots = await boardShoots().catch(() => ({})); // inside Documenting Fictions: the shoots each board was sent to
   const firstPhoto = (b) => b.pages.flatMap((p) => p.images).map((im) => im && photoById(im.id)).find(Boolean);
   view.innerHTML = `
     <div class="screen">
@@ -23,7 +25,7 @@ export async function boardsScreen(view) {
           <div class="row" data-b>
             <a class="row-open" href="#/board/${esc(b.id)}">
               <span class="thumb">${p ? `<img src="${thumbUrl(p)}" alt="" />` : ''}</span>
-              <span class="row-text"><span class="row-name">${esc(b.name)}</span><span class="row-meta">${b.pages.length} ${b.pages.length === 1 ? 'page' : 'pages'}, ${esc(shortDate(b.updatedAt))}</span></span>
+              <span class="row-text"><span class="row-name">${esc(b.name)}</span><span class="row-meta">${b.pages.length} ${b.pages.length === 1 ? 'page' : 'pages'}, ${esc(shortDate(b.updatedAt))}</span>${onShoots[b.id] ? `<span class="row-meta row-shoots">For ${esc(onShoots[b.id].join(', '))}</span>` : ''}</span>
             </a>
             <button type="button" class="icon-btn" data-more="${esc(b.id)}" aria-label="More for ${esc(b.name)}">${ICONS.more}</button>
           </div>`; }).join('')}
@@ -33,10 +35,13 @@ export async function boardsScreen(view) {
     </div>`;
   view.querySelectorAll('[data-more]').forEach((btn) => btn.addEventListener('click', async () => {
     const b = boards.find((x) => x.id === btn.dataset.more);
-    const key = await choiceSheet({ title: b.name, options: [{ key: 'rename', label: 'Rename' }, { key: 'delete', label: 'Delete', danger: true }] });
-    if (key === 'rename') {
+    const key = await choiceSheet({ title: b.name, options: [{ key: 'send', label: 'Send to shoot' }, { key: 'rename', label: 'Rename' }, { key: 'delete', label: 'Delete', danger: true }] });
+    if (key === 'send') {
+      await sendToShoot(b);
+      if ((location.hash || '') === '#/boards') boardsScreen(view);
+    } else if (key === 'rename') {
       const name = await promptSheet({ title: 'Rename board', value: b.name });
-      if (name) { await db.saveBoard({ ...b, name }); boardsScreen(view); }
+      if (name) { await db.saveBoard({ ...b, name }); boardsScreen(view); keepUp(b.id); }
     } else if (key === 'delete') {
       if (await confirmSheet({ title: 'Delete this board?', message: `<b>${esc(b.name)}</b> will be gone. Its photos stay in the notebook.`, confirmLabel: 'Delete', danger: true })) {
         await db.deleteBoard(b.id);

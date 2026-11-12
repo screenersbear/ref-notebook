@@ -6,6 +6,7 @@ import { lib, photoById, photosIn, thumbUrl, sortList, SPECIAL } from './library
 import { TEMPLATES, SHAPES, templateFor, styleTemplate, defaultTemplate } from './templates.js';
 import { renderPage, pageTemplate, pageToCanvas, applyCrop, MAX_ZOOM } from './pages.js';
 import { makePdf } from './pdf.js';
+import { keepUp } from './sendshoot.js';
 import { openSheet, choiceSheet, confirmSheet, promptSheet, toast, hideToast } from './ui.js';
 import { ICONS } from './icons.js';
 import { esc, clamp, clone, slug, canvasToBlob, downloadBlob, debounce } from './util.js';
@@ -19,6 +20,7 @@ export async function boardScreen(view, id) {
   const persist = debounce(() => db.saveBoard(board).then((b) => { board.updatedAt = b.updatedAt; }), 300);
   const snapshot = () => { undo.push(JSON.stringify(board.pages)); if (undo.length > 40) undo.shift(); paintUndo(); };
   const page = () => board.pages[at];
+  const asOpened = JSON.stringify([board.name, board.pages]); // to tell, on leaving, whether it changed
 
   view.innerHTML = `
     <div class="screen editor">
@@ -439,5 +441,11 @@ export async function boardScreen(view, id) {
   paintUndo();
   await drawPage();
   drawTray();
-  return () => { destroyed = true; persist.flush(); window.removeEventListener('ref-layout', onResize); };
+  // Leaving a board that changed: a shoot it was sent to gets its pages drawn again.
+  return () => {
+    destroyed = true;
+    const changed = JSON.stringify([board.name, board.pages]) !== asOpened;
+    Promise.resolve(persist.flush()).then(() => { if (changed) keepUp(board.id); });
+    window.removeEventListener('ref-layout', onResize);
+  };
 }

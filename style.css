@@ -434,3 +434,4 @@ html.settled .nb.closed:not(.placing) .nb-sun { opacity: 1; pointer-events: auto
 .show-btn:disabled { opacity: .25; }
 .show-stage { flex: 1; min-height: 0; position: relative; display: flex; align-items: center; justify-content: center; margin: 4px 12px; overflow: hidden; }
 .show-page { position: absolute; box-shadow: none; }
+.row-shoots { font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }

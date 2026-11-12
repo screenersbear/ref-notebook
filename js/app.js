@@ -12,6 +12,7 @@ import { openOptions, startPage } from './options.js';
 import { introSeen, openIntro } from './intro.js';
 import { ICONS } from './icons.js';
 import { esc } from './util.js';
+import { keepUp } from './sendshoot.js';
 
 const view = document.getElementById('view');
 const book = document.getElementById('book');
@@ -238,9 +239,11 @@ book.addEventListener('pointercancel', letGo);
 book.addEventListener('click', (e) => { if (performance.now() - held.ended < 350) { e.preventDefault(); e.stopPropagation(); } }, true);
 
 window.addEventListener('hashchange', route);
-if (suite && !suite.options && (location.hash || '#/') === '#/') history.replaceState(null, '', suite.at === 'tags' ? '#/folders' : '#/boards');
+// ?board=<id>: The Eye's Open in Ref, straight to that board.
+if (suite && !suite.options && suite.get('board')) history.replaceState(null, '', `#/board/${encodeURIComponent(suite.get('board'))}`);
+else if (suite && !suite.options && (location.hash || '#/') === '#/') history.replaceState(null, '', suite.at === 'tags' ? '#/folders' : '#/boards');
 else if (!suite && startPage() && (location.hash || '#/') === '#/') history.replaceState(null, '', startPage());
-route().then(() => setTimeout(carryOn, 2500)); // once the notebook is on screen
+route().then(() => { setTimeout(carryOn, 2500); setTimeout(() => keepUp(), 4000); }); // once the notebook is on screen; then any sent board changed elsewhere is drawn again
 if (suite && suite.options) {
   setTimeout(openOptions, 60);
   suite.whenOptionsDone(() => !!document.querySelector('.crop-layer, .place-layer') || book.classList.contains('placing') || (location.hash || '#/') !== '#/');
