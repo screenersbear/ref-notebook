@@ -18,6 +18,9 @@ const book = document.getElementById('book');
 const frame = document.getElementById('frame');
 let destroyCurrent = null;
 let token = 0;
+// Inside Documenting Fictions (../suite.js) the shelf is the shut notebook.
+const suite = window.DF_SUITE;
+let suiteOpened = !(suite && suite.options);
 
 document.getElementById('bookHit').addEventListener('click', () => { location.hash = '#/boards'; });
 const sun = document.getElementById('bookSun');
@@ -124,6 +127,8 @@ async function route() {
   closeAllSheets();
   document.querySelectorAll('.viewer').forEach((v) => v.remove());
   const h = (location.hash || '#/').slice(1) || '/';
+  if (suite && h === '/' && suiteOpened) { suite.home(); return; }
+  if (h !== '/') suiteOpened = true;
   const section = h === '/boards' ? 0 : h === '/folders' || h.startsWith('/folder/') ? 1 : -1;
   if (h !== '/') {
     frame.dataset.side = sideOf(section);
@@ -233,9 +238,13 @@ book.addEventListener('pointercancel', letGo);
 book.addEventListener('click', (e) => { if (performance.now() - held.ended < 350) { e.preventDefault(); e.stopPropagation(); } }, true);
 
 window.addEventListener('hashchange', route);
-if (startPage() && (location.hash || '#/') === '#/') history.replaceState(null, '', startPage());
+if (suite && !suite.options && (location.hash || '#/') === '#/') history.replaceState(null, '', suite.at === 'tags' ? '#/folders' : '#/boards');
+else if (!suite && startPage() && (location.hash || '#/') === '#/') history.replaceState(null, '', startPage());
 route().then(() => setTimeout(carryOn, 2500)); // once the notebook is on screen
-if (!introSeen()) setTimeout(() => { if (!document.querySelector('.sheet-overlay')) openIntro(); }, 1200); // the first launch
+if (suite && suite.options) {
+  setTimeout(openOptions, 60);
+  suite.whenOptionsDone(() => !!document.querySelector('.crop-layer, .place-layer') || book.classList.contains('placing') || (location.hash || '#/') !== '#/');
+} else if (!introSeen()) setTimeout(() => { if (!document.querySelector('.sheet-overlay')) openIntro(); }, 1200); // the first launch
 paintStickers().catch(console.error);
 
 if ('serviceWorker' in navigator && location.protocol !== 'file:') navigator.serviceWorker.register('./sw.js').catch(() => {});
