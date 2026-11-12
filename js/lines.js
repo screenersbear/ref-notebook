@@ -7,6 +7,7 @@
 // Measured, not worked out: the fonts differ, and Safari ignores ascent-override.
 const root = document.documentElement;
 const done = new Map();
+let stale = new Set(); // measured before the fonts or the pitch changed: kept until they can be measured again
 const rules = document.createElement('style');
 document.head.append(rules);
 let ready = false;
@@ -66,22 +67,27 @@ export function sitOnLines(scope = document) {
   let changed = false;
   for (const el of scope.querySelectorAll('[data-sit]')) {
     const k = el.dataset.sit;
-    if (done.has(k) || !el.getClientRects().length) continue;
+    if ((done.has(k) && !stale.has(k)) || !el.getClientRects().length) continue;
     const v = measure(el);
     if (v == null) continue;
+    stale.delete(k);
+    if (done.get(k) === v) continue;
     done.set(k, v);
     changed = true;
   }
   if (changed) paint();
 }
 
-// A font arriving (the header font loads the first time a header shows) or the
-// line pitch changing with the screen size: measure every kind again.
+// A font arriving or the line pitch changing with the screen size: measure
+// every kind again, each as soon as it shows (a hidden one keeps its old nudge
+// until then). Both fonts load up front, so this is rare.
 let lh = 0;
-function again() { done.clear(); lh = varPx('--lh', 32); sitOnLines(); }
+function again() { stale = new Set(done.keys()); lh = varPx('--lh', 32); sitOnLines(); }
+getComputedStyle(root).fontFamily; // Safari lists the CSS fonts only once the page's style is worked out
+document.fonts?.forEach((f) => f.status === 'unloaded' && f.load().catch(() => {}));
 document.fonts?.ready.then(() => { ready = true; again(); });
 document.fonts?.addEventListener?.('loadingdone', () => { if (ready) again(); });
 addEventListener('resize', () => { if (ready && varPx('--lh', 32) !== lh) again(); else snap(document); });
 // New screens are drawn all the time: catch each kind the first time it appears,
-// before the page is painted.
-new MutationObserver(() => sitOnLines()).observe(document.body, { childList: true, subtree: true, characterData: true });
+// before the page is painted (shown by adding it, or by taking away hidden).
+new MutationObserver(() => sitOnLines()).observe(document.body, { childList: true, subtree: true, characterData: true, attributes: true, attributeFilter: ['hidden'] });
