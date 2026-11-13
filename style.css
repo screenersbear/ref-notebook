@@ -18,7 +18,7 @@
   --safe-b: env(safe-area-inset-bottom, 0px);
   --nb-top: max(var(--safe-t), 10px);
   --nb-rim: 10px; /* the slot Contact Sheet's notebook edge is drawn in; the line itself is about half */
-  --nb-pad: calc(10px + max(10px, var(--safe-b))); /* the bar's icon 25px + this above the screen's edge (35px + the safe area since 11-12, the user's mark): the same height in all four notebooks and on the shelf */
+  --nb-pad: max(5px, calc(var(--safe-b) - 19px)); /* the bar's icon 25px + this above the screen's edge: where an iPhone's home button used to be (the safe area + 6px, 30px at least; user, 11-12), the same in all four notebooks and on the shelf */
   --nb-bar: calc(50px + var(--nb-pad));
   --app-h: 100vh;      /* set from the real height in ui.js */
 }
@@ -34,7 +34,7 @@ html, body { height: 100%; margin: 0; background: #fff; color: var(--text); font
 html, body { overflow-x: clip; }
 body { overflow: hidden; -webkit-text-size-adjust: 100%; }
 html.ios-nudge body, html.ios-hold body { min-height: calc(var(--screen-h, 100vh) + 160px); overflow-x: clip; overflow-y: visible; }
-html.is-short { --nb-pad: max(10px, calc(var(--safe-b) - var(--short-by, 0px))); } /* the bottom edge is already --short-by above the screen's: the icon ends up at the same height as everywhere else */
+html.is-short { --nb-pad: max(5px, calc(var(--safe-b) - 19px - var(--short-by, 0px))); } /* the bottom edge is already --short-by above the screen's: the icon ends up at the same height as everywhere else */
 button, input, textarea { font: inherit; color: inherit; }
 button { background: none; border: 0; padding: 0; cursor: pointer; }
 button:disabled { opacity: .35; cursor: default; }
@@ -178,6 +178,9 @@ html.settled .nb.closed:not(.placing) .nb-sun { opacity: 1; pointer-events: auto
    around it (user, 11-12): just the icons and the name, on a soft white haze. */
 .nav-bar { -webkit-touch-callout: none; }
 .nav-bar.is-docked { z-index: 2; } /* over the page while the row is up */
+/* A line along the bar's top, so a page scrolling under it is cut off by
+   something (user, 11-12). Drawn inside, so nothing moves. */
+:is(.tools, .nav-bar) { box-shadow: inset 0 2px 0 var(--line); }
 /* Installed, the bars show once iOS has its height right (ui.js adds
    .settled), so they never show high and then drop. */
 @media (display-mode: standalone) { html:not(.settled) :is(.tools, .nav-bar) { visibility: hidden; } }
