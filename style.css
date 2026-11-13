@@ -457,9 +457,9 @@ html.settled .nb.closed:not(.placing) .nb-sun { opacity: 1; pointer-events: auto
 .row-shoots { font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
 /* ===== Archivo Black capitals over Inter, under a band of the notebook's colour with its title in white (user, 11-12; The Eye's band is berry blade black). Levels: 1 the band's title, Archivo 24px; 2 sheet titles, Archivo 18px; 3 labels, Inter semibold spaced capitals. The board's own pages keep Klee One, as their pictures are drawn in it. ===== */
-@font-face { font-family: "Inter"; src: url("fonts/inter-latin.woff2") format("woff2"); font-weight: 100 900; font-display: swap; size-adjust: 91%; }
+@font-face { font-family: "Figtree"; src: url("fonts/figtree-latin.woff2") format("woff2"); font-weight: 300 900; font-display: swap; size-adjust: 96.5%; }
 @font-face { font-family: "Archivo Black"; src: url("fonts/archivo-black-latin.woff2") format("woff2"); font-weight: 400; font-display: swap; }
-:root { --ui: "Inter", "Helvetica Neue", Arial, sans-serif; --display: "Archivo Black", "Arial Black", "Helvetica Neue", Arial, sans-serif; --hand: var(--ui); --head: var(--display); }
+:root { --ui: "Figtree", "Helvetica Neue", Arial, sans-serif; --display: "Archivo Black", "Arial Black", "Helvetica Neue", Arial, sans-serif; --hand: var(--ui); --head: var(--display); }
 .page, .nb-side-tabs { font-family: "Klee One", "Bradley Hand", "Noteworthy", cursive; }
 /* the band: from the top of the screen, past the screen's padding, to its sides */
 .frame::before { content: ''; position: absolute; left: 0; right: 0; bottom: 100%; height: calc(var(--nb-top) + 1px); background: var(--ink); }

@@ -14,11 +14,11 @@
   "art/orange-cover.webp": "c6432866813aba06a94e743c7166f0ac1c432d7d02221d970c6da5770534dcff",
   "df-data.js": "5f6336acd5ec23e94fc6e04631a6e7487eb419ba4180699898a705334305efe0",
   "fonts/ArchivoBlack-OFL.txt": "3173acd82f8c6159b5b1037b539fcbd4edff68e65c2ea8b9412b5a5ca97b08ff",
-  "fonts/Inter-OFL.txt": "5b9321a4298cfeb6b34354164a1c3afc3db114569984c502b9b35d988fd58c57",
+  "fonts/Figtree-OFL.txt": "140d37233e7f3ce7313798befa9600893bcceaf41a55fa0fa5ad52f7f657a268",
   "fonts/KaiseiDecol-OFL.txt": "6c5445d4febbf6d84025b874a85c51e7e4bfa7495279eccdb4c317a6de857b46",
   "fonts/KleeOne-OFL.txt": "e376b0df8e8a2345a9533db6f0a5333a1107975569ad9d1973a7ee557161ca38",
   "fonts/archivo-black-latin.woff2": "4eca2abdbbc1998c3a286e2e83a2256be5263ccb801aa93b00c64fea891efd3a",
-  "fonts/inter-latin.woff2": "c940764593d0fe5d596be327ca7558855e018039fb78509aa21921fd3644c3e4",
+  "fonts/figtree-latin.woff2": "8330490a01c60c196eae00b823de8102275aaa5862e7b76a7af21b8745338928",
   "fonts/kaisei-decol-500-latin.woff2": "2f00d1bb96cacdc475812bdae1bb29f3e65196a2f62a6a598619682d10c90759",
   "fonts/klee-one-latin.woff": "01bf56463a14928517b79628e2a3925fd0444940643c21b0f14d12f635ee8b6c",
   "icons/icon-180.png": "789d90047d7e5f121e16cfbc31de3569c8b24766c236c1367b43096e8a5080d8",
@@ -61,8 +61,8 @@
   "ml/ort-wasm-simd-threaded.jsep.mjs": "08fb86ec433c78bfb032c5d84a68b8e8e5a8d81268fa39e24314179a5767a5b9",
   "ml/ort-wasm-simd-threaded.jsep.wasm": "c46655e8a94afc45338d4cb2b840475f88e5012d524509916e505079c00bfa39",
   "ml/transformers.min.js": "aa5002b70e789798da263f5f99c62bd3e8fcd0c119258a493c40c180648365fa",
-  "style.css": "46b4d4bcd500536f65f577d404101e35c3f9e4d18c05b7cc7beb64e5562d923d",
-  "sw.js": "34bdd8ebc182f7929497a524a7e83df649934b2e12800d0536a3690566cbf1cd"
+  "style.css": "74de762855d3734868bfa867405db26f5e680229947a81a29048137def5c3852",
+  "sw.js": "7c1f65a8afb23787bac47924c30713d67aae277fc805145c03d2474cde187f0a"
  },
  "keep": [
   ".DS_Store",
@@ -79,6 +79,6 @@
  ],
  "name": "Ref",
  "notebook": "ref",
- "suite": "cca65c6",
+ "suite": "d479398",
  "suite_folder": "../../../../../../../../private/tmp/claude-501/-Users-starkyproductions-Library-CloudStorage-OneDrive-SharedLibraries-Onedrive-Documents-Claude/c95c4b1a-0018-47fd-8e7f-7614c230c7b3/scratchpad/df-export"
 }
