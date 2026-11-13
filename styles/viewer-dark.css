@@ -1,0 +1,39 @@
+/* The picture viewer in the round 2 look (06-viewer): dark (berry blade
+   black), a ring to close and "4 OF 14" over the photo; under it the tags
+   it's in, what Ref found in it (each can go, and more can be added), its
+   colours as a strip to tap, and the four actions, labelled, at the foot.
+   The photo is never covered. After viewer.css. */
+.viewer:not(.color-page) { --v-rule: #4A565E; --v-quiet: #D6DADD; --v-chip: #44515A; background: #313D45; color: #FAFAF7; font-family: var(--ui); }
+.viewer .v-top { position: static; flex: none; display: flex; align-items: center; justify-content: space-between; padding: calc(var(--nb-top) + 2px) 8px 12px; background: none; pointer-events: auto; }
+.v-close { color: #FAFAF7; }
+.v-count { font: 700 13px/16px var(--ui); letter-spacing: .12em; text-transform: uppercase; color: #FAFAF7; font-variant-numeric: tabular-nums; }
+.v-top-gap { width: 44px; flex: none; }
+.viewer .v-stage { flex: 1 1 auto; min-height: 160px; }
+.v-info { flex: none; padding: 12px 16px 14px; }
+.v-label { margin: 0 0 6px; font: 500 11px/14px var(--ui); letter-spacing: .12em; text-transform: uppercase; color: var(--v-quiet); }
+.v-label span { font-weight: 400; letter-spacing: 0; font-size: 12px; text-transform: none; }
+.v-label + .v-chips + .v-label { margin-top: 14px; }
+.v-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.v-chip { display: inline-flex; align-items: center; gap: 4px; height: 28px; padding: 0 10px; border: 0; border-radius: 14px; box-shadow: inset 0 0 0 1px #9AA3A8; background: none; color: #FAFAF7; font: 400 13px/16px var(--ui); white-space: nowrap; }
+.v-chip.found { padding: 0 6px 0 10px; box-shadow: none; background: var(--v-chip); }
+.v-chip.add { padding: 0 10px 0 6px; }
+.v-chip svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; }
+.v-none { font: 400 13px/28px var(--ui); color: var(--v-quiet); }
+.viewer .v-palette { height: 40px; margin-top: 16px; border-radius: 8px; overflow: hidden; box-shadow: 0 0 0 1px #5C666D; }
+.viewer .v-palette:empty { display: none; }
+.viewer .v-palette:empty + .v-hint { display: none; }
+.v-hint { margin: 6px 0 0; font: 500 11px/14px var(--ui); letter-spacing: .12em; text-transform: uppercase; color: var(--v-quiet); }
+.viewer .v-tools { padding: 0 0 var(--safe-b); border-top: 1px solid var(--v-rule); }
+.viewer .v-tools button { flex: 1; flex-direction: column; gap: 4px; width: auto; height: 56px; color: #FAFAF7; font: 700 10px/12px var(--ui); letter-spacing: .1em; text-transform: uppercase; }
+.viewer .v-tools svg { width: 22px; height: 22px; stroke-width: 1.8; }
+
+/* Every photo with one colour: a page of its own, on paper, under the short band. */
+.color-page { padding: 0; background: var(--paper); }
+.color-page > .band-short { flex: none; margin: 0 0 26px; }
+.color-page .band-line .color-swatch { flex: 1; height: 14px; margin: 0; border: 0; border-radius: 7px; box-shadow: 0 0 0 1px var(--partner); }
+.color-page .scroll { padding: 0 16px calc(24px + var(--safe-b)); }
+.color-page .grid { gap: 3px; }
+.color-page .tile { aspect-ratio: 1; border-radius: 4px; background: #EFEFEA; }
+.color-page > .band-short { height: calc(var(--nb-top) + 56px); padding-top: calc(var(--nb-top) + 6px); }
+.color-page > .band-short .band-line { top: calc(var(--nb-top) + 21px); }
+.color-page .band-line .count { flex: none; min-width: 0; margin: 0; padding: 0; font: 700 11px/14px var(--ui); letter-spacing: .14em; color: var(--band-small); }

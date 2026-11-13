@@ -29,6 +29,7 @@
 :root[data-book="berry"] { --ink: #a80a73; --book-cover: url(../art/berry-cover.webp); --book-block: url(../art/berry-block.webp); }
 :root[data-book="fern"] { --ink: #286b4a; --book-cover: url(../art/fern-cover.webp); --book-block: url(../art/fern-block.webp); }
 :root[data-book="ink"] { --ink: #2a353c; --book-cover: url(../art/ink-cover.webp); --book-block: url(../art/ink-block.webp); }
+:root[data-book="leaf"] { --ink: #14BFA0; --on-ink: #313d45; --book-cover: url(../art/leaf-cover.webp); --book-block: url(../art/leaf-block.webp); }
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 [hidden] { display: none !important; }
 html, body { height: 100%; margin: 0; background: #fff; color: var(--text); font-family: var(--hand); font-weight: 400; font-synthesis: none; overscroll-behavior: none; }

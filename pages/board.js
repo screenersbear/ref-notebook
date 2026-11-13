@@ -10,6 +10,7 @@ import { keepUp } from '../data/sendshoot.js';
 import { promptSheet } from '../components/dialogs.js';
 import { toast } from '../components/toast.js';
 import { ICONS } from '../components/icons.js';
+import { shortBandHtml, FULL } from '../components/band.js';
 import { esc, clamp, debounce } from '../components/util.js';
 import { addTouch } from './board-touch.js';
 import { addTools } from './board-tools.js';
@@ -28,25 +29,24 @@ export async function boardScreen(view, id) {
   const page = () => board.pages[ed.at]; ed.page = page;
   const asOpened = JSON.stringify([board.name, board.pages]); // to tell, on leaving, whether it changed
 
+  // Round 2 (08-board-editor): the short band with Back and Full screen, the
+  // board's name (tap to rename) and the page, the tray, the labelled tools.
+  const tool = (t, icon, label) => `<button type="button" class="tool" data-t="${t}">${ICONS[icon]}<span>${label}</span></button>`;
   view.innerHTML = `
     <div class="screen editor">
-      <header class="folder-head">
-        <a class="icon-btn" href="#/boards" aria-label="Back to boards">${ICONS.back}</a>
-        <button type="button" class="hand board-name" data-rename></button>
+      ${shortBandHtml({ name: 'Mood boards', back: '#/boards', backLabel: 'Back to mood boards', end: { label: 'Full screen', attr: 'data-show', svg: FULL } })}
+      <div class="board-head">
+        <button type="button" class="board-name" data-rename></button>
         <span class="count" data-at></span>
-      </header>
+      </div>
       <div class="stage" data-stage></div>
-      <div class="show-row"><button type="button" class="label-btn show-open" data-show>${ICONS.expand}<span>Full screen</span></button></div>
       <div class="tpanel" data-tpanel hidden></div>
-      <div class="tray-head" data-tray-head></div>
-      <div class="tray" data-tray></div>
+      <div class="tray-box" data-tray-box>
+        <div class="tray-head" data-tray-head></div>
+        <div class="tray" data-tray></div>
+      </div>
       <nav class="tools" aria-label="Page tools">
-        <button type="button" class="tool" data-t="layout" aria-label="Change layout">${ICONS.layout}</button>
-        <button type="button" class="tool" data-t="text" aria-label="Edit text">${ICONS.text}</button>
-        <button type="button" class="tool" data-t="add" aria-label="Add a page">${ICONS.page}</button>
-        <button type="button" class="tool" data-t="undo" aria-label="Undo">${ICONS.undo}</button>
-        <button type="button" class="tool" data-t="more" aria-label="More">${ICONS.more}</button>
-        <button type="button" class="tool" data-t="pdf" aria-label="Save as PDF">${ICONS.share}</button>
+        ${tool('layout', 'layout', 'Layout')}${tool('text', 'text', 'Text')}${tool('add', 'page', 'Add page')}${tool('undo', 'undo', 'Undo')}${tool('more', 'more', 'More')}${tool('pdf', 'download', 'PDF')}
       </nav>
     </div>`;
   const stage = view.querySelector('[data-stage]'); ed.stage = stage;
@@ -55,14 +55,17 @@ export async function boardScreen(view, id) {
   async function drawPage(turn = 0) {
     const token = ++drawToken;
     view.querySelector('[data-rename]').textContent = board.name;
-    view.querySelector('[data-at]').textContent = `${ed.at + 1} of ${board.pages.length}`;
-    const el = await renderPage(board, page(), { selected: ed.sel, editing: true });
+    view.querySelector('[data-at]').textContent = `Page ${ed.at + 1} of ${board.pages.length}`;
+    const el = await renderPage(board, page(), { selected: ed.sel, editing: true, mainHint: ed.tsel === 'main' });
     if (token !== drawToken || destroyed) return;
     fit(el);
     if (ed.sel >= 0 && page().images[ed.sel]) {
       const x = document.createElement('button');
       x.type = 'button'; x.className = 'slot-x'; x.setAttribute('aria-label', 'Take this photo off the page'); x.innerHTML = ICONS.x;
-      el.querySelector(`.slot[data-index="${ed.sel}"]`).append(x);
+      // On the spot's top right corner, half off the photo, so it covers little of it.
+      const spot = el.querySelector(`.slot[data-index="${ed.sel}"]`).style;
+      Object.assign(x.style, { left: `min(calc(${spot.left} + ${spot.width}), calc(100% - 16px))`, top: `max(${spot.top}, 16px)` });
+      el.append(x);
     }
     stage.replaceChildren(el);
     ed.paintTsel(el);
@@ -113,7 +116,7 @@ export async function boardScreen(view, id) {
     if (!b) return;
     const k = b.dataset.t;
     if (k === 'layout') ed.layoutSheet();
-    else if (k === 'text') ed.addNote();
+    else if (k === 'text') ed.textSheet();
     else if (k === 'add') ed.addPage();
     else if (k === 'more') ed.moreSheet();
     else if (k === 'pdf') ed.exportPdf();

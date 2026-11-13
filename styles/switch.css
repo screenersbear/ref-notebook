@@ -1,0 +1,12 @@
+/* A switch row (round 2, 07-new-board-layout and 09-options): the words at
+   the left, the switch at the right, 52px tall. The switch is a checkbox
+   drawn as a 51 x 31 track, in the notebook's colour when on. */
+.switch-row { display: flex; align-items: center; justify-content: space-between; gap: 16px; min-height: 52px; margin-top: 14px; font: 400 17px/22px var(--ui); color: var(--text); }
+.switch {
+  -webkit-appearance: none; appearance: none; position: relative; flex: none; width: 51px; height: 31px; margin: 0;
+  border-radius: 16px; background: #D6DADD; transition: background .15s ease; cursor: pointer;
+}
+.switch::after { content: ''; position: absolute; left: 2px; top: 2px; width: 27px; height: 27px; border-radius: 50%; background: #FFFFFF; box-shadow: 0 1px 3px rgba(49, 61, 69, .25); transition: transform .15s ease; }
+.switch:checked { background: var(--ink); }
+.switch:checked::after { transform: translateX(20px); }
+.switch:focus-visible { outline: 2px solid var(--text); outline-offset: 2px; }

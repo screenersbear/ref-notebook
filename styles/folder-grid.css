@@ -1,0 +1,41 @@
+/* Inside a tag (round 2, 04-inside-incoming): under the short band, how
+   many and how they're sorted on one line with Sort, Undo and SELECT; the
+   chips in a row of their own; while photos are read, a line saying so with
+   a small bar; then the photos, three across, square. Picking them (SELECT)
+   rings each in the notebook's colour, and the bar at the foot says how
+   many and what to do with them. */
+.in-tag .bar { flex: none; display: flex; align-items: center; justify-content: space-between; gap: 4px; margin: 4px 0 0; padding: 0; }
+.bar .count { flex: 1; min-width: 0; margin: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 400 15px/20px var(--ui); color: var(--dim); font-variant-numeric: tabular-nums; }
+.bar-btns { flex: none; display: flex; }
+.bar-icon { display: flex; align-items: center; justify-content: center; width: 44px; height: 44px; color: var(--text); }
+.bar-icon svg { width: 18px; height: 18px; stroke-width: 2; }
+.bar-text { height: 44px; padding: 0 8px; margin-right: -8px; font: 700 13px/16px var(--ui); letter-spacing: .12em; text-transform: uppercase; color: var(--text); }
+.in-tag .chips { gap: 8px; margin: 4px -16px 0; padding: 0 16px; -webkit-mask-image: none; mask-image: none; }
+.in-tag .chip { flex: none; height: 32px; padding: 0 12px; border: 0; border-radius: 16px; background: #EFEFEA; color: var(--text); font: 400 13px/16px var(--ui); white-space: nowrap; }
+.in-tag .chip.on { background: var(--ink); color: var(--on-ink); }
+/* Reading the photos: the words in small capitals, a 60px bar of how far. */
+.in-tag .scan { flex: none; margin: 12px 0 0; padding: 0; }
+.scan-line { display: flex; align-items: center; gap: 10px; margin: 0; font: 500 11px/14px var(--ui); letter-spacing: .12em; text-transform: uppercase; color: var(--dim); }
+.scan-bar { flex: 0 0 60px; height: 4px; border-radius: 2px; background: #EFEFEA; overflow: hidden; }
+.scan-bar > span { display: block; height: 100%; background: var(--ink); }
+.in-tag .scan-btn { font: 500 15px/20px var(--ui); color: var(--ink); text-decoration: underline; }
+.in-tag > .scroll.photos { margin: 12px -16px 0; padding: 0 16px 24px; }
+.in-tag .grid { gap: 3px; padding-bottom: 0; }
+.in-tag .tile { aspect-ratio: 1; border-radius: 4px; background: #EFEFEA; }
+.in-tag .tile.add { flex-direction: column; gap: 6px; border: 0; box-shadow: inset 0 0 0 1.5px var(--ink); background: none; color: var(--ink);
+  font: 700 11px/14px var(--ui); letter-spacing: .08em; text-transform: uppercase; text-align: center; }
+.in-tag .tile.add svg { width: 22px; height: 22px; stroke-width: 2; }
+.in-tag .fav { width: 16px; height: 16px; filter: drop-shadow(0 1px 1px rgba(0, 0, 0, .4)); }
+.in-tag .tile.sel::after { border: 0; border-radius: 4px; box-shadow: inset 0 0 0 3px var(--ink); background: none; }
+.tile-tick { position: absolute; z-index: 1; top: 6px; right: 6px; display: flex; align-items: center; justify-content: center; width: 22px; height: 22px; border-radius: 50%; background: var(--ink); color: var(--on-ink); }
+.tile-tick svg { width: 13px; height: 13px; stroke-width: 3; }
+/* Nothing in Incoming yet: the one big way in. */
+.in-tag .open-phone { border: 0; border-radius: 10px; box-shadow: inset 0 0 0 1.5px var(--ink); color: var(--ink); }
+.in-tag .open-phone .big-words { font: 700 13px/16px var(--ui); letter-spacing: .12em; text-transform: uppercase; }
+.in-tag .open-phone .row-meta { font: 400 15px/20px var(--ui); color: var(--dim); }
+/* Picking: how many, then Tag these, Favorite and Delete, labelled. */
+.in-tag .tools { justify-content: space-between; gap: 4px; padding: 8px 12px var(--nb-foot); background: var(--paper); box-shadow: none; border-top: 1px solid #E1E1DC; }
+.in-tag .sel-count { flex: 1; font: 700 13px/16px var(--ui); letter-spacing: .12em; text-transform: uppercase; color: var(--text); }
+.in-tag .tools .tool { flex-direction: column; gap: 4px; width: auto; min-width: 64px; height: 48px; padding: 0 6px; font: 700 10px/12px var(--ui); letter-spacing: .1em; text-transform: uppercase; color: var(--text); }
+.in-tag .tools .tool svg { width: 22px; height: 22px; stroke-width: 1.8; }
+.in-tag .tile:not(.sel) .tile-tick { display: none; }

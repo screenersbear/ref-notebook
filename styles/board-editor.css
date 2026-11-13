@@ -1,0 +1,62 @@
+/* The board editor (round 2, 08-board-editor): the short band with Back and
+   Full screen, the board's name and PAGE 3 OF 8, the page on paper, the tray
+   of photos under a hairline, and the labelled tools where the section bar
+   would be. After board.css and board-page.css, which it reframes. */
+.screen.editor { padding: 0 16px; }
+.screen.editor > .band-short { flex: none; margin: 0 -16px 25px; }
+.board-head { flex: none; display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+.editor .board-name {
+  flex: 1; min-width: 0; padding: 0; font: 300 20px/24px var(--ui); letter-spacing: 0; text-transform: none; text-align: left;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--text);
+}
+.editor .board-head .count { flex: none; margin: 0; padding: 0; font: 500 11px/14px var(--ui); letter-spacing: .12em; text-transform: uppercase; color: var(--dim); font-variant-numeric: tabular-nums; }
+
+/* The page, with room around it. */
+.editor .stage { margin: 16px 0; }
+.editor .stage .page { box-shadow: 0 2px 10px rgba(49, 61, 69, .15); }
+.editor .slot:not(.filled) { background: #EFEFEA; }
+.slot-hint { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; padding: 4px; text-align: center; font: 400 12px/16px var(--ui); color: var(--dim); pointer-events: none; }
+/* The picked spot: a ring just outside it, and the x to take its photo off
+   on its corner (board.js places it), neither over the photo itself. */
+.editor .slot.sel { outline: 2px solid var(--ink); outline-offset: 0; }
+.editor .slot.sel::after { content: none; }
+.editor .slot-x { right: auto; transform: translate(-50%, -50%); width: 28px; height: 28px; background: var(--ink); color: var(--on-ink); }
+.editor .slot-x svg { width: 14px; height: 14px; stroke-width: 2.5; }
+.editor .page-text .pt-title.empty { color: #9AA3A8; }
+
+/* The tray: where the photos come from, then the photos. */
+.tray-box { flex: none; margin: 0 -16px; padding: 8px 16px 10px; border-top: 1px solid #E1E1DC; }
+.tray-box[hidden] { display: none; }
+.editor .tray-head { gap: 8px; padding: 0; }
+.editor .tray-head .chip { flex: none; height: 32px; padding: 0 12px; border: 0; border-radius: 16px; background: #EFEFEA; color: var(--text); font: 400 13px/16px var(--ui); white-space: nowrap; }
+.editor .tray-head .chip.on { background: var(--ink); color: var(--on-ink); }
+.editor .tray { gap: 6px; height: 56px; margin-top: 8px; }
+.editor .tray-photo { width: 56px; height: 56px; border-radius: 4px; background: #EFEFEA; }
+.editor .tray-photo.used { opacity: .35; }
+.editor .tray .note { margin: 0; font: 400 15px/56px var(--ui); color: var(--dim); }
+.editor .tpanel { padding-top: 10px; border-top: 1px solid #E1E1DC; margin: 0 -16px; padding-left: 16px; padding-right: 16px; }
+
+/* The tools, each with its name under it. */
+.editor .tools { align-items: flex-start; justify-content: stretch; padding: 4px 4px var(--nb-foot); background: var(--paper); box-shadow: none; border-top: 1px solid #E1E1DC; }
+.editor .tools .tool {
+  flex: 1 1 0; min-width: 0; width: auto; height: 56px; flex-direction: column; gap: 4px; padding: 0;
+  font: 700 9.5px/12px var(--ui); letter-spacing: .08em; text-transform: uppercase; color: var(--text); white-space: nowrap;
+}
+.editor .tools .tool svg { width: 22px; height: 22px; stroke-width: 2; }
+.editor .tools .tool:disabled { color: #9AA3A8; }
+
+/* The Layout sheet: the option cards. */
+.sheet .opt-cards { margin-top: 4px; }
+
+/* A text box picked: its outline and corners in the notebook's colour. */
+.editor .tbox-sel { outline-color: var(--ink); }
+.editor .tbox-sel i::after { border-color: var(--ink); }
+/* The text menu, in place of the tray: the words, their sizes, Done. */
+.editor .tpanel :is(textarea, input[type=text]) { padding: 10px 12px; border: 0; border-radius: 8px; background: #FFFFFF; box-shadow: inset 0 0 0 1px #E1E1DC; font: 400 17px/22px var(--ui); color: var(--text); }
+.editor .tpanel :is(textarea, input[type=text]):focus { box-shadow: inset 0 0 0 2px var(--text); }
+.editor .tpanel .stepper button { width: 40px; height: 32px; border: 0; border-radius: 8px; box-shadow: inset 0 0 0 1.5px var(--text); background: none; font: 400 14px/1 var(--ui); color: var(--text); }
+.editor .tpanel .stepper b { width: 46px; font: 400 15px/1 var(--ui); font-variant-numeric: tabular-nums; }
+.editor .tpanel .label-btn { height: 32px; padding: 0 10px; border: 0; border-radius: 8px; box-shadow: inset 0 0 0 1.5px var(--text); font: 700 10px/12px var(--ui); letter-spacing: .1em; text-transform: uppercase; color: var(--text); }
+.editor .tpanel .label-btn:disabled { box-shadow: inset 0 0 0 1.5px #D6DADD; color: #9AA3A8; }
+.editor .tpanel .tp-done { height: 40px; padding: 0 20px; border: 0 !important; background: var(--ink); color: var(--on-ink); box-shadow: none; }
+.editor .tpanel .check { font: 400 15px/20px var(--ui); }

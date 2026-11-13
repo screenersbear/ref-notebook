@@ -1,0 +1,22 @@
+/* The section bar (DESIGN.md 9.4), as The Eye's: on paper, a 1px line on
+   top, each section's mark (28px) over its name (10px capitals). The one
+   you're on is in berry blade black and the notebook's colour, its name
+   bold; the other in two greys. 64px over the foot. Swiping along it or
+   holding it: components/navbar.js. */
+:root {
+  --nb-foot: max(11px, calc(var(--safe-b) - 13px));
+  --nb-bar: calc(64px + var(--nb-foot));
+}
+html.is-short { --nb-foot: max(11px, calc(var(--safe-b) - 13px - var(--short-by, 0px))); }
+.nav-bar { padding: 8px 12px var(--nb-foot); background: var(--paper); box-shadow: none; border-top: 1px solid #E1E1DC; }
+.sec-row { display: flex; justify-content: center; align-items: flex-start; gap: 48px; }
+.sec { --mk-1: #9AA3A8; --mk-2: #D6DADD; display: flex; flex-direction: column; align-items: center; gap: 6px; width: 96px; height: 52px;
+  font: 500 10px/14px var(--ui); letter-spacing: .1em; text-transform: uppercase; color: var(--dim); -webkit-touch-callout: none; }
+.sec[aria-current="page"] { --mk-1: var(--ink); color: var(--text); font-weight: 700; }
+.sec-boards[aria-current="page"] { --mk-2: var(--step3); } /* the board's other quarters, pale */
+.sec-tags[aria-current="page"] { --mk-2: var(--text); }    /* the dot under the half circle */
+.sec svg, .nav-dock-icon svg { width: 28px; height: 28px; }
+.mk-1 { fill: var(--mk-1, #9AA3A8); }
+.mk-2 { fill: var(--mk-2, #D6DADD); }
+/* The held bar's row of every section shows the marks too. */
+.nav-dock-label { font: 700 11px/22px var(--ui); letter-spacing: .1em; text-transform: uppercase; }

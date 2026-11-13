@@ -967,7 +967,7 @@ async function undoLast() {
 }
 
 // data/templates.js
-const SHAPES = {
+const SHAPES$1 = {
 	"letter-portrait": {
 		W: 8.5,
 		H: 11,
@@ -1280,7 +1280,7 @@ const GUIDE_MIN = 4;
 const GUIDE_MAX = 12;
 const guideTemplateId = (shape, n, head) => `g-${shape === "wide-16x9" ? "w" : "lp"}-${n}${head ? "-head" : ""}`;
 function guides(shape) {
-	const { W, H } = SHAPES[shape], M = shape === "wide-16x9" ? .45 : .5, HEAD = .95;
+	const { W, H } = SHAPES$1[shape], M = shape === "wide-16x9" ? .45 : .5, HEAD = .95;
 	const out = [];
 	for (let n = 4; n <= 12; n++) for (const head of [true, false]) {
 		const area = {
@@ -1505,8 +1505,8 @@ const textParts = (page) => [{
 	scale: page.textSize ?? 1,
 	bold: false
 }].filter((p) => p.text.trim());
-async function renderPage(board, page, { selected = -1, editing = false } = {}) {
-	const shape = SHAPES[board.shape];
+async function renderPage(board, page, { selected = -1, editing = false, mainHint = false } = {}) {
+	const shape = SHAPES$1[board.shape];
 	const t = pageTemplate(board, page);
 	const el = document.createElement("div");
 	el.className = "page";
@@ -1524,7 +1524,10 @@ async function renderPage(board, page, { selected = -1, editing = false } = {}) 
 		el.append(slot);
 		const im = page.images[i];
 		const rec = im && photoById(im.id);
-		if (!rec) return;
+		if (!rec) {
+			if (editing) slot.innerHTML = "<span class=\"slot-hint\">Tap a photo below</span>";
+			return;
+		}
 		const img = document.createElement("img");
 		img.draggable = false;
 		img.alt = "";
@@ -1535,6 +1538,12 @@ async function renderPage(board, page, { selected = -1, editing = false } = {}) 
 	}));
 	const parts = textParts(page);
 	const cols = page.palette ? pagePalette(page, t) : [];
+	const hint = editing && mainHint && !parts.length;
+	if (hint) parts.push({
+		kind: "title empty",
+		text: "Title",
+		scale: page.titleSize ?? 1.5
+	});
 	if (parts.length || cols.length) {
 		const tx = document.createElement("div");
 		tx.className = `page-text${t.text.overlay ? " overlay" : ""}${page.textFill === false ? " nofill" : ""}`;
@@ -1625,7 +1634,7 @@ function wrapLines(ctx, text, maxW) {
 	return out;
 }
 async function pageToCanvas(board, page, pxWidth) {
-	const shape = SHAPES[board.shape];
+	const shape = SHAPES$1[board.shape];
 	const W = Math.round(pxWidth);
 	const H = Math.round(pxWidth * shape.H / shape.W);
 	const c = document.createElement("canvas");
@@ -1856,6 +1865,60 @@ function promptSheet({ title, label = "Name", value = "", confirmLabel = "Save",
 	});
 }
 
+// components/shoot-picker.js
+const line$1 = /* @__PURE__ */ __name((d) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`, "line");
+const PLUS$2 = line$1("<line x1=\"12\" y1=\"5\" x2=\"12\" y2=\"19\"/><line x1=\"5\" y1=\"12\" x2=\"19\" y2=\"12\"/>");
+const CAMERA = line$1("<path d=\"M4 8h3l1.5-2h7L17 8h3a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z\"/><circle cx=\"12\" cy=\"13\" r=\"3.5\"/>");
+function pickShoot({ boardName, shoots }) {
+	return new Promise((resolve) => {
+		let answer = null;
+		let pick = shoots.find((x) => !x.has)?.id || null;
+		const row = (x) => `
+      <button type="button" class="send-shoot" role="radio" aria-checked="${x.id === pick}" data-shoot="${esc(x.id)}"${x.has ? " aria-disabled=\"true\"" : ""}>
+        <span class="send-thumb">${x.photo ? `<img src="${esc(x.photo)}" alt="" />` : CAMERA}</span>
+        <span class="send-words"><span class="send-name">${esc(x.name)}</span><span class="send-line">${esc(x.line)}</span></span>
+        <span class="send-radio" aria-hidden="true"></span>
+      </button>`;
+		const s = openSheet({
+			title: "Send to shoot",
+			className: "send-sheet",
+			body: `
+        <p class="send-lead">"${esc(boardName)}" goes to the shoot and stays live until the shoot happens.</p>
+        ${shoots.length ? "<span class=\"field-label choice-heading\">Upcoming in The Eye</span>" : "<p class=\"send-lead\">No shoots coming up in The Eye.</p>"}
+        <div class="send-list" role="radiogroup" aria-label="Shoot">${shoots.map(row).join("")}</div>
+        <button type="button" class="send-new" data-new><span class="send-plus">${PLUS$2}</span>New shoot from this board</button>
+        ${shoots.length ? "<div class=\"sheet-actions one\"><button type=\"button\" class=\"btn primary\" data-send></button></div>" : ""}`,
+			onClose: () => resolve(answer)
+		});
+		const send = s.body.querySelector("[data-send]");
+		const paint = () => {
+			s.body.querySelectorAll("[data-shoot]").forEach((b) => b.setAttribute("aria-checked", String(b.dataset.shoot === pick)));
+			if (!send) return;
+			const x = shoots.find((y) => y.id === pick);
+			send.textContent = x ? `Send to ${x.name}` : "Send";
+			send.disabled = !x;
+		};
+		paint();
+		s.body.addEventListener("click", (e) => {
+			const b = e.target.closest("[data-shoot]");
+			if (b && !b.hasAttribute("aria-disabled")) {
+				pick = b.dataset.shoot;
+				paint();
+				return;
+			}
+			if (e.target.closest("[data-new]")) {
+				answer = "+new";
+				s.close();
+				return;
+			}
+			if (e.target.closest("[data-send]") && pick) {
+				answer = pick;
+				s.close();
+			}
+		});
+	});
+}
+
 // data/sendshoot.js
 const D = window.DFData;
 const LONG_EDGE = 1600;
@@ -1867,6 +1930,12 @@ const UPCOMING = [
 	"waiting_to_shoot",
 	"rescheduled"
 ];
+const STATUS = {
+	prospect: "Prospect",
+	planning: "Active planning",
+	waiting_to_shoot: "Shoot ready",
+	rescheduled: "Postponed"
+};
 function boardKey(b) {
 	const str = JSON.stringify([
 		b.name,
@@ -1928,7 +1997,7 @@ async function drawCover(board, firstPage) {
 	return toPicture(c, .8);
 }
 async function drawBoard(board, say) {
-	const s = SHAPES[board.shape] || SHAPES["letter-portrait"];
+	const s = SHAPES$1[board.shape] || SHAPES$1["letter-portrait"];
 	const px = s.W >= s.H ? LONG_EDGE : Math.round(LONG_EDGE * s.W / s.H);
 	const pages = [];
 	for (let i = 0; i < board.pages.length; i++) {
@@ -1968,15 +2037,15 @@ const dateOf = (ymd) => {
 	return new Date(y, m - 1, d);
 };
 function shootDay(ymd) {
-	if (!ymd) return "No date yet";
+	if (!ymd) return "Date not set";
 	const d = dateOf(ymd);
 	const opts = {
 		weekday: "short",
-		month: "short",
-		day: "numeric"
+		day: "numeric",
+		month: "short"
 	};
 	if (d.getFullYear() !== new Date().getFullYear()) opts.year = "numeric";
-	return d.toLocaleDateString(undefined, opts);
+	return d.toLocaleDateString("en-GB", opts).replace(",", "");
 }
 function upcomingShoots() {
 	const { shoots, mode } = eyeShoots();
@@ -1987,14 +2056,12 @@ function upcomingShoots() {
 			id: s.id,
 			name,
 			other: other !== name ? other : "",
-			date: s.date || ""
+			date: s.date || "",
+			status: STATUS[s.status || "prospect"],
+			photo: s.projectPhoto || ""
 		};
 	});
 }
-const shortDay = (ymd) => ymd ? dateOf(ymd).toLocaleDateString(undefined, {
-	month: "short",
-	day: "numeric"
-}) : "";
 async function boardShoots() {
 	if (!D || !D.inSuite()) return {};
 	const { shoots, mode } = eyeShoots();
@@ -2006,7 +2073,7 @@ async function boardShoots() {
 		type: "moodboard"
 	})) {
 		const s = byId.get(l.toId);
-		if (s) (out[l.fromId] = out[l.fromId] || []).push(`${D.eyeShootName(s, mode)}${s.date ? ` (${shortDay(s.date)})` : ""}`);
+		if (s) (out[l.fromId] = out[l.fromId] || []).push(D.eyeShootName(s, mode));
 	}
 	return out;
 }
@@ -2024,28 +2091,21 @@ async function sendToShoot(board) {
 	});
 	const has = new Set(links.map((l) => l.toId));
 	const shoots = upcomingShoots();
-	const key = await choiceSheet({
-		title: "Send to which shoot?",
-		message: shoots.length ? "" : "No shoots coming up in The Eye.",
-		options: [...shoots.map((s) => ({
-			key: s.id,
-			label: s.name,
-			detail: [
+	const key = await pickShoot({
+		boardName: board.name,
+		shoots: shoots.map((s) => ({
+			id: s.id,
+			name: s.name,
+			photo: s.photo,
+			has: has.has(s.id),
+			line: [
 				shootDay(s.date),
-				s.other,
+				s.status,
 				has.has(s.id) ? "Has this board" : ""
-			].filter(Boolean).join(" · "),
-			current: has.has(s.id)
-		})), {
-			key: "+new",
-			label: "+ New shoot from this board"
-		}]
+			].filter(Boolean).join(" · ")
+		}))
 	});
 	if (!key) return;
-	if (key !== "+new" && has.has(key)) {
-		toast("That shoot has this board already");
-		return;
-	}
 	let drawn;
 	try {
 		drawn = await drawBoard(board, (i) => toast(`Getting page ${i + 1} of ${board.pages.length} ready`, { ms: 6e4 }));
@@ -2166,33 +2226,91 @@ const ICONS = {
 	text: svg("<path d=\"M5 7V4.5h14V7M12 4.5v15M9 19.5h6\"/>"),
 	undo: svg("<path d=\"M8 5L4 9l4 4M4 9h10a5.5 5.5 0 0 1 0 11H9\"/>"),
 	share: svg("<path d=\"M12 15V3M8 7l4-4 4 4M6 11H4.5v10h15V11H18\"/>"),
+	download: svg("<path d=\"M12 4v11M7.5 10.5L12 15l4.5-4.5M5 20h14\"/>"),
 	page: svg("<rect x=\"5\" y=\"3.5\" width=\"14\" height=\"17\"/><path d=\"M12 8.5v7M8.5 12h7\"/>")
 };
+
+// components/band.js
+const ring = (label, attr, svg) => `<button type="button" class="ring-btn" ${attr} aria-label="${label}"><span>${svg}</span></button>`;
+const line = (d) => `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
+const BOOKS = "<svg viewBox=\"0 0 24 24\" width=\"19\" height=\"19\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><rect x=\"3\" y=\"5\" width=\"4.5\" height=\"14\" rx=\"1\"/><rect x=\"9.5\" y=\"3\" width=\"4.5\" height=\"16\" rx=\"1\"/><path d=\"M16 6.2l3.6-1 3 12.6-3.6 1z\"/></svg>";
+const PLUS$1 = line("<line x1=\"12\" y1=\"5\" x2=\"12\" y2=\"19\"/><line x1=\"5\" y1=\"12\" x2=\"19\" y2=\"12\"/>");
+const MENU = line("<line x1=\"4\" y1=\"7\" x2=\"20\" y2=\"7\"/><line x1=\"4\" y1=\"12\" x2=\"20\" y2=\"12\"/><line x1=\"4\" y1=\"17\" x2=\"20\" y2=\"17\"/>");
+const MARK = "<svg class=\"band-mark\" viewBox=\"0 0 40 40\" aria-hidden=\"true\"><rect width=\"20\" height=\"20\" class=\"mk-p\"/><rect x=\"20\" width=\"20\" height=\"20\" class=\"mk-w\"/><rect y=\"20\" width=\"20\" height=\"20\" class=\"mk-w\"/><rect x=\"20\" y=\"20\" width=\"20\" height=\"20\" class=\"mk-p\"/></svg>";
+const bandDate = (d = new Date()) => d.toLocaleDateString("en-GB", {
+	weekday: "short",
+	day: "numeric",
+	month: "short"
+}).replace(",", "");
+function bandHtml({ title, place, add }) {
+	return `
+    <header class="band">
+      <h1 class="band-title">${esc(title)}</h1>
+      <div class="band-btns">${ring("Back to your notebooks", "data-books", BOOKS)}${ring(add, "data-band-add", PLUS$1)}${ring("Options", "data-app-menu", MENU)}</div>
+      ${MARK}
+      <p class="band-line"><b>${esc(place)}</b><span class="band-rule"></span><span class="band-date">${bandDate()}</span></p>
+    </header>`;
+}
+function wireBand(view, onAdd) {
+	view.querySelector("[data-books]")?.addEventListener("click", () => {
+		location.hash = "#/";
+	});
+	view.querySelector("[data-band-add]")?.addEventListener("click", onAdd);
+}
+const BACK = line("<polyline points=\"15 5 8 12 15 19\"/>");
+const CLOSE = line("<line x1=\"6\" y1=\"6\" x2=\"18\" y2=\"18\"/><line x1=\"18\" y1=\"6\" x2=\"6\" y2=\"18\"/>");
+const FULL = line("<polyline points=\"4 9 4 4 9 4\"/><polyline points=\"20 9 20 4 15 4\"/><polyline points=\"4 15 4 20 9 20\"/><polyline points=\"20 15 20 20 15 20\"/>");
+const MORE = "<svg viewBox=\"0 0 24 24\" width=\"18\" height=\"18\" aria-hidden=\"true\"><circle cx=\"5\" cy=\"12\" r=\"1.6\" fill=\"currentColor\"/><circle cx=\"12\" cy=\"12\" r=\"1.6\" fill=\"currentColor\"/><circle cx=\"19\" cy=\"12\" r=\"1.6\" fill=\"currentColor\"/></svg>";
+function shortBandHtml({ name, back = "", backAttr = "", backLabel = "Back", more = "", end = null }) {
+	const left = backAttr ? ring(backLabel, backAttr, BACK) : `<a class="ring-btn" href="${back}" aria-label="${esc(backLabel)}"><span>${BACK}</span></a>`;
+	const right = end ? ring(end.label, end.attr, end.svg) : more ? ring(more, "data-band-more", MORE) : "<span class=\"ring-btn\" aria-hidden=\"true\"></span>";
+	return `
+    <header class="band band-short">
+      ${left}
+      <p class="band-line"><b>${esc(name)}</b><span class="band-rule"></span></p>
+      ${right}
+    </header>`;
+}
 
 // pages/boards.js
 async function boardsScreen(view) {
 	const boards = await listBoards();
 	const onShoots = await boardShoots().catch(() => ({}));
 	const firstPhoto = (b) => b.pages.flatMap((p) => p.images).map((im) => im && photoById(im.id)).find(Boolean);
-	view.innerHTML = `
-    <div class="screen">
-      ${window.DF_SUITE ? `<h1 class="head head-add"><button type="button" class="icon-btn head-plus head-menu" data-app-menu aria-label="Menu">${ICONS.menu}</button>Mood boards</h1>` : "<h1 class=\"head\">Mood boards</h1>"}
-      <div class="scroll rows">
-        ${boards.map((b) => {
+	const card = (b) => {
 		const p = firstPhoto(b);
+		const href = `#/board/${esc(b.id)}`;
+		const flags = (onShoots[b.id] || []).map((s) => `<span class="flag">For ${esc(s)}</span>`).join("");
 		return `
-          <div class="row" data-b>
-            <a class="row-open" href="#/board/${esc(b.id)}">
-              <span class="thumb">${p ? `<img src="${thumbUrl(p)}" alt="" />` : ""}</span>
-              <span class="row-text"><span class="row-name">${esc(b.name)}</span><span class="row-meta">${b.pages.length} ${b.pages.length === 1 ? "page" : "pages"}, ${esc(shortDate(b.updatedAt))}</span>${onShoots[b.id] ? `<span class="row-meta row-shoots">For ${esc(onShoots[b.id].join(", "))}</span>` : ""}</span>
-            </a>
-            <button type="button" class="icon-btn" data-more="${esc(b.id)}" aria-label="More for ${esc(b.name)}">${ICONS.more}</button>
-          </div>`;
-	}).join("")}
-        <a class="row row-open" href="#/new"><span class="thumb add">${ICONS.plus}</span><span class="row-name">New board</span></a>
+      <div class="board-card" data-b>
+        <a class="card-cover" href="${href}" aria-label="Open ${esc(b.name)}">${p ? `<img src="${thumbUrl(p)}" alt="" />` : ""}</a>
+        <div class="card-info">
+          <a class="card-words" href="${href}">
+            <span class="card-name">${esc(b.name)}</span>
+            <span class="card-meta">${b.pages.length} ${b.pages.length === 1 ? "page" : "pages"} · ${esc(shortDate(b.updatedAt))}</span>
+            ${flags ? `<span class="flags">${flags}</span>` : ""}
+          </a>
+          <button type="button" class="icon-btn card-more" data-more="${esc(b.id)}" aria-label="More for ${esc(b.name)}">${ICONS.more}</button>
+        </div>
+      </div>`;
+	};
+	view.innerHTML = `
+    <div class="screen has-band">
+      <div class="scroll">
+        ${bandHtml({
+		title: "Ref",
+		place: "Mood boards",
+		add: "New board"
+	})}
+        <div class="list-head"><h2>Boards <span>${boards.length}</span></h2><a class="list-act" href="#/new">${ICONS.plus}New board</a></div>
+        <div class="list-rule"></div>
+        ${boards.map(card).join("")}
         ${!lib.photos.length ? "<p class=\"note\">Start in <a href=\"#/folder/incoming\">Incoming</a>: bring in the photos you want to work with, then make a board from them.</p>" : ""}
       </div>
     </div>`;
+	wireBand(view, () => {
+		location.hash = "#/new";
+	});
 	view.querySelectorAll("[data-more]").forEach((btn) => btn.addEventListener("click", async () => {
 		const b = boards.find((x) => x.id === btn.dataset.more);
 		const key = await choiceSheet({
@@ -2252,6 +2370,7 @@ async function boardsScreen(view) {
 }
 
 // components/filing.js
+const PLUS = "<svg viewBox=\"0 0 24 24\" width=\"24\" height=\"24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" aria-hidden=\"true\"><line x1=\"12\" y1=\"5\" x2=\"12\" y2=\"19\"/><line x1=\"5\" y1=\"12\" x2=\"19\" y2=\"12\"/></svg>";
 async function newFolder() {
 	const name = await promptSheet({
 		title: "New tag",
@@ -2262,6 +2381,18 @@ async function newFolder() {
 	const f = await saveFolder({ name });
 	await refresh();
 	return f;
+}
+async function relabel(p, tags) {
+	const before = {
+		tags: p.tags,
+		tagsEdited: p.tagsEdited
+	};
+	await patchPhoto(p.id, {
+		tags,
+		tagsEdited: true
+	});
+	await refresh();
+	remember("changing what is in it", () => patchPhoto(p.id, before));
 }
 async function changePhotos(photos, change, label) {
 	const before = photos.map((p) => ({
@@ -2299,9 +2430,9 @@ function fileSheet(ids) {
 				const on = changes.has(f.id) ? changes.get(f.id) : inCount(f.id) === photos.length;
 				return `<label class="tick" data-name="${esc(f.name.toLowerCase())}"><input type="checkbox" value="${esc(f.id)}"${on ? " checked" : ""} /><span>${esc(f.name)}</span></label>`;
 			}).join("")}
-          <button type="button" class="tick add" data-new>+ New tag</button>
+          <button type="button" class="tick add" data-new>${PLUS}New tag</button>
         </div>
-        <div class="sheet-actions"><button type="button" class="btn secondary" data-close>Cancel</button><button type="button" class="btn primary" data-save>Save</button></div>`;
+        <div class="sheet-actions one"><button type="button" class="btn primary" data-save>Done</button></div>`;
 			s.body.querySelectorAll(".tick input").forEach((box) => {
 				const n = inCount(box.value);
 				box.indeterminate = !changes.has(box.value) && n > 0 && n < photos.length;
@@ -2354,30 +2485,44 @@ function fileSheet(ids) {
 }
 
 // pages/folders.js
+const CHEVRON$1 = "<svg class=\"chevron\" viewBox=\"0 0 24 24\" aria-hidden=\"true\"><polyline points=\"9 5 16 12 9 19\"/></svg>";
+const SEARCH = "<svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><circle cx=\"11\" cy=\"11\" r=\"6.5\"/><line x1=\"16\" y1=\"16\" x2=\"20.5\" y2=\"20.5\"/></svg>";
 function foldersScreen(view) {
 	const row = (f, cls = "") => {
 		const list = sortList(photosIn(f.id), "newest");
 		return `
-      <a class="row row-open ${cls}" href="#/folder/${esc(f.id)}" data-t data-name="${esc(f.name.toLowerCase())}">
-        <span class="thumb">${list[0] ? `<img src="${thumbUrl(list[0])}" alt="" loading="lazy" />` : ""}</span>
-        <span class="row-text"><span class="row-name">${esc(f.name)}</span><span class="row-meta">${list.length} ${list.length === 1 ? "photo" : "photos"}</span></span>
+      <a class="tag-row ${cls}" href="#/folder/${esc(f.id)}" data-t data-name="${esc(f.name.toLowerCase())}">
+        <span class="tag-thumb">${list[0] ? `<img src="${thumbUrl(list[0])}" alt="" loading="lazy" />` : ""}</span>
+        <span class="tag-name">${esc(f.name)}</span>
+        <span class="tag-count" aria-label="${list.length} ${list.length === 1 ? "photo" : "photos"}">${list.length.toLocaleString()}</span>
+        ${CHEVRON$1}
       </a>`;
 	};
 	view.innerHTML = `
-    <div class="screen">
-      <h1 class="head head-add">Tags<button type="button" class="icon-btn head-plus" data-new aria-label="New tag">${ICONS.plus}</button></h1>
-      <div class="scroll rows tag-rows">
-        ${lib.folders.length > 8 ? "<input class=\"find\" type=\"search\" placeholder=\"Find a tag\" autocomplete=\"off\" />" : ""}
-        ${row(folderById("incoming"), "marked")}
-        ${row(folderById("favorites"))}
-        ${row(folderById("all"))}
+    <div class="screen has-band">
+      <div class="scroll tag-rows">
+        ${bandHtml({
+		title: "Tags",
+		place: "Ref",
+		add: "New tag"
+	})}
+        ${lib.folders.length > 8 ? `<label class="find-box">${SEARCH}<input class="find" type="search" placeholder="Find a tag" autocomplete="off" /></label>` : ""}
+        <div class="list-rule tag-top"></div>
+        ${row(folderById("incoming"), "special")}
+        ${row(folderById("favorites"), "special")}
+        ${row(folderById("all"), "special")}
+        <div class="list-head tag-mine-head" data-mine><h2>Your tags <span>${lib.folders.length}</span></h2></div>
+        <div class="list-rule" data-mine></div>
         ${lib.folders.map((f) => row(f, "mine")).join("")}
+        ${lib.folders.length ? "" : `<button type="button" class="list-act tag-new" data-new>${ICONS.plus}New tag</button>`}
       </div>
     </div>`;
 	const rows = [...view.querySelectorAll("[data-t]")];
-	view.querySelector("[data-new]").addEventListener("click", async () => {
+	const make = async () => {
 		if (await newFolder()) foldersScreen(view);
-	});
+	};
+	wireBand(view, make);
+	view.querySelector("[data-new]")?.addEventListener("click", make);
 	view.querySelector(".find")?.addEventListener("input", (e) => {
 		const q = e.target.value.trim().toLowerCase();
 		rows.forEach((r) => {
@@ -2407,6 +2552,8 @@ const del = (k) => {
 		localStorage.removeItem(k);
 	} catch {}
 };
+const isOff = () => get(ON) === "off";
+const tagsOn = () => !isOff();
 const scan = {
 	state: "off",
 	done: 0,
@@ -2417,9 +2564,10 @@ const emit = (tagged = false) => window.dispatchEvent(new CustomEvent("ref-scan"
 let worker = null;
 let running = false;
 let nextId = 1;
+let runs = 0;
 const waiting = new Map();
 const skip = new Set();
-const todo = () => lib.photos.filter((p) => p.tagsV !== VERSION && !skip.has(p.id));
+const todo = () => lib.photos.filter((p) => p.tagsV !== VERSION && !p.tagsEdited && !skip.has(p.id));
 function ask(type, bytes) {
 	return new Promise((resolve, reject) => {
 		const id = nextId++;
@@ -2465,6 +2613,8 @@ async function run() {
 		return;
 	}
 	running = true;
+	const me = ++runs;
+	const stopped = () => isOff() || me !== runs;
 	scan.state = "loading";
 	scan.pct = 0;
 	scan.done = 0;
@@ -2490,7 +2640,7 @@ async function run() {
 		scan.state = "working";
 		emit();
 		let first = true;
-		for (let p = todo()[0]; p; p = todo()[0]) {
+		for (let p = todo()[0]; p && !stopped(); p = todo()[0]) {
 			await visible();
 			try {
 				const bytes = await getThumb(p.id);
@@ -2513,6 +2663,7 @@ async function run() {
 					};
 				}
 			} catch (e) {
+				if (stopped()) break;
 				console.error(e);
 				skip.add(p.id);
 			}
@@ -2524,13 +2675,14 @@ async function run() {
 			scan.total = scan.done + todo().length;
 			emit(scan.done % 4 === 0 || !todo().length);
 		}
+		if (stopped()) return;
 		worker.terminate();
 		worker = null;
 		running = false;
 		scan.state = "done";
 		emit(true);
 	} catch (e) {
-		fail(e);
+		if (!stopped()) fail(e);
 	}
 }
 function turnOnTags() {
@@ -2538,9 +2690,26 @@ function turnOnTags() {
 	del(BUSY);
 	run();
 }
+function turnOffTags() {
+	set(ON, "off");
+	del(BUSY);
+	runs++;
+	worker?.terminate();
+	worker = null;
+	for (const w of waiting.values()) w.reject(new Error("turned off"));
+	waiting.clear();
+	running = false;
+	scan.state = "off";
+	emit();
+}
 async function carryOn() {
 	if (get(ON) === "failed") {
 		scan.state = "failed";
+		emit();
+		return;
+	}
+	if (isOff()) {
+		scan.state = "off";
 		emit();
 		return;
 	}
@@ -2554,6 +2723,9 @@ async function carryOn() {
 }
 
 // pages/viewer.js
+const X = "<svg viewBox=\"0 0 24 24\" width=\"18\" height=\"18\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" aria-hidden=\"true\"><line x1=\"6\" y1=\"6\" x2=\"18\" y2=\"18\"/><line x1=\"18\" y1=\"6\" x2=\"6\" y2=\"18\"/></svg>";
+const SMALL_X = "<svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><line x1=\"7\" y1=\"7\" x2=\"17\" y2=\"17\"/><line x1=\"17\" y1=\"7\" x2=\"7\" y2=\"17\"/></svg>";
+const SMALL_PLUS = "<svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><line x1=\"12\" y1=\"6\" x2=\"12\" y2=\"18\"/><line x1=\"6\" y1=\"12\" x2=\"18\" y2=\"12\"/></svg>";
 function openViewer(ids, start, onChange) {
 	let list = [...ids];
 	let i = start;
@@ -2564,15 +2736,25 @@ function openViewer(ids, start, onChange) {
 	const el = document.createElement("div");
 	el.className = "viewer";
 	el.innerHTML = `
+    <div class="v-top">
+      <button type="button" class="ring-btn v-close" data-close aria-label="Close"><span>${X}</span></button>
+      <span class="v-count"></span>
+      <span class="v-top-gap" aria-hidden="true"></span>
+    </div>
     <div class="v-stage"><img class="v-img" alt="" draggable="false" /></div>
-    <div class="v-top"><span class="v-name"></span><span class="v-count"></span></div>
-    <div class="v-palette"></div>
+    <div class="v-info">
+      <p class="v-label">Tags</p>
+      <div class="v-chips v-tags"></div>
+      <p class="v-label">What is in it <span>(found by Ref, edit any)</span></p>
+      <div class="v-chips v-found"></div>
+      <div class="v-palette"></div>
+      <p class="v-hint">Tap a color to see every photo with it</p>
+    </div>
     <nav class="v-tools">
-      <button type="button" data-v="close" aria-label="Close">${ICONS.back}</button>
-      <button type="button" data-v="fav" aria-label="Favorite"></button>
-      <button type="button" data-v="file" aria-label="Tag this photo">${ICONS.file}</button>
-      <button type="button" data-v="undo" aria-label="Undo"${canUndo() ? "" : " disabled"}>${ICONS.undo}</button>
-      <button type="button" data-v="delete" aria-label="Delete">${ICONS.trash}</button>
+      <button type="button" data-v="fav"></button>
+      <button type="button" data-v="file" aria-label="Tag this photo">${ICONS.file}<span aria-hidden="true">Tag</span></button>
+      <button type="button" data-v="undo"${canUndo() ? "" : " disabled"}>${ICONS.undo}<span>Undo</span></button>
+      <button type="button" data-v="delete">${ICONS.trash}<span>Delete</span></button>
     </nav>`;
 	document.body.append(el);
 	const img = el.querySelector(".v-img");
@@ -2588,10 +2770,13 @@ function openViewer(ids, start, onChange) {
 		ty = 0;
 		place();
 		img.src = thumbUrl(p);
-		el.querySelector(".v-name").textContent = p.folderIds.map((id) => lib.folders.find((f) => f.id === id)?.name).filter(Boolean).join(", ") || "Incoming";
+		const tags = p.folderIds.map((id) => lib.folders.find((f) => f.id === id)?.name).filter(Boolean);
+		el.querySelector(".v-tags").innerHTML = (tags.length ? tags : ["Incoming"]).map((t) => `<span class="v-chip">${esc(t)}</span>`).join("");
+		el.querySelector(".v-found").innerHTML = (p.tags || []).map((t) => `<button type="button" class="v-chip found" data-untag="${esc(t)}" aria-label="Remove ${esc(t)}">${esc(t)}${SMALL_X}</button>`).join("") + `<button type="button" class="v-chip add" data-addtag>${SMALL_PLUS}Add</button>`;
 		el.querySelector(".v-count").textContent = `${i + 1} of ${list.length}`;
 		el.querySelector(".v-palette").innerHTML = (p.palette || []).map((c) => `<button type="button" data-color="${esc(c.hex)}" aria-label="Photos with this color" style="background:${esc(c.hex)};flex:${c.w}"></button>`).join("");
-		el.querySelector("[data-v=fav]").innerHTML = p.favorite ? ICONS.heartOn : ICONS.heart;
+		el.querySelector("[data-v=fav]").innerHTML = `${p.favorite ? ICONS.heartOn : ICONS.heart}<span>Favorite</span>`;
+		el.querySelector("[data-v=fav]").setAttribute("aria-pressed", String(!!p.favorite));
 		const want = list[i];
 		const u = await fullUrl(want);
 		if (u && want === list[i]) img.src = u;
@@ -2616,6 +2801,32 @@ function openViewer(ids, start, onChange) {
 		const b = e.target.closest("[data-color]");
 		if (b) openColorPage(b.dataset.color, again);
 	});
+	el.querySelector("[data-close]").addEventListener("click", () => close());
+	el.querySelector(".v-found").addEventListener("click", async (e) => {
+		const p = photoById(list[i]);
+		if (!p) return;
+		const now = p.tags || [];
+		let next = null;
+		const gone = e.target.closest("[data-untag]");
+		if (gone) next = now.filter((t) => t !== gone.dataset.untag);
+		else if (e.target.closest("[data-addtag]")) {
+			const word = (await promptSheet({
+				title: "What is in it",
+				label: "A word for something in the photo",
+				confirmLabel: "Add"
+			}))?.trim().toLowerCase();
+			if (word && !now.includes(word)) next = [...now, word];
+		}
+		if (!next) return;
+		try {
+			await relabel(p, next);
+			changed = true;
+			show();
+		} catch (err) {
+			console.error(err);
+			toast("Could not save that. Try once more.");
+		}
+	});
 	const go = (d) => {
 		const n = i + d;
 		if (n >= 0 && n < list.length) {
@@ -2629,8 +2840,7 @@ function openViewer(ids, start, onChange) {
 		const b = e.target.closest("[data-v]");
 		if (!b) return;
 		const p = photoById(list[i]);
-		if (b.dataset.v === "close") close();
-		else if (b.dataset.v === "undo") {
+		if (b.dataset.v === "undo") {
 			const gone = list[i];
 			await undoLast();
 			changed = true;
@@ -2772,10 +2982,10 @@ function openColorPage(hex, onBack) {
 	const draw = () => {
 		list = photosOfColor(hex);
 		el.innerHTML = `
-      <header class="folder-head">
-        <button type="button" class="icon-btn" data-back aria-label="Back to the photo">${ICONS.back}</button>
-        <span class="color-swatch" style="background:${esc(hex)}"></span>
-        <span class="count">${list.length}</span>
+      <header class="band band-short">
+        <button type="button" class="ring-btn" data-back aria-label="Back to the photo"><span>${BACK}</span></button>
+        <p class="band-line"><span class="color-swatch" style="background:${esc(hex)}"></span><b class="count">${list.length} ${list.length === 1 ? "photo" : "photos"}</b></p>
+        <span class="ring-btn" aria-hidden="true"></span>
       </header>
       <div class="scroll"><div class="grid">
         ${list.map((p, n) => `<button type="button" class="tile" data-i="${n}" aria-label="${esc(p.name)}"><img src="${thumbUrl(p)}" alt="" decoding="async" draggable="false" /></button>`).join("")}
@@ -2795,6 +3005,8 @@ function openColorPage(hex, onBack) {
 }
 
 // pages/folder.js
+const SORT_ICON = "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" aria-hidden=\"true\"><line x1=\"4\" y1=\"7\" x2=\"20\" y2=\"7\"/><line x1=\"7\" y1=\"12\" x2=\"17\" y2=\"12\"/><line x1=\"10\" y1=\"17\" x2=\"14\" y2=\"17\"/></svg>";
+const TICK$1 = "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><polyline points=\"5 12.5 10 17 19 7\"/></svg>";
 const filterMemory = {};
 let stopListening = null;
 function folderScreen(view, id) {
@@ -2821,10 +3033,7 @@ function folderScreen(view, id) {
 		carryOn();
 	}
 	const openPhone = () => pickFiles().then(bringIn);
-	const chipsHtml = () => {
-		const chips = chipsFor(photosIn(id), on(), id);
-		return `<button type="button" class="chip${on().length ? "" : " on"}" data-filter="">All</button>${chips.map((c) => `<button type="button" class="chip kind-${c.kind}${on().includes(c.key) ? " on" : ""}" data-filter="${esc(c.key)}">${esc(c.label)}</button>`).join("")}`;
-	};
+	const chipsHtml = () => chipsFor(photosIn(id), on(), id).map((c) => `<button type="button" class="chip kind-${c.kind}${on().includes(c.key) ? " on" : ""}" data-filter="${esc(c.key)}">${esc(c.label)}</button>`).join("");
 	const gridHtml = () => {
 		const total = photosIn(id).length;
 		if (!total && incoming) return `
@@ -2836,19 +3045,21 @@ function folderScreen(view, id) {
       ${isIOS() && !isStandalone() ? "<p class=\"note\">Add this to your Home Screen to keep your photos safe. Safari can clear what sites have saved if they go unused.</p>" : ""}`;
 		if (!total) return `<p class="note center">${id === "favorites" ? "Tap the heart on a photo to keep it here." : "Nothing here yet. File photos in from Incoming."}</p>`;
 		return `<div class="grid">
-      ${incoming && !selecting ? `<button type="button" class="tile add" data-phone aria-label="Add from your phone">${ICONS.plus}</button>` : ""}
-      ${current.map((p, i) => `<button type="button" class="tile${sel.has(p.id) ? " sel" : ""}" data-i="${i}" aria-label="${esc(p.name)}"><img src="${thumbUrl(p)}" alt="" decoding="async" draggable="false" />${p.favorite ? `<span class="fav">${ICONS.heartOn}</span>` : ""}</button>`).join("")}
+      ${incoming && !selecting ? `<button type="button" class="tile add" data-phone aria-label="Add from your phone">${ICONS.plus}<span>Add from<br />your phone</span></button>` : ""}
+      ${current.map((p, i) => `<button type="button" class="tile${sel.has(p.id) ? " sel" : ""}" data-i="${i}" aria-label="${esc(p.name)}"><img src="${thumbUrl(p)}" alt="" decoding="async" draggable="false" />${p.favorite ? `<span class="fav">${ICONS.heartOn}</span>` : ""}${selecting ? `<span class="tile-tick">${TICK$1}</span>` : ""}</button>`).join("")}
     </div>`;
 	};
 	const countText = () => {
 		const total = photosIn(id).length;
-		return current.length === total ? `${total}` : `${current.length} of ${total}`;
+		const sort = SORTS.find((s) => s.key === sortOf(id)).label;
+		return `${current.length === total ? "" : `${current.length} of `}${total} ${total === 1 ? "photo" : "photos"} · ${sort}`;
 	};
 	const scanHtml = () => {
 		if (!photosIn(id).length) return "";
 		if (scan.state === "failed") return "<button type=\"button\" class=\"scan-btn\" data-scan>This phone couldn't read them. Try again</button>";
-		if (scan.state === "loading") return `<span class="scan-text">Getting ready, ${scan.pct}%</span>`;
-		if (scan.state === "working") return `<span class="scan-text">Looking at your photos, ${scan.done} of ${scan.total}</span>`;
+		const line = (pct, words) => `<p class="scan-line"><span class="scan-bar" aria-hidden="true"><span style="width:${Math.max(0, Math.min(100, pct))}%"></span></span>${words}</p>`;
+		if (scan.state === "loading") return line(scan.pct, `Getting ready, ${scan.pct}%`);
+		if (scan.state === "working") return line(scan.total ? scan.done / scan.total * 100 : 0, `Looking at your photos, ${scan.done} of ${scan.total}`);
 		return "";
 	};
 	function paintList() {
@@ -2885,30 +3096,32 @@ function folderScreen(view, id) {
 		const stay = view.querySelector(".screen")?.dataset.folder === id;
 		current = shown();
 		const empty = !photosIn(id).length;
-		const sortLabel = SORTS.find((s) => s.key === sortOf(id)).label;
 		view.innerHTML = `
-      <div class="screen${stay ? " still" : ""}" data-folder="${esc(id)}">
-        <header class="folder-head">
-          <a class="icon-btn" href="#/folders" aria-label="Back to tags">${ICONS.back}</a>
-          <h1><span class="under">${esc(folder.name)}</span></h1>
-          ${isSpecial(id) ? "<span class=\"icon-btn\" aria-hidden=\"true\"></span>" : `<button type="button" class="icon-btn" data-folder-more aria-label="Folder options">${ICONS.more}</button>`}
-        </header>
+      <div class="screen in-tag${stay ? " still" : ""}" data-folder="${esc(id)}">
+        ${shortBandHtml({
+			name: folder.name,
+			back: "#/folders",
+			backLabel: "Back to tags",
+			more: isSpecial(id) ? "" : "Tag options"
+		})}
         ${empty ? "" : `
           <div class="bar">
-            <button type="button" class="label-btn" data-sort>${esc(sortLabel)}</button>
-            <button type="button" class="label-btn" data-select>${selecting ? "Done" : "Select"}</button>
-            <button type="button" class="undo-btn" data-undo aria-label="Undo"${canUndo() ? "" : " disabled"}>${ICONS.undo}</button>
             <span class="count">${countText()}</span>
+            <span class="bar-btns">
+              <button type="button" class="bar-icon" data-sort aria-label="Sort">${SORT_ICON}</button>
+              <button type="button" class="bar-icon" data-undo aria-label="Undo"${canUndo() ? "" : " disabled"}>${ICONS.undo}</button>
+              <button type="button" class="bar-text" data-select>${selecting ? "Done" : "Select"}</button>
+            </span>
           </div>
           <div class="chips">${chipsHtml()}</div>`}
         <div class="scan"${scanHtml() ? "" : " hidden"}>${scanHtml()}</div>
-        <div class="scroll">${gridHtml()}</div>
+        <div class="scroll photos">${gridHtml()}</div>
         ${selecting ? `
           <nav class="tools" aria-label="Selection">
             <span class="sel-count">${sel.size} picked</span>
-            <button type="button" class="tool" data-act="file" aria-label="Tag these"${sel.size ? "" : " disabled"}>${ICONS.file}</button>
-            <button type="button" class="tool" data-act="fav" aria-label="Favorite"${sel.size ? "" : " disabled"}>${ICONS.heart}</button>
-            <button type="button" class="tool" data-act="delete" aria-label="Delete"${sel.size ? "" : " disabled"}>${ICONS.trash}</button>
+            <button type="button" class="tool" data-act="file"${sel.size ? "" : " disabled"}>${ICONS.file}<span>Tag</span></button>
+            <button type="button" class="tool" data-act="fav"${sel.size ? "" : " disabled"}>${ICONS.heart}<span>Favorite</span></button>
+            <button type="button" class="tool" data-act="delete"${sel.size ? "" : " disabled"}>${ICONS.trash}<span>Delete</span></button>
           </nav>` : ""}
       </div>`;
 		const sc = view.querySelector(".scroll");
@@ -3000,7 +3213,7 @@ function folderScreen(view, id) {
 			sel.clear();
 			draw();
 		}));
-		view.querySelector("[data-folder-more]")?.addEventListener("click", async () => {
+		view.querySelector("[data-band-more]")?.addEventListener("click", async () => {
 			const key = await choiceSheet({
 				title: folder.name,
 				options: [{
@@ -3133,1238 +3346,169 @@ function withTextDefaults(page) {
 	return page;
 }
 
-// pages/newboard.js
-const SHAPE_INFO = {
-	"letter-portrait": {
-		name: "Tall",
-		blurb: "For printing and bringing to a shoot."
-	},
-	"wide-16x9": {
-		name: "Wide",
-		blurb: "For screens and sharing."
-	}
-};
-const ORDERS = [
-	[
-		"newest",
-		"Newest first",
-		"The photos you brought in most lately."
-	],
-	[
-		"oldest",
-		"Oldest first",
-		"From the first ones you saved."
-	],
-	[
-		"fav",
-		"Favorites first",
-		"Hearted photos lead each section."
-	],
-	[
-		"random",
-		"Random",
-		"A fresh mix each time."
-	]
-];
+// components/option-card.js
+function cardHtml({ attr, on, picture = "", name, blurb = "" }) {
+	return `<button type="button" class="opt-card" role="radio" aria-checked="${on}" ${attr}>${picture}<span class="opt-name">${esc(name)}</span>${blurb ? `<span class="opt-blurb">${esc(blurb)}</span>` : ""}</button>`;
+}
+
+// pages/newboard-parts.js
+function marksHtml(names, at) {
+	const last = names.length - 1;
+	const marks = names.map((_, i) => {
+		const line = i ? `<span class="guide-line${i <= at ? " inked" : ""}"></span>` : "";
+		return `${line}<span class="guide-mark${i === at ? " now" : i < at ? " done" : ""}"></span>`;
+	}).join("");
+	const words = names.map((n, i) => {
+		const where = i === 0 ? "left:0" : i === last ? "right:0" : `left:${i / last * 100}%`;
+		return `<span class="guide-mark-name${i <= at ? " reached" : ""}${i && i < last ? " mid" : ""}" style="${where}">${esc(n)}</span>`;
+	}).join("");
+	return `<div class="guide-marks" role="img" aria-label="Step ${at + 1} of ${names.length}: ${esc(names[at])}"><div class="guide-mark-row">${marks}</div><div class="guide-mark-names" aria-hidden="true">${words}</div></div>`;
+}
 function miniPage(shape, tid, w) {
-	const s = SHAPES[shape];
+	const s = SHAPES$1[shape];
 	const t = templateFor(shape, tid);
 	const W = 60;
 	const H = 60 * s.H / s.W;
 	const r = (t?.slots || []).map((b) => `<rect x="${b.x * W}" y="${b.y * H}" width="${b.w * W}" height="${b.h * H}"/>`).join("");
 	return `<svg viewBox="0 0 ${W} ${H}" style="width:${w}px" aria-hidden="true"><rect class="paper-r" width="${W}" height="${H}"/>${r}</svg>`;
 }
-function newBoardScreen(view) {
-	const W = {
-		step: 0,
-		name: "",
-		shape: "letter-portrait",
-		style: "mosaic",
-		cover: false,
-		start: "blank",
-		blankPages: 3,
-		sections: [{
-			name: "",
-			tags: [],
-			all: true
-		}],
-		order: "newest",
-		perSection: 3
-	};
-	const sources = [
-		SPECIAL[0],
-		SPECIAL[1],
-		...lib.folders
-	];
-	const nameOf = (id) => sources.find((f) => f.id === id)?.name || "";
-	const flow = () => W.start === "fill" ? [
-		stepName,
-		stepLayout,
-		stepStart,
-		stepPhotos
-	] : [
-		stepName,
-		stepLayout,
-		stepStart
-	];
-	const TITLES = new Map([
-		[stepName, "Name and page size"],
-		[stepLayout, "Layout"],
-		[stepStart, "Start"],
-		[stepPhotos, "Which photos"]
-	]);
-	const photosOf = (sec) => {
-		if (!sec.tags.length) return [];
-		if (sec.all && sec.tags.length > 1) return lib.photos.filter((p) => sec.tags.every((t) => photosIn(t).includes(p)));
-		return [...new Set(sec.tags.flatMap((t) => photosIn(t)))];
-	};
-	const titleOf = (sec, i) => sec.name.trim() || sec.tags.map(nameOf).join(" · ") || `Section ${i + 1}`;
-	function draw(keepScroll = false) {
-		const top = keepScroll ? view.querySelector(".form-page")?.scrollTop || 0 : 0;
-		const steps = flow();
-		const step = steps[W.step];
-		const last = W.step === steps.length - 1;
-		view.innerHTML = `
-      <div class="screen">
-        <h1 class="head">New board</h1>
-        <p class="wz-step">${W.step + 1} of ${steps.length}: ${TITLES.get(step)}</p>
-        <div class="scroll form-page">${step()}</div>
-        <div class="foot">
-          <button type="button" class="icon-btn" data-back aria-label="${W.step ? "Back a step" : "Back to mood boards"}">${ICONS.back}</button>
-          <span class="wz-dots" aria-hidden="true">${steps.map((_, i) => `<i class="${i === W.step ? "on" : ""}"></i>`).join("")}</span>
-          <button type="button" class="cta" data-next>${last ? "Make the board" : "Next"}</button>
-        </div>
-      </div>`;
-		if (keepScroll) view.querySelector(".screen").classList.add("still");
-		view.querySelector(".form-page").scrollTop = top;
-		wire();
-	}
-	function stepName() {
-		return `
-      <label class="group"><span class="label">Name</span>
-        <input class="hand-input" data-name value="${esc(W.name)}" placeholder="Name this board" maxlength="80" autocomplete="off" enterkeyhint="next" /></label>
-      <div class="group"><span class="label">Page size, the same for the whole board</span>
-        <div class="wz-cards">${Object.entries(SHAPE_INFO).map(([k, s]) => `
-          <button type="button" class="wz-card${W.shape === k ? " on" : ""}" data-shape="${k}">
-            <span class="wz-shape ${k === "wide-16x9" ? "wide" : "tall"}"></span>
-            <strong>${s.name}</strong><span>${s.blurb}</span></button>`).join("")}</div>
-      </div>`;
-	}
-	function stepLayout() {
-		const big = W.shape === "wide-16x9" ? 30 : 22;
-		return `
-      <p class="small">Pick a general approach. Any page can still change layout afterwards.</p>
-      <div class="wz-cards">${STYLES.map((st) => `
-        <button type="button" class="wz-card${W.style === st.id ? " on" : ""}" data-style="${st.id}">
-          <span class="wz-pages">${[
-			0,
-			1,
-			2
-		].map((n) => miniPage(W.shape, styleTemplate(W.shape, st.id, n), big)).join("")}</span>
-          <strong>${esc(st.name)}</strong><span>${esc(st.blurb)}</span></button>`).join("")}</div>
-      <label class="check"><input type="checkbox" data-cover${W.cover ? " checked" : ""} /> Start with a cover page: the board's name, big, with its first photo</label>`;
-	}
-	function stepStart() {
-		let out = `
-      <div class="wz-cards">
-        <button type="button" class="wz-card${W.start === "blank" ? " on" : ""}" data-start="blank">
-          <span class="wz-glyph">${miniPage(W.shape, styleTemplate(W.shape, W.style, 0), W.shape === "wide-16x9" ? 40 : 28)}</span>
-          <strong>Start blank</strong><span>Just the layout, with empty pages. You put the photos in yourself.</span></button>
-        <button type="button" class="wz-card${W.start === "fill" ? " on" : ""}" data-start="fill">
-          <span class="wz-glyph wz-glyph-fill">${miniPage(W.shape, styleTemplate(W.shape, W.style, 0), W.shape === "wide-16x9" ? 40 : 28)}</span>
-          <strong>Fill in sections</strong><span>Name sections and pick the tags each one fills from.</span></button>
-      </div>`;
-		if (W.start === "blank") {
-			return out + `
-        <div class="group row-group"><span class="label">Pages</span>
-          <span class="stepper"><button type="button" data-blank="-1" aria-label="Fewer pages">−</button><b>${W.blankPages}</b><button type="button" data-blank="1" aria-label="More pages">+</button></span></div>`;
-		}
-		out += "<p class=\"small\">Each section gets its own pages, with its name as the first page's title.</p>";
-		W.sections.forEach((sec, i) => {
-			out += `
-        <div class="wz-section" data-sec="${i}">
-          <div class="wz-sechead"><span class="wz-secnum">${i + 1}</span>
-            <input class="hand-input wz-secname" data-secname="${i}" value="${esc(sec.name)}" placeholder="Section ${i + 1} name" maxlength="60" autocomplete="off" enterkeyhint="done" />
-            ${W.sections.length > 1 ? `<button type="button" class="icon-btn" data-drop="${i}" aria-label="Remove section ${i + 1}">${ICONS.x}</button>` : ""}</div>
-          <div class="pick-chips">${sources.map((f) => `<button type="button" class="pick${sec.tags.includes(f.id) ? " on" : ""}" data-tag="${esc(f.id)}" data-in="${i}">${esc(f.name)} ${photosIn(f.id).length}</button>`).join("")}</div>
-          ${sec.tags.length > 1 ? `<label class="check"><input type="checkbox" data-all="${i}"${sec.all ? " checked" : ""} /> Only photos with all of these tags</label>` : ""}
-          <p class="small">${sec.tags.length ? `${photosOf(sec).length} photos` : "Pick at least one tag."}</p>
-        </div>`;
-		});
-		return out + "<button type=\"button\" class=\"label-btn wz-add\" data-addsec>+ Add section</button>";
-	}
-	function stepPhotos() {
-		return `
-      <div class="wz-cards">${ORDERS.map(([k, name, blurb]) => `
-        <button type="button" class="wz-card${W.order === k ? " on" : ""}" data-order="${k}"><strong>${name}</strong><span>${blurb}</span></button>`).join("")}</div>
-      <div class="group row-group"><span class="label">Pages per section</span>
-        <span class="stepper"><button type="button" data-per="-1" aria-label="Fewer pages">−</button><b>${W.perSection}</b><button type="button" data-per="1" aria-label="More pages">+</button></span></div>
-      <div class="wz-summary">${W.sections.map((sec, i) => {
-			const n = photosOf(sec).length;
-			return `<div class="wz-sumrow"><span>${esc(titleOf(sec, i))}</span><span class="row-meta">${n ? `${n} ${n === 1 ? "photo" : "photos"}` : "none yet"}</span></div>`;
-		}).join("")}</div>
-      ${W.sections.every((s) => !photosOf(s).length) ? "<p class=\"small\">No photos match yet, so the board starts with empty pages.</p>" : ""}`;
-	}
-	function ok() {
-		const step = flow()[W.step];
-		if (step === stepStart && W.start === "fill") {
-			const empty = W.sections.findIndex((s) => !s.tags.length);
-			if (empty >= 0) {
-				toast(`Pick a tag for ${titleOf(W.sections[empty], empty)}, or start blank`);
-				return false;
-			}
-		}
+
+// pages/intro.js
+const SEEN = "ref-notebook-intro-seen";
+const CARDS = [
+	["Bring your photos in", "Open Incoming and pick photos from your phone. Tag them to sort them, then make mood boards from your tags."],
+	["It keeps its own copy", "Everything you add is saved inside Ref Notebook. Once a photo is in, you can delete it from your phone’s Photos to free up space, and it stays here in your boards and tags."],
+	["Good to know", "Photos are kept at a size made for boards and PDFs, not the full original. Your photos are saved inside the app, not in Photos. If you delete Ref Notebook from your home screen, its photos are deleted with it."]
+];
+const introSeen = () => {
+	try {
+		return localStorage.getItem(SEEN) === "1";
+	} catch {
 		return true;
 	}
-	function go(d) {
-		if (d > 0 && !ok()) return;
-		if (d > 0 && W.step === flow().length - 1) return make();
-		if (d < 0 && W.step === 0) {
-			location.hash = "#/boards";
-			return;
-		}
-		W.step = clamp(W.step + d, 0, flow().length - 1);
-		draw();
-	}
-	function wire() {
-		view.querySelector("[data-back]").addEventListener("click", () => go(-1));
-		view.querySelector("[data-next]").addEventListener("click", () => go(1));
-		const name = view.querySelector("[data-name]");
-		name?.addEventListener("input", () => {
-			W.name = name.value;
-		});
-		name?.addEventListener("keydown", (e) => {
-			if (e.key === "Enter") {
-				e.preventDefault();
-				name.blur();
-			}
-		});
-		view.querySelectorAll("[data-secname]").forEach((el) => el.addEventListener("input", () => {
-			W.sections[+el.dataset.secname].name = el.value;
-		}));
-		view.querySelector("[data-cover]")?.addEventListener("change", (e) => {
-			W.cover = e.target.checked;
-		});
-		view.querySelectorAll("[data-all]").forEach((el) => el.addEventListener("change", () => {
-			W.sections[+el.dataset.all].all = el.checked;
-			draw(true);
-		}));
-		view.querySelector(".form-page").addEventListener("click", (e) => {
-			const b = e.target.closest("button");
-			if (!b) return;
-			const d = b.dataset;
-			if (d.shape) W.shape = d.shape;
-			else if (d.style) W.style = d.style;
-			else if (d.start) W.start = d.start;
-			else if (d.blank) W.blankPages = clamp(W.blankPages + +d.blank, 1, 20);
-			else if (d.per) W.perSection = clamp(W.perSection + +d.per, 1, 20);
-			else if (d.order) W.order = d.order;
-			else if (d.tag) {
-				const sec = W.sections[+d.in];
-				sec.tags = sec.tags.includes(d.tag) ? sec.tags.filter((x) => x !== d.tag) : [...sec.tags, d.tag];
-			} else if (d.drop) W.sections.splice(+d.drop, 1);
-			else if ("addsec" in d) {
-				W.sections.push({
-					name: "",
-					tags: [],
-					all: true
-				});
-				draw(true);
-				const all = view.querySelectorAll(".wz-secname");
-				all[all.length - 1]?.scrollIntoView({ block: "center" });
-				return;
-			} else return;
-			draw(true);
-		});
-	}
-	const shuffle = (list) => {
-		const a = [...list];
-		for (let i = a.length - 1; i > 0; i--) {
-			const j = Math.floor(Math.random() * (i + 1));
-			[a[i], a[j]] = [a[j], a[i]];
-		}
-		return a;
-	};
-	async function make() {
-		const name = W.name.trim() || "Untitled board";
-		let pages = [];
-		if (W.start === "blank") {
-			pages = Array.from({ length: W.blankPages }, (_, n) => ({
-				template: styleTemplate(W.shape, W.style, n) || paginate(W.shape, W.style, [])[0].template,
-				images: []
-			}));
-		} else {
-			const used = new Set();
-			W.sections.forEach((sec, i) => {
-				const list = photosOf(sec);
-				const all = (W.order === "random" ? shuffle(list) : sortList(list, W.order)).map((p) => p.id);
-				const pool = [...all.filter((x) => !used.has(x)), ...all.filter((x) => used.has(x))];
-				const own = paginate(W.shape, W.style, pool).slice(0, W.perSection);
-				while (own.length < W.perSection) own.push({
-					template: styleTemplate(W.shape, W.style, own.length) || own[0].template,
-					images: []
-				});
-				own.forEach((p) => p.images.forEach((x) => used.add(x)));
-				const title = titleOf(sec, i);
-				own[0].title = title;
-				own.forEach((p) => {
-					p.section = title;
-				});
-				pages.push(...own);
-			});
-		}
-		if (W.cover) pages.unshift(makeCover({
-			shape: W.shape,
-			name
-		}, pages.flatMap((p) => p.images).find(Boolean) || null));
-		pages = pages.map((p) => withTextDefaults({
-			...p,
-			images: p.images.map((x) => x ? { id: x } : null)
-		}));
-		const b = await saveBoard({
-			name,
-			shape: W.shape,
-			style: W.style,
-			pages
-		});
-		location.hash = `#/board/${b.id}`;
-	}
-	draw();
-}
-
-// pages/showboard.js
-function showBoard(board, start, onClose) {
-	let at = start;
-	let busy = false;
-	const el = document.createElement("div");
-	el.className = "show";
-	el.innerHTML = `
-    <div class="show-top">
-      <button type="button" class="show-btn" data-close aria-label="Leave full screen">${ICONS.x}</button>
-      <span class="show-count"></span>
-    </div>
-    <div class="show-stage"></div>
-    <div class="show-foot">
-      <button type="button" class="show-btn" data-go="-1" aria-label="Previous page">${ICONS.back}</button>
-      <button type="button" class="show-btn flip" data-go="1" aria-label="Next page">${ICONS.back}</button>
-    </div>`;
-	document.body.append(el);
-	const stage = el.querySelector(".show-stage");
-	const count = el.querySelector(".show-count");
-	async function pageEl(n) {
-		const p = await renderPage(board, board.pages[n]);
-		const s = SHAPES[board.shape];
-		const k = Math.min(stage.clientWidth / s.W, stage.clientHeight / s.H);
-		p.style.width = `${Math.floor(s.W * k)}px`;
-		p.classList.add("show-page");
-		return p;
-	}
-	function paint() {
-		count.textContent = `${at + 1} of ${board.pages.length}`;
-		el.querySelector("[data-go=\"-1\"]").disabled = at === 0;
-		el.querySelector("[data-go=\"1\"]").disabled = at === board.pages.length - 1;
-	}
-	async function draw() {
-		stage.replaceChildren(await pageEl(at));
-		paint();
-	}
-	async function go(dir, from = 0) {
-		const n = at + dir;
-		const cur = stage.firstElementChild;
-		if (busy || n < 0 || n >= board.pages.length) {
-			if (cur) {
-				cur.style.transition = "transform .18s ease-out";
-				cur.style.transform = "";
-			}
-			return;
-		}
-		busy = true;
-		at = n;
-		paint();
-		const next = await pageEl(n);
-		const w = stage.clientWidth;
-		next.style.transform = `translateX(${dir * w}px)`;
-		stage.append(next);
-		void next.offsetWidth;
-		const ease = "transform .26s cubic-bezier(.25,.6,.3,1)";
-		if (cur) {
-			cur.style.transition = ease;
-			cur.style.transform = `translateX(${-dir * w + 0}px)`;
-		}
-		next.style.transition = ease;
-		next.style.transform = "translateX(0)";
-		const done = () => {
-			if (!busy) return;
-			busy = false;
-			cur?.remove();
-			next.style.transition = "";
-		};
-		next.addEventListener("transitionend", done, { once: true });
-		setTimeout(done, 400);
-	}
-	let d = null;
-	stage.addEventListener("pointerdown", (e) => {
-		if (busy || e.button) return;
-		d = {
-			id: e.pointerId,
-			x0: e.clientX,
-			y0: e.clientY,
-			x: 0,
-			on: false
-		};
-	});
-	stage.addEventListener("pointermove", (e) => {
-		if (!d || e.pointerId !== d.id) return;
-		const dx = e.clientX - d.x0;
-		const dy = e.clientY - d.y0;
-		if (!d.on) {
-			if (Math.hypot(dx, dy) < 10) return;
-			if (Math.abs(dy) > Math.abs(dx)) {
-				d = null;
-				return;
-			}
-			d.on = true;
+};
+function openIntro() {
+	let at = 0;
+	const s = openSheet({
+		title: CARDS[0][0],
+		className: "sheet-small intro",
+		onClose: () => {
 			try {
-				stage.setPointerCapture(e.pointerId);
+				localStorage.setItem(SEEN, "1");
 			} catch {}
 		}
-		const end = dx > 0 && at === 0 || dx < 0 && at === board.pages.length - 1;
-		d.x = end ? dx * .25 : dx;
-		const cur = stage.firstElementChild;
-		if (cur) {
-			cur.style.transition = "";
-			cur.style.transform = `translateX(${d.x}px)`;
-		}
 	});
-	const up = (e) => {
-		if (!d || e.pointerId !== d.id) return;
-		const g = d;
-		d = null;
-		if (!g.on) return;
-		if (e.type === "pointerup" && Math.abs(g.x) > 50) go(g.x < 0 ? 1 : -1, g.x);
-		else go(0);
+	const draw = () => {
+		const last = at === CARDS.length - 1;
+		s.setTitle(CARDS[at][0]);
+		s.body.innerHTML = `
+      <p class="sheet-message">${CARDS[at][1]}</p>
+      <span class="wz-dots intro-dots" aria-hidden="true">${CARDS.map((_, i) => `<i class="${i === at ? "on" : ""}"></i>`).join("")}</span>
+      <div class="sheet-actions${at ? "" : " one"}">
+        ${at ? "<button type=\"button\" class=\"btn secondary\" data-back>Back</button>" : ""}
+        <button type="button" class="btn primary" data-next>${last ? "Got it" : "Next"}</button>
+      </div>`;
 	};
-	stage.addEventListener("pointerup", up);
-	stage.addEventListener("pointercancel", up);
-	function close() {
-		document.removeEventListener("keydown", key);
-		window.removeEventListener("resize", draw);
-		el.remove();
-		onClose?.(at);
-	}
-	const key = (e) => {
-		if (e.key === "ArrowRight") go(1);
-		else if (e.key === "ArrowLeft") go(-1);
-		else if (e.key === "Escape") close();
-	};
-	document.addEventListener("keydown", key);
-	window.addEventListener("resize", draw);
-	el.querySelector("[data-close]").addEventListener("click", close);
-	el.querySelector(".show-foot").addEventListener("click", (e) => {
-		const b = e.target.closest("[data-go]");
-		if (b) go(+b.dataset.go);
+	s.body.addEventListener("click", (e) => {
+		if (e.target.closest("[data-back]")) {
+			at--;
+			draw();
+		} else if (e.target.closest("[data-next]")) {
+			if (at === CARDS.length - 1) s.close();
+			else {
+				at++;
+				draw();
+			}
+		}
 	});
 	draw();
-	return { close };
+	return s;
 }
 
-// pages/board-touch.js
-function addTouch(ed) {
-	const pts = new Map();
-	let gesture = null;
-	const slotOf = (target) => target.closest?.(".slot");
-	ed.stage.addEventListener("pointerdown", (e) => {
-		if (e.target.closest(".slot-x")) return;
-		try {
-			ed.stage.setPointerCapture(e.pointerId);
-		} catch {}
-		pts.set(e.pointerId, [e.clientX, e.clientY]);
-		const handle = e.target.closest(".tbox-sel i");
-		const boxEl = handle ? null : e.target.closest("[data-box]");
-		if (pts.size === 1 && (handle || boxEl)) {
-			const key = handle ? ed.tsel : ed.keyOf(boxEl.dataset.box);
-			const pg = ed.stage.querySelector(".page");
-			const b = pg.querySelector(`[data-box="${key}"]`);
-			gesture = {
-				text: key,
-				handle: handle?.dataset.h,
-				x: e.clientX,
-				y: e.clientY,
-				moved: false,
-				picked: key === ed.tsel,
-				r0: ed.rectOf(b, pg),
-				pw: pg.clientWidth,
-				ph: pg.clientHeight
-			};
-			return;
-		}
-		if (pts.size === 1) {
-			const slot = slotOf(e.target);
-			const onSel = slot && +slot.dataset.index === ed.sel && ed.page().images[ed.sel];
-			gesture = {
-				x: e.clientX,
-				y: e.clientY,
-				slot,
-				crop: onSel ? { ...ed.page().images[ed.sel] } : null,
-				moved: false
-			};
-		} else if (pts.size === 2 && gesture?.crop) {
-			const [a, b] = [...pts.values()];
-			gesture.pinch = {
-				d: Math.hypot(a[0] - b[0], a[1] - b[1]),
-				zoom: ed.page().images[ed.sel].zoom || 1
-			};
+// pages/options-backup.js
+function saveBackup() {
+	const D = window.DFData;
+	let open = true;
+	let made = null;
+	const s = openSheet({
+		title: "Save a backup",
+		className: "sheet-small",
+		body: "<p class=\"sheet-message\" data-msg>Putting it together</p>",
+		onClose: () => {
+			open = false;
+			if (made) made.done();
 		}
 	});
-	ed.stage.addEventListener("pointermove", (e) => {
-		if (!pts.has(e.pointerId) || !gesture) return;
-		pts.set(e.pointerId, [e.clientX, e.clientY]);
-		const dx = e.clientX - gesture.x;
-		const dy = e.clientY - gesture.y;
-		if (Math.hypot(dx, dy) > 8) gesture.moved = true;
-		if (gesture.text != null) {
-			if (gesture.moved && (gesture.picked || gesture.handle)) ed.dragBox(gesture, dx / gesture.pw, dy / gesture.ph);
+	const msg = s.body.querySelector("[data-msg]");
+	D.zipBackup({
+		app: "ref",
+		databases: ["ref-notebook"],
+		extra: { book: document.documentElement.dataset.book || "" },
+		filename: `ref-backup-${D.todayStr()}.zip`,
+		onProgress: (f) => {
+			if (open) msg.textContent = `Putting it together, ${Math.floor(f * 100)}%`;
+		}
+	}).then((m) => {
+		made = m;
+		if (!open) {
+			if (m) m.done();
 			return;
 		}
-		if (!gesture.crop) return;
-		const im = ed.page().images[ed.sel];
-		const slotEl = ed.stage.querySelector(`.slot[data-index="${ed.sel}"]`);
-		const img = slotEl?.querySelector("img");
-		const rec = photoById(im.id);
-		if (!img || !rec) return;
-		if (pts.size === 2 && gesture.pinch) {
-			const [a, b] = [...pts.values()];
-			im.zoom = clamp(gesture.pinch.zoom * Math.hypot(a[0] - b[0], a[1] - b[1]) / gesture.pinch.d, 1, 6);
-		} else if (pts.size === 1 && !gesture.pinch) {
-			const sw = slotEl.clientWidth;
-			const sh = slotEl.clientHeight;
-			const scale = Math.max(sw / rec.width, sh / rec.height) * (im.zoom || 1);
-			const spareX = rec.width * scale - sw;
-			const spareY = rec.height * scale - sh;
-			const [fx, fy] = gesture.crop.focal || [.5, .5];
-			im.focal = [spareX > .5 ? clamp(fx - dx / spareX, 0, 1) : fx, spareY > .5 ? clamp(fy - dy / spareY, 0, 1) : fy];
+		if (!m) {
+			msg.textContent = "There is nothing to back up yet.";
+			return;
 		}
-		applyCrop(img, im);
-		gesture.changed = true;
-	});
-	const up = (e) => {
-		if (!pts.has(e.pointerId)) return;
-		pts.delete(e.pointerId);
-		if (pts.size || !gesture) return;
-		const g = gesture;
-		gesture = null;
-		if (g.text != null) return ed.endBoxGesture(g, e);
-		if (g.crop) {
-			if (g.changed) {
-				ed.undo.push(JSON.stringify(ed.board.pages.map((p, i) => i === ed.at ? {
-					...p,
-					images: p.images.map((x, n) => n === ed.sel ? g.crop : x)
-				} : p)));
-				ed.paintUndo();
-				ed.persist();
-				return;
+		const steps = D.backupSteps(m);
+		msg.textContent = steps.note;
+		msg.insertAdjacentHTML("afterend", `<button type="button" class="btn secondary opt-wide" data-save>${steps.label}</button>`);
+		const btn = s.body.querySelector("[data-save]");
+		btn.addEventListener("click", async () => {
+			try {
+				if (!await steps.tap()) {
+					btn.textContent = steps.label;
+					return;
+				}
+				s.close();
+				toast("Backup saved");
+			} catch (err) {
+				console.error(err);
+				toast(err.message || "The backup wasn't saved.");
 			}
-		}
-		const dx = e.clientX - g.x;
-		if (g.moved && !g.crop) {
-			if (Math.abs(dx) > 40) ed.goTo(ed.at + (dx < 0 ? 1 : -1), dx < 0 ? 1 : -1);
-			return;
-		}
-		if (g.moved) return;
-		const i = g.slot ? +g.slot.dataset.index : -1;
-		ed.sel = ed.sel === i ? -1 : i;
-		if (ed.tsel != null) {
-			ed.tsel = null;
-			ed.closePanel();
-		}
-		ed.drawPage();
-	};
-	ed.stage.addEventListener("pointerup", up);
-	ed.stage.addEventListener("pointercancel", up);
-	ed.stage.addEventListener("click", (e) => {
-		if (!e.target.closest(".slot-x")) return;
-		ed.snapshot();
-		ed.page().images[ed.sel] = null;
-		ed.sel = -1;
-		ed.persist();
-		ed.drawPage();
-		ed.drawTray();
+		});
+	}).catch((err) => {
+		console.error(err);
+		if (open) msg.textContent = err.message || "The backup couldn't be made.";
 	});
 }
-
-// data/pdf.js
-const enc = new TextEncoder();
-function makePdf(sheets) {
-	const parts = [];
-	const offsets = [];
-	let size = 0;
-	const put = (v) => {
-		const b = typeof v === "string" ? enc.encode(v) : v;
-		parts.push(b);
-		size += b instanceof Blob ? b.size : b.length;
-	};
-	const obj = (id, write) => {
-		offsets[id] = size;
-		put(`${id} 0 obj\n`);
-		write();
-		put("\nendobj\n");
-	};
-	const ids = sheets.map((_, i) => 3 + i * 3);
-	const next = 3 + sheets.length * 3;
-	put("%PDF-1.4\n");
-	put(new Uint8Array([
-		37,
-		226,
-		227,
-		207,
-		211,
-		10
-	]));
-	obj(1, () => put("<< /Type /Catalog /Pages 2 0 R >>"));
-	obj(2, () => put(`<< /Type /Pages /Count ${sheets.length} /Kids [${ids.map((id) => `${id + 1} 0 R`).join(" ")}] >>`));
-	sheets.forEach((s, i) => {
-		const im = ids[i];
-		obj(im, () => {
-			put(`<< /Type /XObject /Subtype /Image /Width ${s.pxW} /Height ${s.pxH} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${s.jpeg.size} >>\nstream\n`);
-			put(s.jpeg);
-			put("\nendstream");
+async function restoreBackup(close, BOOK_KEY) {
+	const D = window.DFData;
+	const files = await D.pickFiles(".zip,application/zip,.json,application/json");
+	if (!files.length) return;
+	if (!await confirmSheet({
+		title: "Restore backup",
+		message: "Everything in ref now is swapped for what's in the file.",
+		confirmLabel: "Restore",
+		danger: true
+	})) return;
+	toast("Restoring the backup", { ms: 6e5 });
+	try {
+		const r = await D.isZipFile(files[0]) ? await D.restoreZip(files, { databases: ["ref-notebook"] }) : await D.importDb(files[0], "ref-notebook", {
+			app: "ref",
+			replace: true
 		});
-		obj(im + 1, () => put(`<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${s.w.toFixed(2)} ${s.h.toFixed(2)}] /Contents ${im + 2} 0 R /Resources << /XObject << /Im ${im} 0 R >> >> >>`));
-		const stream = enc.encode(`q ${s.w.toFixed(2)} 0 0 ${s.h.toFixed(2)} 0 0 cm /Im Do Q\n`);
-		obj(im + 2, () => {
-			put(`<< /Length ${stream.length} >>\nstream\n`);
-			put(stream);
-			put("\nendstream");
-		});
-	});
-	const xref = size;
-	let table = `xref\n0 ${next}\n0000000000 65535 f \n`;
-	for (let id = 1; id < next; id++) table += `${String(offsets[id]).padStart(10, "0")} 00000 n \n`;
-	put(table);
-	put(`trailer\n<< /Size ${next} /Root 1 0 R >>\nstartxref\n${xref}\n%%EOF\n`);
-	return new Blob(parts, { type: "application/pdf" });
-}
-
-// pages/board-tools.js
-function addTools(ed) {
-	Object.assign(ed, {
-		layoutSheet,
-		addPage,
-		moreSheet,
-		exportPdf
-	});
-	function layoutSheet() {
-		const s = SHAPES[ed.board.shape];
-		const W = 60;
-		const H = 60 * s.H / s.W;
-		const list = TEMPLATES[ed.board.shape].filter((t) => !t.guide);
-		const sh = openSheet({
-			title: "Layout",
-			body: `<div class="style-grid">${list.map((t) => `<button type="button" class="style${t.id === ed.page().template ? " on" : ""}" data-tpl="${esc(t.id)}"><svg viewBox="0 0 ${W} ${H}" aria-hidden="true"><rect class="paper-r" width="${W}" height="${H}"/>${t.slots.map((b) => `<rect x="${b.x * W}" y="${b.y * H}" width="${b.w * W}" height="${b.h * H}"/>`).join("")}</svg><span>${esc(t.name)}</span></button>`).join("")}</div>`
-		});
-		sh.body.addEventListener("click", (e) => {
-			const b = e.target.closest("[data-tpl]");
-			if (!b) return;
-			ed.snapshot();
-			ed.page().template = b.dataset.tpl;
-			ed.sel = -1;
-			ed.persist();
-			sh.close();
-			ed.drawPage();
-		});
-	}
-	function addPage() {
-		ed.snapshot();
-		const n = ed.at + 1;
-		const tid = styleTemplate(ed.board.shape, ed.board.style, n) || defaultTemplate(ed.board.shape, 1).id;
-		ed.board.pages.splice(n, 0, withTextDefaults({
-			template: tid,
-			images: [],
-			section: ed.page().section
-		}));
-		ed.persist();
-		ed.goTo(n, 1);
-		ed.drawPage(1);
-	}
-	async function moreSheet() {
-		const key = await choiceSheet({
-			title: `Page ${ed.at + 1}`,
-			options: [
-				...ed.at > 0 ? [{
-					key: "up",
-					label: "Move earlier"
-				}] : [],
-				...ed.at < ed.board.pages.length - 1 ? [{
-					key: "down",
-					label: "Move later"
-				}] : [],
-				{
-					key: "dup",
-					label: "Duplicate page"
-				},
-				...ed.board.pages.length > 1 ? [{
-					key: "delete",
-					label: "Delete page",
-					danger: true
-				}] : []
-			]
-		});
-		if (!key) return;
-		if (key === "delete" && !await confirmSheet({
-			title: "Delete this page?",
-			message: "Its photos stay in the notebook.",
-			confirmLabel: "Delete",
-			danger: true
-		})) return;
-		ed.snapshot();
-		if (key === "up" || key === "down") {
-			const j = key === "up" ? ed.at - 1 : ed.at + 1;
-			[ed.board.pages[ed.at], ed.board.pages[j]] = [ed.board.pages[j], ed.board.pages[ed.at]];
-			ed.at = j;
-		} else if (key === "dup") {
-			ed.board.pages.splice(ed.at + 1, 0, clone(ed.page()));
-			ed.at += 1;
-		} else {
-			ed.board.pages.splice(ed.at, 1);
-			ed.at = Math.min(ed.at, ed.board.pages.length - 1);
+		const book = r.extra && r.extra.book || (r.local ? await r.local(BOOK_KEY) : null);
+		if (book) {
+			try {
+				localStorage.setItem(BOOK_KEY, book);
+			} catch {}
 		}
-		ed.sel = -1;
-		ed.persist();
-		ed.drawPage();
-		ed.drawTray();
+		close();
+		toast("Backup restored");
+		setTimeout(() => location.reload(), 700);
+	} catch (err) {
+		console.error(err);
+		toast(err.message || "That backup couldn't be restored.");
 	}
-	async function exportPdf() {
-		const s = SHAPES[ed.board.shape];
-		const px = ed.board.shape === "wide-16x9" ? 2e3 : 1700;
-		const sheets = [];
-		try {
-			for (let i = 0; i < ed.board.pages.length; i++) {
-				toast(`Making page ${i + 1} of ${ed.board.pages.length}`, { ms: 6e4 });
-				const c = await pageToCanvas(ed.board, ed.board.pages[i], px);
-				sheets.push({
-					w: s.W * 72,
-					h: s.H * 72,
-					pxW: c.width,
-					pxH: c.height,
-					jpeg: await canvasToBlob(c, "image/jpeg", .88)
-				});
-				c.width = c.height = 0;
-			}
-		} catch (e) {
-			console.error(e);
-			toast("Could not make the PDF");
-			return;
-		}
-		hideToast();
-		const blob = makePdf(sheets);
-		const name = `${slug(ed.board.name)}.pdf`;
-		const mb = (blob.size / 1048576).toFixed(1);
-		const sh = openSheet({
-			title: "Your PDF is ready",
-			className: "sheet-small",
-			body: `<p class="sheet-message">${ed.board.pages.length} ${ed.board.pages.length === 1 ? "page" : "pages"}, ${mb} MB.</p><div class="sheet-actions one"><button type="button" class="btn primary" data-send>Save or share</button></div>`
-		});
-		sh.body.querySelector("[data-send]").addEventListener("click", async () => {
-			const file = new File([blob], name, { type: "application/pdf" });
-			if (navigator.canShare?.({ files: [file] })) {
-				try {
-					await navigator.share({
-						files: [file],
-						title: ed.board.name
-					});
-				} catch {}
-			} else downloadBlob(blob, name);
-			sh.close();
-		});
-	}
-}
-
-// pages/board-text.js
-function addTextBoxes(ed) {
-	Object.assign(ed, {
-		rectOf,
-		paintTsel,
-		dragBox,
-		endBoxGesture,
-		addNote,
-		closePanel
-	});
-	const keyOf = (v) => v === "main" ? "main" : +v;
-	ed.keyOf = keyOf;
-	const noteOf = (key) => key === "main" ? null : ed.page().notes?.[key];
-	function rectOf(b, pg) {
-		return {
-			x: b.offsetLeft / pg.clientWidth,
-			y: b.offsetTop / pg.clientHeight,
-			w: b.offsetWidth / pg.clientWidth,
-			h: b.offsetHeight / pg.clientHeight
-		};
-	}
-	function paintTsel(pg) {
-		if (ed.tsel == null) return;
-		const b = pg.querySelector(`[data-box="${ed.tsel}"]`);
-		if (!b) {
-			ed.tsel = null;
-			closePanel();
-			return;
-		}
-		let o = pg.querySelector(".tbox-sel");
-		if (!o) {
-			o = document.createElement("div");
-			o.className = "tbox-sel";
-			o.innerHTML = [
-				"nw",
-				"ne",
-				"sw",
-				"se"
-			].map((h) => `<i data-h="${h}"></i>`).join("");
-			pg.append(o);
-		}
-		Object.assign(o.style, {
-			left: `${b.offsetLeft}px`,
-			top: `${b.offsetTop}px`,
-			width: `${b.offsetWidth}px`,
-			height: `${b.offsetHeight}px`
-		});
-	}
-	function dragBox(g, fx, fy) {
-		const r0 = g.r0;
-		const r = { ...r0 };
-		const h = g.handle;
-		if (!h) {
-			r.x = r0.x + fx;
-			r.y = r0.y + fy;
-		} else {
-			if (h.includes("w")) {
-				r.x = r0.x + fx;
-				r.w = r0.w - fx;
-			}
-			if (h.includes("e")) r.w = r0.w + fx;
-			if (h.includes("n")) {
-				r.y = r0.y + fy;
-				r.h = r0.h - fy;
-			}
-			if (h.includes("s")) r.h = r0.h + fy;
-			if (r.w < .12) {
-				if (h.includes("w")) r.x -= .12 - r.w;
-				r.w = .12;
-			}
-			if (r.h < .04) {
-				if (h.includes("n")) r.y -= .04 - r.h;
-				r.h = .04;
-			}
-		}
-		r.w = Math.min(r.w, 1);
-		r.h = Math.min(r.h, 1);
-		r.x = clamp(r.x, 0, 1 - r.w);
-		r.y = clamp(r.y, 0, 1 - r.h);
-		if (!g.snap) {
-			ed.snapshot();
-			g.snap = true;
-		}
-		const target = g.text === "main" ? ed.page().textBox ||= {} : noteOf(g.text);
-		Object.assign(target, r);
-		const pg = ed.stage.querySelector(".page");
-		const b = pg.querySelector(`[data-box="${g.text}"]`);
-		const pc = (v) => `${(v * 100).toFixed(3)}%`;
-		if (g.text === "main" && b.classList.contains("overlay")) Object.assign(b.style, {
-			left: pc(r.x),
-			top: pc(r.y),
-			bottom: "",
-			maxWidth: pc(r.w)
-		});
-		else Object.assign(b.style, {
-			left: pc(r.x),
-			top: pc(r.y),
-			bottom: "",
-			width: pc(r.w),
-			height: pc(r.h)
-		});
-		paintTsel(pg);
-	}
-	function endBoxGesture(g, e) {
-		if (g.moved && (g.picked || g.handle)) {
-			if (g.snap) {
-				ed.persist();
-				ed.drawPage();
-			}
-			return;
-		}
-		if (g.moved) {
-			const dx = e.clientX - g.x;
-			if (Math.abs(dx) > 40) ed.goTo(ed.at + (dx < 0 ? 1 : -1), dx < 0 ? 1 : -1);
-			return;
-		}
-		const now = performance.now();
-		if (g.picked && ed.lastTap && ed.lastTap.key === g.text && now - ed.lastTap.t < 400) {
-			ed.lastTap = null;
-			openPanel(g.text);
-			return;
-		}
-		ed.lastTap = {
-			key: g.text,
-			t: now
-		};
-		if (!g.picked) {
-			ed.tsel = g.text;
-			ed.sel = -1;
-			if (ed.panel != null && ed.panel !== ed.tsel) closePanel();
-			ed.drawPage();
-		}
-	}
-	function addNote() {
-		ed.snapshot();
-		const p = ed.page();
-		p.notes ||= [];
-		p.notes.push({
-			x: .15,
-			y: .4,
-			w: .7,
-			h: .1,
-			text: "",
-			size: defaultSize("note") * 1.6
-		});
-		ed.tsel = p.notes.length - 1;
-		ed.sel = -1;
-		ed.persist();
-		ed.drawPage();
-		openPanel(ed.tsel, true);
-	}
-	const tpanel = ed.view.querySelector("[data-tpanel]");
-	function closePanel() {
-		if (ed.panel == null) return;
-		const p = ed.page();
-		const n = ed.panel === "main" ? null : p?.notes?.[ed.panel];
-		ed.panel = null;
-		tpanel.hidden = true;
-		tpanel.innerHTML = "";
-		ed.view.querySelectorAll(".show-row, [data-tray-head], [data-tray]").forEach((x) => {
-			x.hidden = false;
-		});
-		if (n && !n.text.trim()) {
-			p.notes.splice(p.notes.indexOf(n), 1);
-			ed.tsel = null;
-			ed.persist();
-		}
-		ed.drawPage();
-	}
-	function openPanel(key, focus = false) {
-		const keep = key === "main" ? "main" : ed.page().notes?.[key];
-		closePanel();
-		key = keep === "main" ? "main" : ed.page().notes.indexOf(keep);
-		if (key === -1) return;
-		ed.panel = key;
-		ed.tsel = key;
-		const p = ed.page();
-		const t = pageTemplate(ed.board, p);
-		const n = noteOf(key);
-		ed.view.querySelectorAll(".show-row, [data-tray-head], [data-tray]").forEach((x) => {
-			x.hidden = true;
-		});
-		tpanel.hidden = false;
-		tpanel.innerHTML = n ? `
-        <textarea rows="2" data-note placeholder="Type here">${esc(n.text)}</textarea>
-        ${sizeRow("note", "text")}
-        <div class="tp-actions"><button type="button" class="label-btn" data-tdel>Delete box</button><button type="button" class="label-btn tp-done" data-tdone>Done</button></div>` : `
-        <input type="text" data-title value="${esc(p.title || "")}" placeholder="Title" maxlength="120" autocomplete="off" />
-        ${sizeRow("title", "title")}
-        <textarea rows="2" data-body placeholder="Text">${esc(p.text || "")}</textarea>
-        ${sizeRow("body", "text")}
-        <div class="tp-checks">${t.text.overlay ? `<label class="check"><input type="checkbox" data-fill${p.textFill === false ? "" : " checked"} /> Background</label>` : ""}
-          <label class="check"><input type="checkbox" data-palette${p.palette ? " checked" : ""} /> Page colors</label></div>
-        <div class="tp-actions"><button type="button" class="label-btn tp-done" data-tdone>Done</button></div>`;
-		let first = true;
-		const change = (fn) => {
-			if (first) {
-				ed.snapshot();
-				first = false;
-			}
-			fn();
-			ed.persist();
-			ed.drawPage();
-		};
-		const on = (sel2, ev, fn) => tpanel.querySelector(sel2)?.addEventListener(ev, fn);
-		on("[data-note]", "input", (e) => change(() => {
-			n.text = e.target.value;
-		}));
-		on("[data-title]", "input", (e) => change(() => {
-			p.title = e.target.value;
-		}));
-		on("[data-body]", "input", (e) => change(() => {
-			p.text = e.target.value;
-		}));
-		on("[data-fill]", "change", (e) => change(() => {
-			p.textFill = e.target.checked;
-		}));
-		on("[data-palette]", "change", (e) => change(() => {
-			p.palette = e.target.checked;
-		}));
-		const targetOf = (kind) => kind === "note" ? n : p;
-		const paintSizes = () => tpanel.querySelectorAll("[data-size]").forEach((row) => {
-			const kind = row.dataset.size;
-			const o = targetOf(kind);
-			row.querySelector("b").textContent = `${Math.round(sizeOf(o, kind) * 100)}%`;
-			row.querySelector("[data-usedef]").disabled = isDefault(o, kind);
-			row.querySelector("[data-savedef]").disabled = isDefault(o, kind);
-		});
-		paintSizes();
-		tpanel.onclick = (e) => {
-			const b = e.target.closest("button");
-			if (!b) return;
-			if ("tdone" in b.dataset) {
-				ed.tsel = null;
-				closePanel();
-				ed.drawPage();
-				return;
-			}
-			if ("tdel" in b.dataset) {
-				ed.snapshot();
-				p.notes.splice(key, 1);
-				ed.panel = null;
-				ed.tsel = null;
-				closePanel();
-				tpanel.hidden = true;
-				ed.view.querySelectorAll(".show-row, [data-tray-head], [data-tray]").forEach((x) => {
-					x.hidden = false;
-				});
-				ed.persist();
-				ed.drawPage();
-				return;
-			}
-			const row = b.closest("[data-size]");
-			if (!row) return;
-			const kind = row.dataset.size;
-			const o = targetOf(kind);
-			const word = kind === "title" ? "Title" : "Text";
-			if (b.dataset.grow) change(() => stepSize(o, kind, +b.dataset.grow));
-			else if ("usedef" in b.dataset) {
-				change(() => useDefault(o, kind));
-				toast(`${word} back to your default size`);
-			} else if ("savedef" in b.dataset) {
-				saveDefault(o, kind);
-				toast(`${word} size saved: new ones start with it`);
-			}
-			paintSizes();
-		};
-		ed.drawPage();
-		if (focus) tpanel.querySelector("textarea, input")?.focus();
-	}
-	function sizeRow(kind, word) {
-		return `
-      <div class="size-row" data-size="${kind}">
-        <span class="label">Size</span>
-        <span class="stepper"><button type="button" data-grow="-1" aria-label="Smaller ${word}">A−</button><b>100%</b><button type="button" data-grow="1" aria-label="Larger ${word}">A+</button></span>
-        <span class="size-defs"><button type="button" class="label-btn" data-usedef>Use default</button><button type="button" class="label-btn" data-savedef>Save as default</button></span>
-      </div>`;
-	}
-}
-
-// pages/board.js
-async function boardScreen(view, id) {
-	const ed = { view };
-	Object.assign(ed, {
-		drawPage,
-		drawTray,
-		goTo
-	});
-	let board = await getBoard(id);
-	ed.board = board;
-	if (!board) {
-		location.hash = "#/boards";
-		return () => {};
-	}
-	ed.at = 0;
-	ed.sel = -1;
-	let tray = "all";
-	let destroyed = false;
-	let drawToken = 0;
-	ed.tsel = null;
-	ed.panel = null;
-	ed.lastTap = null;
-	const undo = [];
-	ed.undo = undo;
-	const persist = debounce(() => saveBoard(board).then((b) => {
-		board.updatedAt = b.updatedAt;
-	}), 300);
-	ed.persist = persist;
-	const snapshot = () => {
-		undo.push(JSON.stringify(board.pages));
-		if (undo.length > 40) undo.shift();
-		paintUndo();
-	};
-	ed.snapshot = snapshot;
-	const page = () => board.pages[ed.at];
-	ed.page = page;
-	const asOpened = JSON.stringify([board.name, board.pages]);
-	view.innerHTML = `
-    <div class="screen editor">
-      <header class="folder-head">
-        <a class="icon-btn" href="#/boards" aria-label="Back to boards">${ICONS.back}</a>
-        <button type="button" class="hand board-name" data-rename></button>
-        <span class="count" data-at></span>
-      </header>
-      <div class="stage" data-stage></div>
-      <div class="show-row"><button type="button" class="label-btn show-open" data-show>${ICONS.expand}<span>Full screen</span></button></div>
-      <div class="tpanel" data-tpanel hidden></div>
-      <div class="tray-head" data-tray-head></div>
-      <div class="tray" data-tray></div>
-      <nav class="tools" aria-label="Page tools">
-        <button type="button" class="tool" data-t="layout" aria-label="Change layout">${ICONS.layout}</button>
-        <button type="button" class="tool" data-t="text" aria-label="Edit text">${ICONS.text}</button>
-        <button type="button" class="tool" data-t="add" aria-label="Add a page">${ICONS.page}</button>
-        <button type="button" class="tool" data-t="undo" aria-label="Undo">${ICONS.undo}</button>
-        <button type="button" class="tool" data-t="more" aria-label="More">${ICONS.more}</button>
-        <button type="button" class="tool" data-t="pdf" aria-label="Save as PDF">${ICONS.share}</button>
-      </nav>
-    </div>`;
-	const stage = view.querySelector("[data-stage]");
-	ed.stage = stage;
-	const paintUndo = () => {
-		view.querySelector("[data-t=undo]").disabled = !undo.length;
-	};
-	ed.paintUndo = paintUndo;
-	async function drawPage(turn = 0) {
-		const token = ++drawToken;
-		view.querySelector("[data-rename]").textContent = board.name;
-		view.querySelector("[data-at]").textContent = `${ed.at + 1} of ${board.pages.length}`;
-		const el = await renderPage(board, page(), {
-			selected: ed.sel,
-			editing: true
-		});
-		if (token !== drawToken || destroyed) return;
-		fit(el);
-		if (ed.sel >= 0 && page().images[ed.sel]) {
-			const x = document.createElement("button");
-			x.type = "button";
-			x.className = "slot-x";
-			x.setAttribute("aria-label", "Take this photo off the page");
-			x.innerHTML = ICONS.x;
-			el.querySelector(`.slot[data-index="${ed.sel}"]`).append(x);
-		}
-		stage.replaceChildren(el);
-		ed.paintTsel(el);
-		if (turn) {
-			el.classList.add(turn > 0 ? "turn-next" : "turn-back");
-		}
-	}
-	function fit(el) {
-		const s = SHAPES[board.shape];
-		const k = Math.min(stage.clientWidth / s.W, stage.clientHeight / s.H);
-		el.style.width = `${Math.floor(s.W * k)}px`;
-	}
-	function drawTray() {
-		const sources = [
-			{
-				id: "all",
-				name: "All"
-			},
-			SPECIAL[0],
-			SPECIAL[1],
-			...lib.folders
-		];
-		view.querySelector("[data-tray-head]").innerHTML = sources.map((f) => `<button type="button" class="chip${tray === f.id ? " on" : ""}" data-source="${esc(f.id)}">${esc(f.name)}</button>`).join("");
-		const list = sortList(photosIn(tray), "newest");
-		const onPage = new Set(page().images.filter(Boolean).map((x) => x.id));
-		view.querySelector("[data-tray]").innerHTML = list.length ? list.map((p) => `<button type="button" class="tray-photo${onPage.has(p.id) ? " used" : ""}" data-photo="${esc(p.id)}" aria-label="${esc(p.name)}"><img src="${thumbUrl(p)}" alt="" loading="lazy" draggable="false" /></button>`).join("") : "<p class=\"note\">No photos here yet.</p>";
-	}
-	function goTo(n, dir) {
-		n = clamp(n, 0, board.pages.length - 1);
-		if (n === ed.at) return;
-		ed.at = n;
-		ed.sel = -1;
-		ed.tsel = null;
-		ed.closePanel();
-		drawPage(dir);
-		drawTray();
-	}
-	function place(photoId) {
-		const t = pageTemplate(board, page());
-		let spot = ed.sel;
-		if (spot < 0) {
-			for (let i = 0; i < t.slots.length; i++) if (!page().images[i]) {
-				spot = i;
-				break;
-			}
-		}
-		if (spot < 0) {
-			toast("Tap a spot on the page first");
-			return;
-		}
-		snapshot();
-		while (page().images.length <= spot) page().images.push(null);
-		page().images[spot] = { id: photoId };
-		persist();
-		drawPage();
-		drawTray();
-	}
-	addTouch(ed);
-	addTools(ed);
-	addTextBoxes(ed);
-	view.querySelector(".tools").addEventListener("click", (e) => {
-		const b = e.target.closest("[data-t]");
-		if (!b) return;
-		const k = b.dataset.t;
-		if (k === "layout") ed.layoutSheet();
-		else if (k === "text") ed.addNote();
-		else if (k === "add") ed.addPage();
-		else if (k === "more") ed.moreSheet();
-		else if (k === "pdf") ed.exportPdf();
-		else if (k === "undo" && undo.length) {
-			board.pages = JSON.parse(undo.pop());
-			ed.at = Math.min(ed.at, board.pages.length - 1);
-			ed.sel = -1;
-			ed.tsel = null;
-			ed.closePanel();
-			paintUndo();
-			persist();
-			drawPage();
-			drawTray();
-		}
-	});
-	view.querySelector("[data-show]").addEventListener("click", () => {
-		persist.flush?.();
-		showBoard(board, ed.at, (n) => {
-			if (!destroyed && n !== ed.at) goTo(n, n > ed.at ? 1 : -1);
-		});
-	});
-	view.querySelector("[data-tray-head]").addEventListener("click", (e) => {
-		const b = e.target.closest("[data-source]");
-		if (b) {
-			tray = b.dataset.source;
-			drawTray();
-		}
-	});
-	view.querySelector("[data-tray]").addEventListener("click", (e) => {
-		const b = e.target.closest("[data-photo]");
-		if (b) place(b.dataset.photo);
-	});
-	view.querySelector("[data-rename]").addEventListener("click", async () => {
-		const name = await promptSheet({
-			title: "Rename board",
-			value: board.name
-		});
-		if (name) {
-			board.name = name;
-			persist();
-			drawPage();
-		}
-	});
-	const onResize = () => {
-		const el = stage.querySelector(".page");
-		if (el) fit(el);
-	};
-	window.addEventListener("ref-layout", onResize);
-	paintUndo();
-	await drawPage();
-	drawTray();
-	return () => {
-		destroyed = true;
-		const changed = JSON.stringify([board.name, board.pages]) !== asOpened;
-		Promise.resolve(persist.flush()).then(() => {
-			if (changed) keepUp(board.id);
-		});
-		window.removeEventListener("ref-layout", onResize);
-	};
 }
 
 // components/stickers.js
@@ -4753,214 +3897,7 @@ function placeSticker(shape, bytes) {
 	});
 }
 
-// pages/intro.js
-const SEEN = "ref-notebook-intro-seen";
-const CARDS = [
-	["Bring your photos in", "Open Incoming and pick photos from your phone. Tag them to sort them, then make mood boards from your tags."],
-	["It keeps its own copy", "Everything you add is saved inside Ref Notebook. Once a photo is in, you can delete it from your phone’s Photos to free up space, and it stays here in your boards and tags."],
-	["Good to know", "Photos are kept at a size made for boards and PDFs, not the full original. Your photos are saved inside the app, not in Photos. If you delete Ref Notebook from your home screen, its photos are deleted with it."]
-];
-const introSeen = () => {
-	try {
-		return localStorage.getItem(SEEN) === "1";
-	} catch {
-		return true;
-	}
-};
-function openIntro() {
-	let at = 0;
-	const s = openSheet({
-		title: CARDS[0][0],
-		className: "sheet-small intro",
-		onClose: () => {
-			try {
-				localStorage.setItem(SEEN, "1");
-			} catch {}
-		}
-	});
-	const draw = () => {
-		const last = at === CARDS.length - 1;
-		s.setTitle(CARDS[at][0]);
-		s.body.innerHTML = `
-      <p class="sheet-message">${CARDS[at][1]}</p>
-      <span class="wz-dots intro-dots" aria-hidden="true">${CARDS.map((_, i) => `<i class="${i === at ? "on" : ""}"></i>`).join("")}</span>
-      <div class="sheet-actions${at ? "" : " one"}">
-        ${at ? "<button type=\"button\" class=\"btn secondary\" data-back>Back</button>" : ""}
-        <button type="button" class="btn primary" data-next>${last ? "Got it" : "Next"}</button>
-      </div>`;
-	};
-	s.body.addEventListener("click", (e) => {
-		if (e.target.closest("[data-back]")) {
-			at--;
-			draw();
-		} else if (e.target.closest("[data-next]")) {
-			if (at === CARDS.length - 1) s.close();
-			else {
-				at++;
-				draw();
-			}
-		}
-	});
-	draw();
-	return s;
-}
-
-// pages/options.js
-const BOOK_KEY = "ref-notebook-book";
-const START_KEY = "ref-notebook-start";
-const COLORS = [
-	["orange", "Orange"],
-	["mango", "Mango"],
-	["berry", "Berry"],
-	["fern", "Fern"],
-	["ocean", "Ocean"],
-	["ink", "Black"]
-];
-const startsOpen = () => {
-	try {
-		return localStorage.getItem(START_KEY) === "open";
-	} catch {
-		return false;
-	}
-};
-const startPage = () => startsOpen() ? "#/boards" : "";
-function useBook(name) {
-	document.documentElement.dataset.book = name;
-	try {
-		localStorage.setItem(BOOK_KEY, name);
-	} catch {}
-}
-function openOptions() {
-	const now = document.documentElement.dataset.book;
-	const s = openSheet({
-		title: "Options",
-		body: `
-      <span class="field-label">App color</span>
-      <div class="opt-colors">
-        ${COLORS.map(([key, name]) => `
-          <button type="button" class="opt-color" data-color="${key}" aria-pressed="${key === now}">
-            <span class="opt-book" style="background-image:url(art/${key}-cover.webp)"></span>
-            <span>${name}</span>
-          </button>`).join("")}
-      </div>
-      ${window.DF_SUITE ? "" : `<span class="field-label opt-gap">Stickers</span>
-      <button type="button" class="btn secondary opt-wide" data-stickers>Stickers</button>`}
-      ${window.DF_SUITE ? "" : `<span class="field-label opt-gap">Always start</span>
-      <div class="seg opt-seg">
-        <button type="button" data-start="shut"${startsOpen() ? "" : " class=\"on\""}>In the notebook</button>
-        <button type="button" data-start="open"${startsOpen() ? " class=\"on\"" : ""}>On the first page</button>
-      </div>`}
-      <span class="field-label opt-gap">Backup</span>
-      <button type="button" class="btn secondary opt-wide" data-save-backup>Save a backup</button>
-      <button type="button" class="btn secondary opt-wide" data-restore-backup>Restore a backup</button>
-      <button type="button" class="btn secondary opt-wide opt-gap" data-intro>How it works</button>`
-	});
-	s.body.addEventListener("click", (e) => {
-		const c = e.target.closest("[data-color]");
-		if (c) {
-			useBook(c.dataset.color);
-			s.body.querySelectorAll("[data-color]").forEach((b) => b.setAttribute("aria-pressed", String(b === c)));
-		}
-		const st = e.target.closest("[data-start]");
-		if (st) {
-			try {
-				localStorage.setItem(START_KEY, st.dataset.start);
-			} catch {}
-			s.body.querySelectorAll("[data-start]").forEach((b) => b.classList.toggle("on", b === st));
-		}
-		if (e.target.closest("[data-stickers]")) stickerSheet(s);
-		if (e.target.closest("[data-intro]")) {
-			s.close();
-			openIntro();
-		}
-		if (e.target.closest("[data-save-backup]")) saveBackup();
-		if (e.target.closest("[data-restore-backup]")) restoreBackup(() => s.close());
-	});
-}
-function saveBackup() {
-	const D = window.DFData;
-	let open = true;
-	let made = null;
-	const s = openSheet({
-		title: "Save a backup",
-		className: "sheet-small",
-		body: "<p class=\"sheet-message\" data-msg>Putting it together</p>",
-		onClose: () => {
-			open = false;
-			if (made) made.done();
-		}
-	});
-	const msg = s.body.querySelector("[data-msg]");
-	D.zipBackup({
-		app: "ref",
-		databases: ["ref-notebook"],
-		extra: { book: document.documentElement.dataset.book || "" },
-		filename: `ref-backup-${D.todayStr()}.zip`,
-		onProgress: (f) => {
-			if (open) msg.textContent = `Putting it together, ${Math.floor(f * 100)}%`;
-		}
-	}).then((m) => {
-		made = m;
-		if (!open) {
-			if (m) m.done();
-			return;
-		}
-		if (!m) {
-			msg.textContent = "There is nothing to back up yet.";
-			return;
-		}
-		const steps = D.backupSteps(m);
-		msg.textContent = steps.note;
-		msg.insertAdjacentHTML("afterend", `<button type="button" class="btn secondary opt-wide" data-save>${steps.label}</button>`);
-		const btn = s.body.querySelector("[data-save]");
-		btn.addEventListener("click", async () => {
-			try {
-				if (!await steps.tap()) {
-					btn.textContent = steps.label;
-					return;
-				}
-				s.close();
-				toast("Backup saved");
-			} catch (err) {
-				console.error(err);
-				toast(err.message || "The backup wasn't saved.");
-			}
-		});
-	}).catch((err) => {
-		console.error(err);
-		if (open) msg.textContent = err.message || "The backup couldn't be made.";
-	});
-}
-async function restoreBackup(close) {
-	const D = window.DFData;
-	const files = await D.pickFiles(".zip,application/zip,.json,application/json");
-	if (!files.length) return;
-	if (!await confirmSheet({
-		title: "Restore backup",
-		message: "Everything in ref now is swapped for what's in the file.",
-		confirmLabel: "Restore",
-		danger: true
-	})) return;
-	toast("Restoring the backup", { ms: 6e5 });
-	try {
-		const r = await D.isZipFile(files[0]) ? await D.restoreZip(files, { databases: ["ref-notebook"] }) : await D.importDb(files[0], "ref-notebook", {
-			app: "ref",
-			replace: true
-		});
-		const book = r.extra && r.extra.book || (r.local ? await r.local(BOOK_KEY) : null);
-		if (book) {
-			try {
-				localStorage.setItem(BOOK_KEY, book);
-			} catch {}
-		}
-		close();
-		toast("Backup restored");
-		setTimeout(() => location.reload(), 700);
-	} catch (err) {
-		console.error(err);
-		toast(err.message || "That backup couldn't be restored.");
-	}
-}
+// pages/options-stickers.js
 function stickerSheet(options) {
 	const s = openSheet({
 		title: "Stickers",
@@ -5013,6 +3950,1416 @@ function removeSheet() {
 		if (!b) return;
 		await removeSticker(stickers.find((x) => x.id === b.dataset.id));
 	});
+}
+
+// pages/options.js
+const BOOK_KEY = "ref-notebook-book";
+const START_KEY = "ref-notebook-start";
+const SHAPE_KEY = "ref-notebook-shape";
+const COLORS = [
+	["mango", "Mango"],
+	["orange", "Orange"],
+	["berry", "Berry"],
+	["fern", "Fern"],
+	["ocean", "Ocean"],
+	["leaf", "Leaf"],
+	["ink", "Black"]
+];
+const SHAPES = [["letter-portrait", "Tall"], ["wide-16x9", "Wide"]];
+const read = (k) => {
+	try {
+		return localStorage.getItem(k);
+	} catch {
+		return null;
+	}
+};
+const write = (k, v) => {
+	try {
+		localStorage.setItem(k, v);
+	} catch {}
+};
+const startsOpen = () => read(START_KEY) === "open";
+const startPage = () => startsOpen() ? "#/boards" : "";
+const defaultShape = () => SHAPES.some(([k]) => k === read("ref-notebook-shape")) ? read(SHAPE_KEY) : "letter-portrait";
+const TICK = "<svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><polyline points=\"5 12.5 10 17 19 7\"/></svg>";
+const CHEVRON = "<svg class=\"opt-chevron\" viewBox=\"0 0 24 24\" aria-hidden=\"true\"><polyline points=\"9 5 16 12 9 19\"/></svg>";
+const recognizeLine = () => tagsOn() ? "On. Runs on this phone, nothing is uploaded" : "Off. New photos are not looked at";
+function useBook(name) {
+	document.documentElement.dataset.book = name;
+	write(BOOK_KEY, name);
+}
+function colorsHtml() {
+	const now = document.documentElement.dataset.book || "ocean";
+	return `<div class="opt-colors" role="radiogroup" aria-label="Notebook color">${COLORS.map(([key, name]) => `
+    <button type="button" class="opt-color" role="radio" data-color="${key}" aria-checked="${key === now}">
+      <span class="opt-swatch" data-swatch="${key}"><span class="opt-swatch-line"></span><span class="opt-swatch-sun"></span>${key === now ? `<span class="opt-swatch-tick">${TICK}</span>` : ""}</span>
+      <span class="opt-color-name">${name}</span>
+    </button>`).join("")}</div>`;
+}
+const row = (attr, name, sub = "") => `<button type="button" class="opt-row" ${attr}><span class="opt-row-words"><span class="opt-row-name">${name}</span>${sub ? `<span class="opt-row-sub">${sub}</span>` : ""}</span>${CHEVRON}</button>`;
+function openOptions() {
+	const alone = !window.DF_SUITE;
+	const shapeName = () => SHAPES.find(([k]) => k === defaultShape())[1];
+	const s = openSheet({
+		title: "Options",
+		className: "opt-sheet",
+		body: `
+      <span class="opt-label">Notebook color</span>
+      <div data-colors>${colorsHtml()}</div>
+      ${alone ? `<span class="opt-label opt-gap">Always start</span>
+      <div class="opt-seg">
+        <button type="button" data-start="shut"${startsOpen() ? "" : " class=\"on\""}>In the notebook</button>
+        <button type="button" data-start="open"${startsOpen() ? " class=\"on\"" : ""}>On the first page</button>
+      </div>` : ""}
+      <span class="opt-label opt-gap">Boards</span>
+      <div class="opt-rows">
+        ${row("data-shape-row", "Default page size", `<span data-shape-now>${shapeName()}</span>`)}
+        <label class="opt-row opt-switch-row"><span class="opt-row-words"><span class="opt-row-name">Recognize what's in new photos</span><span class="opt-row-sub" data-recognize-line>${recognizeLine()}</span></span>
+          <input type="checkbox" class="switch" role="switch" data-recognize${tagsOn() ? " checked" : ""} /></label>
+      </div>
+      ${alone ? `<span class="opt-label opt-gap">Cover</span><div class="opt-rows">${row("data-stickers", "Stickers")}</div>` : ""}
+      <span class="opt-label opt-gap">Backups</span>
+      <div class="opt-rows">${row("data-save-backup", "Save a backup")}${row("data-restore-backup", "Restore a backup")}</div>
+      <span class="opt-label opt-gap">Help</span>
+      <div class="opt-rows">${row("data-intro", "How it works")}</div>`
+	});
+	s.body.addEventListener("click", async (e) => {
+		const c = e.target.closest("[data-color]");
+		if (c) {
+			useBook(c.dataset.color);
+			s.body.querySelector("[data-colors]").innerHTML = colorsHtml();
+			return;
+		}
+		const st = e.target.closest("[data-start]");
+		if (st) {
+			write(START_KEY, st.dataset.start);
+			s.body.querySelectorAll("[data-start]").forEach((b) => b.classList.toggle("on", b === st));
+		}
+		if (e.target.closest("[data-shape-row]")) {
+			const key = await choiceSheet({
+				title: "Default page size",
+				options: SHAPES.map(([k, name]) => ({
+					key: k,
+					label: name,
+					current: k === defaultShape(),
+					detail: k === "wide-16x9" ? "For screens and sharing" : "For printing and bringing to a shoot"
+				}))
+			});
+			if (key) {
+				write(SHAPE_KEY, key);
+				s.body.querySelector("[data-shape-now]").textContent = shapeName();
+			}
+		}
+		if (e.target.closest("[data-stickers]")) stickerSheet(s);
+		if (e.target.closest("[data-intro]")) {
+			s.close();
+			openIntro();
+		}
+		if (e.target.closest("[data-save-backup]")) saveBackup();
+		if (e.target.closest("[data-restore-backup]")) restoreBackup(() => s.close(), BOOK_KEY);
+	});
+	s.body.querySelector("[data-recognize]").addEventListener("change", (e) => {
+		if (e.target.checked) turnOnTags();
+		else turnOffTags();
+		s.body.querySelector("[data-recognize-line]").textContent = recognizeLine();
+	});
+}
+
+// pages/newboard.js
+const SHAPE_INFO = {
+	"letter-portrait": {
+		name: "Tall",
+		blurb: "For printing and bringing to a shoot."
+	},
+	"wide-16x9": {
+		name: "Wide",
+		blurb: "For screens and sharing."
+	}
+};
+const ORDERS = [
+	[
+		"newest",
+		"Newest first",
+		"The photos you brought in most lately."
+	],
+	[
+		"oldest",
+		"Oldest first",
+		"From the first ones you saved."
+	],
+	[
+		"fav",
+		"Favorites first",
+		"Hearted photos lead each section."
+	],
+	[
+		"random",
+		"Random",
+		"A fresh mix each time."
+	]
+];
+function newBoardScreen(view) {
+	const W = {
+		step: 0,
+		name: "",
+		shape: defaultShape(),
+		style: "mosaic",
+		cover: false,
+		start: "blank",
+		blankPages: 3,
+		sections: [{
+			name: "",
+			tags: [],
+			all: true
+		}],
+		order: "newest",
+		perSection: 3
+	};
+	const sources = [
+		SPECIAL[0],
+		SPECIAL[1],
+		...lib.folders
+	];
+	const nameOf = (id) => sources.find((f) => f.id === id)?.name || "";
+	const flow = () => W.start === "fill" ? [
+		stepName,
+		stepLayout,
+		stepStart,
+		stepPhotos
+	] : [
+		stepName,
+		stepLayout,
+		stepStart
+	];
+	const TITLES = new Map([
+		[stepName, "Name and page size"],
+		[stepLayout, "Layout"],
+		[stepStart, "Start"],
+		[stepPhotos, "Which photos"]
+	]);
+	const MARKS = new Map([
+		[stepName, "Name"],
+		[stepLayout, "Layout"],
+		[stepStart, "Start"],
+		[stepPhotos, "Photos"]
+	]);
+	const ASKS = new Map([
+		[stepName, "What is it called, and how big are its pages?"],
+		[stepLayout, "How should the pages look? You can change any page later."],
+		[stepStart, "Empty pages to fill yourself, or pages filled from your tags?"],
+		[stepPhotos, "Which photos come first, and how many pages each section gets."]
+	]);
+	const photosOf = (sec) => {
+		if (!sec.tags.length) return [];
+		if (sec.all && sec.tags.length > 1) return lib.photos.filter((p) => sec.tags.every((t) => photosIn(t).includes(p)));
+		return [...new Set(sec.tags.flatMap((t) => photosIn(t)))];
+	};
+	const titleOf = (sec, i) => sec.name.trim() || sec.tags.map(nameOf).join(" · ") || `Section ${i + 1}`;
+	function draw(keepScroll = false) {
+		const top = keepScroll ? view.querySelector(".form-page")?.scrollTop || 0 : 0;
+		const steps = flow();
+		const step = steps[W.step];
+		const last = W.step === steps.length - 1;
+		view.innerHTML = `
+      <div class="screen new-board">
+        ${shortBandHtml({
+			name: "New board",
+			backAttr: "data-back",
+			backLabel: W.step ? "Back a step" : "Back to mood boards",
+			end: {
+				label: "Close",
+				attr: "data-close",
+				svg: CLOSE
+			}
+		})}
+        <div class="scroll form-page">
+          ${marksHtml(steps.map((f) => MARKS.get(f)), W.step)}
+          <h1 class="guide-title">${TITLES.get(step)}</h1>
+          <p class="guide-ask">${ASKS.get(step)}</p>
+          ${step()}
+        </div>
+        <div class="foot guide-foot">
+          <button type="button" class="btn secondary" data-back>Back</button>
+          <button type="button" class="btn primary" data-next>${last ? "Make the board" : `Next: ${MARKS.get(steps[W.step + 1])}`}</button>
+        </div>
+      </div>`;
+		if (keepScroll) view.querySelector(".screen").classList.add("still");
+		view.querySelector(".form-page").scrollTop = top;
+		wire();
+	}
+	function stepName() {
+		return `
+      <label class="guide-field"><span class="guide-label">Name</span>
+        <input class="guide-input" data-name value="${esc(W.name)}" placeholder="Name this board" maxlength="80" autocomplete="off" enterkeyhint="next" /></label>
+      <p class="guide-label">Page size, the same for the whole board</p>
+      <div class="opt-cards two" role="radiogroup" aria-label="Page size">${Object.entries(SHAPE_INFO).map(([k, sh]) => cardHtml({
+			attr: `data-shape="${k}"`,
+			on: W.shape === k,
+			picture: `<span class="opt-shape ${k === "wide-16x9" ? "wide" : "tall"}"></span>`,
+			name: sh.name,
+			blurb: sh.blurb
+		})).join("")}</div>`;
+	}
+	function stepLayout() {
+		const w = W.shape === "wide-16x9" ? 80 : 60;
+		return `
+      <div class="opt-cards" role="radiogroup" aria-label="Layout">${STYLES.map((st) => cardHtml({
+			attr: `data-style="${st.id}"`,
+			on: W.style === st.id,
+			picture: miniPage(W.shape, styleTemplate(W.shape, st.id, 0), w),
+			name: st.name
+		})).join("")}</div>
+      <label class="switch-row"><span>Start with a cover page</span><input type="checkbox" class="switch" role="switch" data-cover${W.cover ? " checked" : ""} /></label>`;
+	}
+	function stepStart() {
+		const w = W.shape === "wide-16x9" ? 64 : 44;
+		const page = (cls) => `<span class="opt-glyph${cls}">${miniPage(W.shape, styleTemplate(W.shape, W.style, 0), w)}</span>`;
+		let out = `
+      <div class="opt-cards two" role="radiogroup" aria-label="Start">
+        ${cardHtml({
+			attr: "data-start=\"blank\"",
+			on: W.start === "blank",
+			picture: page(""),
+			name: "Start blank",
+			blurb: "Just the layout, with empty pages. You put the photos in yourself."
+		})}
+        ${cardHtml({
+			attr: "data-start=\"fill\"",
+			on: W.start === "fill",
+			picture: page(" filled"),
+			name: "Fill in sections",
+			blurb: "Name sections and pick the tags each one fills from."
+		})}
+      </div>`;
+		if (W.start === "blank") return out + stepperRow("Pages", "blank", W.blankPages, "pages");
+		out += "<p class=\"guide-small\">Each section gets its own pages, with its name as the first page's title.</p>";
+		W.sections.forEach((sec, i) => {
+			out += `
+        <div class="guide-section" data-sec="${i}">
+          <div class="guide-sechead"><span class="guide-secnum">${i + 1}</span>
+            <input class="guide-input" data-secname="${i}" value="${esc(sec.name)}" placeholder="Section ${i + 1} name" maxlength="60" autocomplete="off" enterkeyhint="done" />
+            ${W.sections.length > 1 ? `<button type="button" class="icon-btn" data-drop="${i}" aria-label="Remove section ${i + 1}">${ICONS.x}</button>` : ""}</div>
+          <div class="pick-chips">${sources.map((f) => `<button type="button" class="pick${sec.tags.includes(f.id) ? " on" : ""}" data-tag="${esc(f.id)}" data-in="${i}" aria-pressed="${sec.tags.includes(f.id)}">${esc(f.name)} ${photosIn(f.id).length}</button>`).join("")}</div>
+          ${sec.tags.length > 1 ? `<label class="switch-row"><span>Only photos with all of these tags</span><input type="checkbox" class="switch" role="switch" data-all="${i}"${sec.all ? " checked" : ""} /></label>` : ""}
+          <p class="guide-small">${sec.tags.length ? `${photosOf(sec).length} photos` : "Pick at least one tag."}</p>
+        </div>`;
+		});
+		return out + "<button type=\"button\" class=\"btn secondary guide-add\" data-addsec>Add section</button>";
+	}
+	function stepperRow(name, key, n, word) {
+		return `
+      <div class="guide-stepper"><span>${name}</span>
+        <span class="stepper"><button type="button" data-${key}="-1" aria-label="Fewer ${word}">−</button><b>${n}</b><button type="button" data-${key}="1" aria-label="More ${word}">+</button></span></div>`;
+	}
+	function stepPhotos() {
+		return `
+      <div class="opt-cards two" role="radiogroup" aria-label="Which photos come first">${ORDERS.map(([k, name, blurb]) => cardHtml({
+			attr: `data-order="${k}"`,
+			on: W.order === k,
+			name,
+			blurb
+		})).join("")}</div>
+      ${stepperRow("Pages per section", "per", W.perSection, "pages")}
+      <div class="guide-summary">${W.sections.map((sec, i) => {
+			const n = photosOf(sec).length;
+			return `<div class="guide-sumrow"><span>${esc(titleOf(sec, i))}</span><span class="guide-sumcount">${n ? `${n} ${n === 1 ? "photo" : "photos"}` : "none yet"}</span></div>`;
+		}).join("")}</div>
+      ${W.sections.every((sec) => !photosOf(sec).length) ? "<p class=\"guide-small\">No photos match yet, so the board starts with empty pages.</p>" : ""}`;
+	}
+	function ok() {
+		const step = flow()[W.step];
+		if (step === stepStart && W.start === "fill") {
+			const empty = W.sections.findIndex((s) => !s.tags.length);
+			if (empty >= 0) {
+				toast(`Pick a tag for ${titleOf(W.sections[empty], empty)}, or start blank`);
+				return false;
+			}
+		}
+		return true;
+	}
+	function go(d) {
+		if (d > 0 && !ok()) return;
+		if (d > 0 && W.step === flow().length - 1) return make();
+		if (d < 0 && W.step === 0) {
+			location.hash = "#/boards";
+			return;
+		}
+		W.step = clamp(W.step + d, 0, flow().length - 1);
+		draw();
+	}
+	function wire() {
+		view.querySelectorAll("[data-back]").forEach((b) => b.addEventListener("click", () => go(-1)));
+		view.querySelector("[data-close]").addEventListener("click", () => {
+			location.hash = "#/boards";
+		});
+		view.querySelector("[data-next]").addEventListener("click", () => go(1));
+		const name = view.querySelector("[data-name]");
+		name?.addEventListener("input", () => {
+			W.name = name.value;
+		});
+		name?.addEventListener("keydown", (e) => {
+			if (e.key === "Enter") {
+				e.preventDefault();
+				name.blur();
+			}
+		});
+		view.querySelectorAll("[data-secname]").forEach((el) => el.addEventListener("input", () => {
+			W.sections[+el.dataset.secname].name = el.value;
+		}));
+		view.querySelector("[data-cover]")?.addEventListener("change", (e) => {
+			W.cover = e.target.checked;
+		});
+		view.querySelectorAll("[data-all]").forEach((el) => el.addEventListener("change", () => {
+			W.sections[+el.dataset.all].all = el.checked;
+			draw(true);
+		}));
+		view.querySelector(".form-page").addEventListener("click", (e) => {
+			const b = e.target.closest("button");
+			if (!b) return;
+			const d = b.dataset;
+			if (d.shape) W.shape = d.shape;
+			else if (d.style) W.style = d.style;
+			else if (d.start) W.start = d.start;
+			else if (d.blank) W.blankPages = clamp(W.blankPages + +d.blank, 1, 20);
+			else if (d.per) W.perSection = clamp(W.perSection + +d.per, 1, 20);
+			else if (d.order) W.order = d.order;
+			else if (d.tag) {
+				const sec = W.sections[+d.in];
+				sec.tags = sec.tags.includes(d.tag) ? sec.tags.filter((x) => x !== d.tag) : [...sec.tags, d.tag];
+			} else if (d.drop) W.sections.splice(+d.drop, 1);
+			else if ("addsec" in d) {
+				W.sections.push({
+					name: "",
+					tags: [],
+					all: true
+				});
+				draw(true);
+				const all = view.querySelectorAll("[data-secname]");
+				all[all.length - 1]?.scrollIntoView({ block: "center" });
+				return;
+			} else return;
+			draw(true);
+		});
+	}
+	const shuffle = (list) => {
+		const a = [...list];
+		for (let i = a.length - 1; i > 0; i--) {
+			const j = Math.floor(Math.random() * (i + 1));
+			[a[i], a[j]] = [a[j], a[i]];
+		}
+		return a;
+	};
+	async function make() {
+		const name = W.name.trim() || "Untitled board";
+		let pages = [];
+		if (W.start === "blank") {
+			pages = Array.from({ length: W.blankPages }, (_, n) => ({
+				template: styleTemplate(W.shape, W.style, n) || paginate(W.shape, W.style, [])[0].template,
+				images: []
+			}));
+		} else {
+			const used = new Set();
+			W.sections.forEach((sec, i) => {
+				const list = photosOf(sec);
+				const all = (W.order === "random" ? shuffle(list) : sortList(list, W.order)).map((p) => p.id);
+				const pool = [...all.filter((x) => !used.has(x)), ...all.filter((x) => used.has(x))];
+				const own = paginate(W.shape, W.style, pool).slice(0, W.perSection);
+				while (own.length < W.perSection) own.push({
+					template: styleTemplate(W.shape, W.style, own.length) || own[0].template,
+					images: []
+				});
+				own.forEach((p) => p.images.forEach((x) => used.add(x)));
+				const title = titleOf(sec, i);
+				own[0].title = title;
+				own.forEach((p) => {
+					p.section = title;
+				});
+				pages.push(...own);
+			});
+		}
+		if (W.cover) pages.unshift(makeCover({
+			shape: W.shape,
+			name
+		}, pages.flatMap((p) => p.images).find(Boolean) || null));
+		pages = pages.map((p) => withTextDefaults({
+			...p,
+			images: p.images.map((x) => x ? { id: x } : null)
+		}));
+		const b = await saveBoard({
+			name,
+			shape: W.shape,
+			style: W.style,
+			pages
+		});
+		location.hash = `#/board/${b.id}`;
+	}
+	draw();
+}
+
+// pages/showboard.js
+function showBoard(board, start, onClose) {
+	let at = start;
+	let busy = false;
+	const el = document.createElement("div");
+	el.className = "show";
+	el.innerHTML = `
+    <div class="show-top">
+      <button type="button" class="show-btn" data-close aria-label="Leave full screen">${ICONS.x}</button>
+      <span class="show-count"></span>
+    </div>
+    <div class="show-stage"></div>
+    <div class="show-foot">
+      <button type="button" class="show-btn" data-go="-1" aria-label="Previous page">${ICONS.back}</button>
+      <button type="button" class="show-btn flip" data-go="1" aria-label="Next page">${ICONS.back}</button>
+    </div>`;
+	document.body.append(el);
+	const stage = el.querySelector(".show-stage");
+	const count = el.querySelector(".show-count");
+	async function pageEl(n) {
+		const p = await renderPage(board, board.pages[n]);
+		const s = SHAPES$1[board.shape];
+		const k = Math.min(stage.clientWidth / s.W, stage.clientHeight / s.H);
+		p.style.width = `${Math.floor(s.W * k)}px`;
+		p.classList.add("show-page");
+		return p;
+	}
+	function paint() {
+		count.textContent = `${at + 1} of ${board.pages.length}`;
+		el.querySelector("[data-go=\"-1\"]").disabled = at === 0;
+		el.querySelector("[data-go=\"1\"]").disabled = at === board.pages.length - 1;
+	}
+	async function draw() {
+		stage.replaceChildren(await pageEl(at));
+		paint();
+	}
+	async function go(dir, from = 0) {
+		const n = at + dir;
+		const cur = stage.firstElementChild;
+		if (busy || n < 0 || n >= board.pages.length) {
+			if (cur) {
+				cur.style.transition = "transform .18s ease-out";
+				cur.style.transform = "";
+			}
+			return;
+		}
+		busy = true;
+		at = n;
+		paint();
+		const next = await pageEl(n);
+		const w = stage.clientWidth;
+		next.style.transform = `translateX(${dir * w}px)`;
+		stage.append(next);
+		void next.offsetWidth;
+		const ease = "transform .26s cubic-bezier(.25,.6,.3,1)";
+		if (cur) {
+			cur.style.transition = ease;
+			cur.style.transform = `translateX(${-dir * w + 0}px)`;
+		}
+		next.style.transition = ease;
+		next.style.transform = "translateX(0)";
+		const done = () => {
+			if (!busy) return;
+			busy = false;
+			cur?.remove();
+			next.style.transition = "";
+		};
+		next.addEventListener("transitionend", done, { once: true });
+		setTimeout(done, 400);
+	}
+	let d = null;
+	stage.addEventListener("pointerdown", (e) => {
+		if (busy || e.button) return;
+		d = {
+			id: e.pointerId,
+			x0: e.clientX,
+			y0: e.clientY,
+			x: 0,
+			on: false
+		};
+	});
+	stage.addEventListener("pointermove", (e) => {
+		if (!d || e.pointerId !== d.id) return;
+		const dx = e.clientX - d.x0;
+		const dy = e.clientY - d.y0;
+		if (!d.on) {
+			if (Math.hypot(dx, dy) < 10) return;
+			if (Math.abs(dy) > Math.abs(dx)) {
+				d = null;
+				return;
+			}
+			d.on = true;
+			try {
+				stage.setPointerCapture(e.pointerId);
+			} catch {}
+		}
+		const end = dx > 0 && at === 0 || dx < 0 && at === board.pages.length - 1;
+		d.x = end ? dx * .25 : dx;
+		const cur = stage.firstElementChild;
+		if (cur) {
+			cur.style.transition = "";
+			cur.style.transform = `translateX(${d.x}px)`;
+		}
+	});
+	const up = (e) => {
+		if (!d || e.pointerId !== d.id) return;
+		const g = d;
+		d = null;
+		if (!g.on) return;
+		if (e.type === "pointerup" && Math.abs(g.x) > 50) go(g.x < 0 ? 1 : -1, g.x);
+		else go(0);
+	};
+	stage.addEventListener("pointerup", up);
+	stage.addEventListener("pointercancel", up);
+	function close() {
+		document.removeEventListener("keydown", key);
+		window.removeEventListener("resize", draw);
+		el.remove();
+		onClose?.(at);
+	}
+	const key = (e) => {
+		if (e.key === "ArrowRight") go(1);
+		else if (e.key === "ArrowLeft") go(-1);
+		else if (e.key === "Escape") close();
+	};
+	document.addEventListener("keydown", key);
+	window.addEventListener("resize", draw);
+	el.querySelector("[data-close]").addEventListener("click", close);
+	el.querySelector(".show-foot").addEventListener("click", (e) => {
+		const b = e.target.closest("[data-go]");
+		if (b) go(+b.dataset.go);
+	});
+	draw();
+	return { close };
+}
+
+// pages/board-touch.js
+function addTouch(ed) {
+	const pts = new Map();
+	let gesture = null;
+	const slotOf = (target) => target.closest?.(".slot");
+	ed.stage.addEventListener("pointerdown", (e) => {
+		if (e.target.closest(".slot-x")) return;
+		try {
+			ed.stage.setPointerCapture(e.pointerId);
+		} catch {}
+		pts.set(e.pointerId, [e.clientX, e.clientY]);
+		const handle = e.target.closest(".tbox-sel i");
+		const boxEl = handle ? null : e.target.closest("[data-box]");
+		if (pts.size === 1 && (handle || boxEl)) {
+			const key = handle ? ed.tsel : ed.keyOf(boxEl.dataset.box);
+			const pg = ed.stage.querySelector(".page");
+			const b = pg.querySelector(`[data-box="${key}"]`);
+			gesture = {
+				text: key,
+				handle: handle?.dataset.h,
+				x: e.clientX,
+				y: e.clientY,
+				moved: false,
+				picked: key === ed.tsel,
+				r0: ed.rectOf(b, pg),
+				pw: pg.clientWidth,
+				ph: pg.clientHeight
+			};
+			return;
+		}
+		if (pts.size === 1) {
+			const slot = slotOf(e.target);
+			const onSel = slot && +slot.dataset.index === ed.sel && ed.page().images[ed.sel];
+			gesture = {
+				x: e.clientX,
+				y: e.clientY,
+				slot,
+				crop: onSel ? { ...ed.page().images[ed.sel] } : null,
+				moved: false
+			};
+		} else if (pts.size === 2 && gesture?.crop) {
+			const [a, b] = [...pts.values()];
+			gesture.pinch = {
+				d: Math.hypot(a[0] - b[0], a[1] - b[1]),
+				zoom: ed.page().images[ed.sel].zoom || 1
+			};
+		}
+	});
+	ed.stage.addEventListener("pointermove", (e) => {
+		if (!pts.has(e.pointerId) || !gesture) return;
+		pts.set(e.pointerId, [e.clientX, e.clientY]);
+		const dx = e.clientX - gesture.x;
+		const dy = e.clientY - gesture.y;
+		if (Math.hypot(dx, dy) > 8) gesture.moved = true;
+		if (gesture.text != null) {
+			if (gesture.moved && (gesture.picked || gesture.handle)) ed.dragBox(gesture, dx / gesture.pw, dy / gesture.ph);
+			return;
+		}
+		if (!gesture.crop) return;
+		const im = ed.page().images[ed.sel];
+		const slotEl = ed.stage.querySelector(`.slot[data-index="${ed.sel}"]`);
+		const img = slotEl?.querySelector("img");
+		const rec = photoById(im.id);
+		if (!img || !rec) return;
+		if (pts.size === 2 && gesture.pinch) {
+			const [a, b] = [...pts.values()];
+			im.zoom = clamp(gesture.pinch.zoom * Math.hypot(a[0] - b[0], a[1] - b[1]) / gesture.pinch.d, 1, 6);
+		} else if (pts.size === 1 && !gesture.pinch) {
+			const sw = slotEl.clientWidth;
+			const sh = slotEl.clientHeight;
+			const scale = Math.max(sw / rec.width, sh / rec.height) * (im.zoom || 1);
+			const spareX = rec.width * scale - sw;
+			const spareY = rec.height * scale - sh;
+			const [fx, fy] = gesture.crop.focal || [.5, .5];
+			im.focal = [spareX > .5 ? clamp(fx - dx / spareX, 0, 1) : fx, spareY > .5 ? clamp(fy - dy / spareY, 0, 1) : fy];
+		}
+		applyCrop(img, im);
+		gesture.changed = true;
+	});
+	const up = (e) => {
+		if (!pts.has(e.pointerId)) return;
+		pts.delete(e.pointerId);
+		if (pts.size || !gesture) return;
+		const g = gesture;
+		gesture = null;
+		if (g.text != null) return ed.endBoxGesture(g, e);
+		if (g.crop) {
+			if (g.changed) {
+				ed.undo.push(JSON.stringify(ed.board.pages.map((p, i) => i === ed.at ? {
+					...p,
+					images: p.images.map((x, n) => n === ed.sel ? g.crop : x)
+				} : p)));
+				ed.paintUndo();
+				ed.persist();
+				return;
+			}
+		}
+		const dx = e.clientX - g.x;
+		if (g.moved && !g.crop) {
+			if (Math.abs(dx) > 40) ed.goTo(ed.at + (dx < 0 ? 1 : -1), dx < 0 ? 1 : -1);
+			return;
+		}
+		if (g.moved) return;
+		const i = g.slot ? +g.slot.dataset.index : -1;
+		ed.sel = ed.sel === i ? -1 : i;
+		if (ed.tsel != null) {
+			ed.tsel = null;
+			ed.closePanel();
+		}
+		ed.drawPage();
+	};
+	ed.stage.addEventListener("pointerup", up);
+	ed.stage.addEventListener("pointercancel", up);
+	ed.stage.addEventListener("click", (e) => {
+		if (!e.target.closest(".slot-x")) return;
+		ed.snapshot();
+		ed.page().images[ed.sel] = null;
+		ed.sel = -1;
+		ed.persist();
+		ed.drawPage();
+		ed.drawTray();
+	});
+}
+
+// data/pdf.js
+const enc = new TextEncoder();
+function makePdf(sheets) {
+	const parts = [];
+	const offsets = [];
+	let size = 0;
+	const put = (v) => {
+		const b = typeof v === "string" ? enc.encode(v) : v;
+		parts.push(b);
+		size += b instanceof Blob ? b.size : b.length;
+	};
+	const obj = (id, write) => {
+		offsets[id] = size;
+		put(`${id} 0 obj\n`);
+		write();
+		put("\nendobj\n");
+	};
+	const ids = sheets.map((_, i) => 3 + i * 3);
+	const next = 3 + sheets.length * 3;
+	put("%PDF-1.4\n");
+	put(new Uint8Array([
+		37,
+		226,
+		227,
+		207,
+		211,
+		10
+	]));
+	obj(1, () => put("<< /Type /Catalog /Pages 2 0 R >>"));
+	obj(2, () => put(`<< /Type /Pages /Count ${sheets.length} /Kids [${ids.map((id) => `${id + 1} 0 R`).join(" ")}] >>`));
+	sheets.forEach((s, i) => {
+		const im = ids[i];
+		obj(im, () => {
+			put(`<< /Type /XObject /Subtype /Image /Width ${s.pxW} /Height ${s.pxH} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${s.jpeg.size} >>\nstream\n`);
+			put(s.jpeg);
+			put("\nendstream");
+		});
+		obj(im + 1, () => put(`<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${s.w.toFixed(2)} ${s.h.toFixed(2)}] /Contents ${im + 2} 0 R /Resources << /XObject << /Im ${im} 0 R >> >> >>`));
+		const stream = enc.encode(`q ${s.w.toFixed(2)} 0 0 ${s.h.toFixed(2)} 0 0 cm /Im Do Q\n`);
+		obj(im + 2, () => {
+			put(`<< /Length ${stream.length} >>\nstream\n`);
+			put(stream);
+			put("\nendstream");
+		});
+	});
+	const xref = size;
+	let table = `xref\n0 ${next}\n0000000000 65535 f \n`;
+	for (let id = 1; id < next; id++) table += `${String(offsets[id]).padStart(10, "0")} 00000 n \n`;
+	put(table);
+	put(`trailer\n<< /Size ${next} /Root 1 0 R >>\nstartxref\n${xref}\n%%EOF\n`);
+	return new Blob(parts, { type: "application/pdf" });
+}
+
+// pages/board-tools.js
+function addTools(ed) {
+	Object.assign(ed, {
+		layoutSheet,
+		addPage,
+		moreSheet,
+		exportPdf
+	});
+	function layoutSheet() {
+		const s = SHAPES$1[ed.board.shape];
+		const W = 60;
+		const H = 60 * s.H / s.W;
+		const list = TEMPLATES[ed.board.shape].filter((t) => !t.guide);
+		const sh = openSheet({
+			title: "Layout",
+			body: `<div class="opt-cards" role="radiogroup" aria-label="Layout">${list.map((t) => cardHtml({
+				attr: `data-tpl="${esc(t.id)}"`,
+				on: t.id === ed.page().template,
+				picture: `<svg viewBox="0 0 ${W} ${H}" style="width:${s.W > s.H ? 80 : 60}px" aria-hidden="true"><rect class="paper-r" width="${W}" height="${H}"/>${t.slots.map((b) => `<rect x="${b.x * W}" y="${b.y * H}" width="${b.w * W}" height="${b.h * H}"/>`).join("")}</svg>`,
+				name: t.name
+			})).join("")}</div>`
+		});
+		sh.body.addEventListener("click", (e) => {
+			const b = e.target.closest("[data-tpl]");
+			if (!b) return;
+			ed.snapshot();
+			ed.page().template = b.dataset.tpl;
+			ed.sel = -1;
+			ed.persist();
+			sh.close();
+			ed.drawPage();
+		});
+	}
+	function addPage() {
+		ed.snapshot();
+		const n = ed.at + 1;
+		const tid = styleTemplate(ed.board.shape, ed.board.style, n) || defaultTemplate(ed.board.shape, 1).id;
+		ed.board.pages.splice(n, 0, withTextDefaults({
+			template: tid,
+			images: [],
+			section: ed.page().section
+		}));
+		ed.persist();
+		ed.goTo(n, 1);
+		ed.drawPage(1);
+	}
+	async function moreSheet() {
+		const key = await choiceSheet({
+			title: `Page ${ed.at + 1}`,
+			options: [
+				...ed.at > 0 ? [{
+					key: "up",
+					label: "Move earlier"
+				}] : [],
+				...ed.at < ed.board.pages.length - 1 ? [{
+					key: "down",
+					label: "Move later"
+				}] : [],
+				{
+					key: "dup",
+					label: "Duplicate page"
+				},
+				...ed.board.pages.length > 1 ? [{
+					key: "delete",
+					label: "Delete page",
+					danger: true
+				}] : []
+			]
+		});
+		if (!key) return;
+		if (key === "delete" && !await confirmSheet({
+			title: "Delete this page?",
+			message: "Its photos stay in the notebook.",
+			confirmLabel: "Delete",
+			danger: true
+		})) return;
+		ed.snapshot();
+		if (key === "up" || key === "down") {
+			const j = key === "up" ? ed.at - 1 : ed.at + 1;
+			[ed.board.pages[ed.at], ed.board.pages[j]] = [ed.board.pages[j], ed.board.pages[ed.at]];
+			ed.at = j;
+		} else if (key === "dup") {
+			ed.board.pages.splice(ed.at + 1, 0, clone(ed.page()));
+			ed.at += 1;
+		} else {
+			ed.board.pages.splice(ed.at, 1);
+			ed.at = Math.min(ed.at, ed.board.pages.length - 1);
+		}
+		ed.sel = -1;
+		ed.persist();
+		ed.drawPage();
+		ed.drawTray();
+	}
+	async function exportPdf() {
+		const s = SHAPES$1[ed.board.shape];
+		const px = ed.board.shape === "wide-16x9" ? 2e3 : 1700;
+		const sheets = [];
+		try {
+			for (let i = 0; i < ed.board.pages.length; i++) {
+				toast(`Making page ${i + 1} of ${ed.board.pages.length}`, { ms: 6e4 });
+				const c = await pageToCanvas(ed.board, ed.board.pages[i], px);
+				sheets.push({
+					w: s.W * 72,
+					h: s.H * 72,
+					pxW: c.width,
+					pxH: c.height,
+					jpeg: await canvasToBlob(c, "image/jpeg", .88)
+				});
+				c.width = c.height = 0;
+			}
+		} catch (e) {
+			console.error(e);
+			toast("Could not make the PDF");
+			return;
+		}
+		hideToast();
+		const blob = makePdf(sheets);
+		const name = `${slug(ed.board.name)}.pdf`;
+		const mb = (blob.size / 1048576).toFixed(1);
+		const sh = openSheet({
+			title: "Your PDF is ready",
+			className: "sheet-small",
+			body: `<p class="sheet-message">${ed.board.pages.length} ${ed.board.pages.length === 1 ? "page" : "pages"}, ${mb} MB.</p><div class="sheet-actions one"><button type="button" class="btn primary" data-send>Save or share</button></div>`
+		});
+		sh.body.querySelector("[data-send]").addEventListener("click", async () => {
+			const file = new File([blob], name, { type: "application/pdf" });
+			if (navigator.canShare?.({ files: [file] })) {
+				try {
+					await navigator.share({
+						files: [file],
+						title: ed.board.name
+					});
+				} catch {}
+			} else downloadBlob(blob, name);
+			sh.close();
+		});
+	}
+}
+
+// pages/board-text.js
+function addTextBoxes(ed) {
+	Object.assign(ed, {
+		rectOf,
+		paintTsel,
+		dragBox,
+		endBoxGesture,
+		addNote,
+		closePanel,
+		textSheet
+	});
+	const keyOf = (v) => v === "main" ? "main" : +v;
+	ed.keyOf = keyOf;
+	const noteOf = (key) => key === "main" ? null : ed.page().notes?.[key];
+	function rectOf(b, pg) {
+		return {
+			x: b.offsetLeft / pg.clientWidth,
+			y: b.offsetTop / pg.clientHeight,
+			w: b.offsetWidth / pg.clientWidth,
+			h: b.offsetHeight / pg.clientHeight
+		};
+	}
+	function paintTsel(pg) {
+		if (ed.tsel == null) return;
+		const b = pg.querySelector(`[data-box="${ed.tsel}"]`);
+		if (!b) {
+			ed.tsel = null;
+			closePanel();
+			return;
+		}
+		let o = pg.querySelector(".tbox-sel");
+		if (!o) {
+			o = document.createElement("div");
+			o.className = "tbox-sel";
+			o.innerHTML = [
+				"nw",
+				"ne",
+				"sw",
+				"se"
+			].map((h) => `<i data-h="${h}"></i>`).join("");
+			pg.append(o);
+		}
+		Object.assign(o.style, {
+			left: `${b.offsetLeft}px`,
+			top: `${b.offsetTop}px`,
+			width: `${b.offsetWidth}px`,
+			height: `${b.offsetHeight}px`
+		});
+	}
+	function dragBox(g, fx, fy) {
+		const r0 = g.r0;
+		const r = { ...r0 };
+		const h = g.handle;
+		if (!h) {
+			r.x = r0.x + fx;
+			r.y = r0.y + fy;
+		} else {
+			if (h.includes("w")) {
+				r.x = r0.x + fx;
+				r.w = r0.w - fx;
+			}
+			if (h.includes("e")) r.w = r0.w + fx;
+			if (h.includes("n")) {
+				r.y = r0.y + fy;
+				r.h = r0.h - fy;
+			}
+			if (h.includes("s")) r.h = r0.h + fy;
+			if (r.w < .12) {
+				if (h.includes("w")) r.x -= .12 - r.w;
+				r.w = .12;
+			}
+			if (r.h < .04) {
+				if (h.includes("n")) r.y -= .04 - r.h;
+				r.h = .04;
+			}
+		}
+		r.w = Math.min(r.w, 1);
+		r.h = Math.min(r.h, 1);
+		r.x = clamp(r.x, 0, 1 - r.w);
+		r.y = clamp(r.y, 0, 1 - r.h);
+		if (!g.snap) {
+			ed.snapshot();
+			g.snap = true;
+		}
+		const target = g.text === "main" ? ed.page().textBox ||= {} : noteOf(g.text);
+		Object.assign(target, r);
+		const pg = ed.stage.querySelector(".page");
+		const b = pg.querySelector(`[data-box="${g.text}"]`);
+		const pc = (v) => `${(v * 100).toFixed(3)}%`;
+		if (g.text === "main" && b.classList.contains("overlay")) Object.assign(b.style, {
+			left: pc(r.x),
+			top: pc(r.y),
+			bottom: "",
+			maxWidth: pc(r.w)
+		});
+		else Object.assign(b.style, {
+			left: pc(r.x),
+			top: pc(r.y),
+			bottom: "",
+			width: pc(r.w),
+			height: pc(r.h)
+		});
+		paintTsel(pg);
+	}
+	function endBoxGesture(g, e) {
+		if (g.moved && (g.picked || g.handle)) {
+			if (g.snap) {
+				ed.persist();
+				ed.drawPage();
+			}
+			return;
+		}
+		if (g.moved) {
+			const dx = e.clientX - g.x;
+			if (Math.abs(dx) > 40) ed.goTo(ed.at + (dx < 0 ? 1 : -1), dx < 0 ? 1 : -1);
+			return;
+		}
+		const now = performance.now();
+		if (g.picked && ed.lastTap && ed.lastTap.key === g.text && now - ed.lastTap.t < 400) {
+			ed.lastTap = null;
+			openPanel(g.text);
+			return;
+		}
+		ed.lastTap = {
+			key: g.text,
+			t: now
+		};
+		if (!g.picked) {
+			ed.tsel = g.text;
+			ed.sel = -1;
+			if (ed.panel != null && ed.panel !== ed.tsel) closePanel();
+			ed.drawPage();
+		}
+	}
+	function addNote() {
+		ed.snapshot();
+		const p = ed.page();
+		p.notes ||= [];
+		p.notes.push({
+			x: .15,
+			y: .4,
+			w: .7,
+			h: .1,
+			text: "",
+			size: defaultSize("note") * 1.6
+		});
+		ed.tsel = p.notes.length - 1;
+		ed.sel = -1;
+		ed.persist();
+		ed.drawPage();
+		openPanel(ed.tsel, true);
+	}
+	async function textSheet() {
+		const key = await choiceSheet({
+			title: "Add text",
+			options: [{
+				key: "title",
+				label: "Title",
+				detail: ed.page().title?.trim() ? "This page's title" : "A title for this page"
+			}, {
+				key: "text",
+				label: "Text",
+				detail: "A box of words, anywhere on the page"
+			}]
+		});
+		if (key === "title") {
+			ed.sel = -1;
+			openPanel("main", true);
+		} else if (key === "text") addNote();
+	}
+	const tpanel = ed.view.querySelector("[data-tpanel]");
+	const trayBox = ed.view.querySelector("[data-tray-box]");
+	function closePanel() {
+		if (ed.panel == null) return;
+		const p = ed.page();
+		const n = ed.panel === "main" ? null : p?.notes?.[ed.panel];
+		ed.panel = null;
+		tpanel.hidden = true;
+		tpanel.innerHTML = "";
+		trayBox.hidden = false;
+		if (n && !n.text.trim()) {
+			p.notes.splice(p.notes.indexOf(n), 1);
+			ed.tsel = null;
+			ed.persist();
+		}
+		ed.drawPage();
+	}
+	function openPanel(key, focus = false) {
+		const keep = key === "main" ? "main" : ed.page().notes?.[key];
+		closePanel();
+		key = keep === "main" ? "main" : ed.page().notes.indexOf(keep);
+		if (key === -1) return;
+		ed.panel = key;
+		ed.tsel = key;
+		const p = ed.page();
+		const t = pageTemplate(ed.board, p);
+		const n = noteOf(key);
+		trayBox.hidden = true;
+		tpanel.hidden = false;
+		tpanel.innerHTML = n ? `
+        <textarea rows="2" data-note placeholder="Type here">${esc(n.text)}</textarea>
+        ${sizeRow("note", "text")}
+        <div class="tp-actions"><button type="button" class="label-btn" data-tdel>Delete box</button><button type="button" class="label-btn tp-done" data-tdone>Done</button></div>` : `
+        <input type="text" data-title value="${esc(p.title || "")}" placeholder="Title" maxlength="120" autocomplete="off" />
+        ${sizeRow("title", "title")}
+        <textarea rows="2" data-body placeholder="Text">${esc(p.text || "")}</textarea>
+        ${sizeRow("body", "text")}
+        <div class="tp-checks">${t.text.overlay ? `<label class="check"><input type="checkbox" data-fill${p.textFill === false ? "" : " checked"} /> Background</label>` : ""}
+          <label class="check"><input type="checkbox" data-palette${p.palette ? " checked" : ""} /> Page colors</label></div>
+        <div class="tp-actions"><button type="button" class="label-btn tp-done" data-tdone>Done</button></div>`;
+		let first = true;
+		const change = (fn) => {
+			if (first) {
+				ed.snapshot();
+				first = false;
+			}
+			fn();
+			ed.persist();
+			ed.drawPage();
+		};
+		const on = (sel2, ev, fn) => tpanel.querySelector(sel2)?.addEventListener(ev, fn);
+		on("[data-note]", "input", (e) => change(() => {
+			n.text = e.target.value;
+		}));
+		on("[data-title]", "input", (e) => change(() => {
+			p.title = e.target.value;
+		}));
+		on("[data-body]", "input", (e) => change(() => {
+			p.text = e.target.value;
+		}));
+		on("[data-fill]", "change", (e) => change(() => {
+			p.textFill = e.target.checked;
+		}));
+		on("[data-palette]", "change", (e) => change(() => {
+			p.palette = e.target.checked;
+		}));
+		const targetOf = (kind) => kind === "note" ? n : p;
+		const paintSizes = () => tpanel.querySelectorAll("[data-size]").forEach((row) => {
+			const kind = row.dataset.size;
+			const o = targetOf(kind);
+			row.querySelector("b").textContent = `${Math.round(sizeOf(o, kind) * 100)}%`;
+			row.querySelector("[data-usedef]").disabled = isDefault(o, kind);
+			row.querySelector("[data-savedef]").disabled = isDefault(o, kind);
+		});
+		paintSizes();
+		tpanel.onclick = (e) => {
+			const b = e.target.closest("button");
+			if (!b) return;
+			if ("tdone" in b.dataset) {
+				ed.tsel = null;
+				closePanel();
+				ed.drawPage();
+				return;
+			}
+			if ("tdel" in b.dataset) {
+				ed.snapshot();
+				p.notes.splice(key, 1);
+				ed.panel = null;
+				ed.tsel = null;
+				closePanel();
+				tpanel.hidden = true;
+				trayBox.hidden = false;
+				ed.persist();
+				ed.drawPage();
+				return;
+			}
+			const row = b.closest("[data-size]");
+			if (!row) return;
+			const kind = row.dataset.size;
+			const o = targetOf(kind);
+			const word = kind === "title" ? "Title" : "Text";
+			if (b.dataset.grow) change(() => stepSize(o, kind, +b.dataset.grow));
+			else if ("usedef" in b.dataset) {
+				change(() => useDefault(o, kind));
+				toast(`${word} back to your default size`);
+			} else if ("savedef" in b.dataset) {
+				saveDefault(o, kind);
+				toast(`${word} size saved: new ones start with it`);
+			}
+			paintSizes();
+		};
+		ed.drawPage();
+		if (focus) tpanel.querySelector("textarea, input")?.focus();
+	}
+	function sizeRow(kind, word) {
+		return `
+      <div class="size-row" data-size="${kind}">
+        <span class="label">Size</span>
+        <span class="stepper"><button type="button" data-grow="-1" aria-label="Smaller ${word}">A−</button><b>100%</b><button type="button" data-grow="1" aria-label="Larger ${word}">A+</button></span>
+        <span class="size-defs"><button type="button" class="label-btn" data-usedef>Use default</button><button type="button" class="label-btn" data-savedef>Save as default</button></span>
+      </div>`;
+	}
+}
+
+// pages/board.js
+async function boardScreen(view, id) {
+	const ed = { view };
+	Object.assign(ed, {
+		drawPage,
+		drawTray,
+		goTo
+	});
+	let board = await getBoard(id);
+	ed.board = board;
+	if (!board) {
+		location.hash = "#/boards";
+		return () => {};
+	}
+	ed.at = 0;
+	ed.sel = -1;
+	let tray = "all";
+	let destroyed = false;
+	let drawToken = 0;
+	ed.tsel = null;
+	ed.panel = null;
+	ed.lastTap = null;
+	const undo = [];
+	ed.undo = undo;
+	const persist = debounce(() => saveBoard(board).then((b) => {
+		board.updatedAt = b.updatedAt;
+	}), 300);
+	ed.persist = persist;
+	const snapshot = () => {
+		undo.push(JSON.stringify(board.pages));
+		if (undo.length > 40) undo.shift();
+		paintUndo();
+	};
+	ed.snapshot = snapshot;
+	const page = () => board.pages[ed.at];
+	ed.page = page;
+	const asOpened = JSON.stringify([board.name, board.pages]);
+	const tool = (t, icon, label) => `<button type="button" class="tool" data-t="${t}">${ICONS[icon]}<span>${label}</span></button>`;
+	view.innerHTML = `
+    <div class="screen editor">
+      ${shortBandHtml({
+		name: "Mood boards",
+		back: "#/boards",
+		backLabel: "Back to mood boards",
+		end: {
+			label: "Full screen",
+			attr: "data-show",
+			svg: FULL
+		}
+	})}
+      <div class="board-head">
+        <button type="button" class="board-name" data-rename></button>
+        <span class="count" data-at></span>
+      </div>
+      <div class="stage" data-stage></div>
+      <div class="tpanel" data-tpanel hidden></div>
+      <div class="tray-box" data-tray-box>
+        <div class="tray-head" data-tray-head></div>
+        <div class="tray" data-tray></div>
+      </div>
+      <nav class="tools" aria-label="Page tools">
+        ${tool("layout", "layout", "Layout")}${tool("text", "text", "Text")}${tool("add", "page", "Add page")}${tool("undo", "undo", "Undo")}${tool("more", "more", "More")}${tool("pdf", "download", "PDF")}
+      </nav>
+    </div>`;
+	const stage = view.querySelector("[data-stage]");
+	ed.stage = stage;
+	const paintUndo = () => {
+		view.querySelector("[data-t=undo]").disabled = !undo.length;
+	};
+	ed.paintUndo = paintUndo;
+	async function drawPage(turn = 0) {
+		const token = ++drawToken;
+		view.querySelector("[data-rename]").textContent = board.name;
+		view.querySelector("[data-at]").textContent = `Page ${ed.at + 1} of ${board.pages.length}`;
+		const el = await renderPage(board, page(), {
+			selected: ed.sel,
+			editing: true,
+			mainHint: ed.tsel === "main"
+		});
+		if (token !== drawToken || destroyed) return;
+		fit(el);
+		if (ed.sel >= 0 && page().images[ed.sel]) {
+			const x = document.createElement("button");
+			x.type = "button";
+			x.className = "slot-x";
+			x.setAttribute("aria-label", "Take this photo off the page");
+			x.innerHTML = ICONS.x;
+			const spot = el.querySelector(`.slot[data-index="${ed.sel}"]`).style;
+			Object.assign(x.style, {
+				left: `min(calc(${spot.left} + ${spot.width}), calc(100% - 16px))`,
+				top: `max(${spot.top}, 16px)`
+			});
+			el.append(x);
+		}
+		stage.replaceChildren(el);
+		ed.paintTsel(el);
+		if (turn) {
+			el.classList.add(turn > 0 ? "turn-next" : "turn-back");
+		}
+	}
+	function fit(el) {
+		const s = SHAPES$1[board.shape];
+		const k = Math.min(stage.clientWidth / s.W, stage.clientHeight / s.H);
+		el.style.width = `${Math.floor(s.W * k)}px`;
+	}
+	function drawTray() {
+		const sources = [
+			{
+				id: "all",
+				name: "All"
+			},
+			SPECIAL[0],
+			SPECIAL[1],
+			...lib.folders
+		];
+		view.querySelector("[data-tray-head]").innerHTML = sources.map((f) => `<button type="button" class="chip${tray === f.id ? " on" : ""}" data-source="${esc(f.id)}">${esc(f.name)}</button>`).join("");
+		const list = sortList(photosIn(tray), "newest");
+		const onPage = new Set(page().images.filter(Boolean).map((x) => x.id));
+		view.querySelector("[data-tray]").innerHTML = list.length ? list.map((p) => `<button type="button" class="tray-photo${onPage.has(p.id) ? " used" : ""}" data-photo="${esc(p.id)}" aria-label="${esc(p.name)}"><img src="${thumbUrl(p)}" alt="" loading="lazy" draggable="false" /></button>`).join("") : "<p class=\"note\">No photos here yet.</p>";
+	}
+	function goTo(n, dir) {
+		n = clamp(n, 0, board.pages.length - 1);
+		if (n === ed.at) return;
+		ed.at = n;
+		ed.sel = -1;
+		ed.tsel = null;
+		ed.closePanel();
+		drawPage(dir);
+		drawTray();
+	}
+	function place(photoId) {
+		const t = pageTemplate(board, page());
+		let spot = ed.sel;
+		if (spot < 0) {
+			for (let i = 0; i < t.slots.length; i++) if (!page().images[i]) {
+				spot = i;
+				break;
+			}
+		}
+		if (spot < 0) {
+			toast("Tap a spot on the page first");
+			return;
+		}
+		snapshot();
+		while (page().images.length <= spot) page().images.push(null);
+		page().images[spot] = { id: photoId };
+		persist();
+		drawPage();
+		drawTray();
+	}
+	addTouch(ed);
+	addTools(ed);
+	addTextBoxes(ed);
+	view.querySelector(".tools").addEventListener("click", (e) => {
+		const b = e.target.closest("[data-t]");
+		if (!b) return;
+		const k = b.dataset.t;
+		if (k === "layout") ed.layoutSheet();
+		else if (k === "text") ed.textSheet();
+		else if (k === "add") ed.addPage();
+		else if (k === "more") ed.moreSheet();
+		else if (k === "pdf") ed.exportPdf();
+		else if (k === "undo" && undo.length) {
+			board.pages = JSON.parse(undo.pop());
+			ed.at = Math.min(ed.at, board.pages.length - 1);
+			ed.sel = -1;
+			ed.tsel = null;
+			ed.closePanel();
+			paintUndo();
+			persist();
+			drawPage();
+			drawTray();
+		}
+	});
+	view.querySelector("[data-show]").addEventListener("click", () => {
+		persist.flush?.();
+		showBoard(board, ed.at, (n) => {
+			if (!destroyed && n !== ed.at) goTo(n, n > ed.at ? 1 : -1);
+		});
+	});
+	view.querySelector("[data-tray-head]").addEventListener("click", (e) => {
+		const b = e.target.closest("[data-source]");
+		if (b) {
+			tray = b.dataset.source;
+			drawTray();
+		}
+	});
+	view.querySelector("[data-tray]").addEventListener("click", (e) => {
+		const b = e.target.closest("[data-photo]");
+		if (b) place(b.dataset.photo);
+	});
+	view.querySelector("[data-rename]").addEventListener("click", async () => {
+		const name = await promptSheet({
+			title: "Rename board",
+			value: board.name
+		});
+		if (name) {
+			board.name = name;
+			persist();
+			drawPage();
+		}
+	});
+	const onResize = () => {
+		const el = stage.querySelector(".page");
+		if (el) fit(el);
+	};
+	window.addEventListener("ref-layout", onResize);
+	paintUndo();
+	await drawPage();
+	drawTray();
+	return () => {
+		destroyed = true;
+		const changed = JSON.stringify([board.name, board.pages]) !== asOpened;
+		Promise.resolve(persist.flush()).then(() => {
+			if (changed) keepUp(board.id);
+		});
+		window.removeEventListener("ref-layout", onResize);
+	};
 }
 
 // pages/cover-spin.js
@@ -5361,29 +5708,26 @@ async function turnTo(i, dir, go) {
 }
 
 // components/navbar.js
+const q = (d, cls) => `<path class="${cls}" d="M12 12 ${d} Z"/>`;
+const MARKS = {
+	boards: `<svg viewBox="0 0 24 24" aria-hidden="true">${q("L0 12 A12 12 0 0 1 12 0", "mk-1")}${q("L12 0 A12 12 0 0 1 24 12", "mk-2")}${q("L24 12 A12 12 0 0 1 12 24", "mk-1")}${q("L12 24 A12 12 0 0 1 0 12", "mk-2")}</svg>`,
+	tags: "<svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path class=\"mk-1\" d=\"M0 12 A12 12 0 0 1 24 12 Z\"/><circle class=\"mk-2\" cx=\"12\" cy=\"18\" r=\"4\"/></svg>"
+};
 const SECTIONS = [{
 	href: "#/boards",
 	name: "Mood boards",
-	icon: ICONS.boards
+	key: "boards",
+	icon: MARKS.boards
 }, {
 	href: "#/folders",
 	name: "Tags",
-	icon: ICONS.folders
+	key: "tags",
+	icon: MARKS.tags
 }];
-const STEP = 46;
-const tri = "<svg viewBox=\"0 0 10 12\" aria-hidden=\"true\"><path d=\"M2.3 1.5Q5.6 3.8 8.7 6.1 5.5 8.3 2.2 10.5 2.5 6 2.3 1.5Z\" fill=\"currentColor\" stroke=\"currentColor\" stroke-width=\"1.2\" stroke-linejoin=\"round\"/></svg>";
 const bar = document.getElementById("navbar");
 const frame$1 = document.getElementById("frame");
-bar.innerHTML = `
-  <div class="slider">
-    <button type="button" class="slide-arrow is-prev">${tri}</button>
-    <a class="slide-now"><span class="slide-strip" aria-hidden="true">${SECTIONS.map((s) => `<span class="slide-icon">${s.icon}</span>`).join("")}</span></a>
-    <button type="button" class="slide-arrow is-next">${tri}</button>
-  </div>`;
-const strip = bar.querySelector(".slide-strip");
-const now = bar.querySelector(".slide-now");
-const prev = bar.querySelector(".is-prev");
-const next = bar.querySelector(".is-next");
+bar.innerHTML = `<div class="sec-row">${SECTIONS.map((s, i) => `<a class="sec sec-${s.key}" href="${s.href}" data-sec="${i}">${s.icon}<span>${s.name}</span></a>`).join("")}</div>`;
+const links = [...bar.querySelectorAll(".sec")];
 let at = 0;
 let busy = false;
 let swiped = 0;
@@ -5393,10 +5737,6 @@ let landed = null;
 let docked = null;
 const setPuller = (p) => {
 	puller = p;
-};
-const stripTo = (i, moving) => {
-	strip.classList.toggle("is-moving", !!moving);
-	strip.style.transform = `translateX(${-i * STEP}px)`;
 };
 function showSection(i, list = false) {
 	bar.hidden = i < 0;
@@ -5412,16 +5752,10 @@ function showSection(i, list = false) {
 		return;
 	}
 	at = i;
-	const s = SECTIONS[i];
-	const p = SECTIONS[i - 1];
-	const n = SECTIONS[i + 1];
-	now.setAttribute("href", s.href);
-	now.setAttribute("aria-label", s.name);
-	prev.setAttribute("aria-label", p ? `Previous: ${p.name}` : "Shut the notebook");
-	next.classList.toggle("is-off", !n);
-	next.disabled = !n;
-	next.setAttribute("aria-label", n ? `Next: ${n.name}` : "Nothing after this");
-	if (!busy) stripTo(i);
+	links.forEach((a, k) => {
+		if (k === i) a.setAttribute("aria-current", "page");
+		else a.removeAttribute("aria-current");
+	});
 }
 const navigate = (href) => new Promise((done) => {
 	landed = done;
@@ -5445,17 +5779,18 @@ async function go(dir, from = 0) {
 	if (!t) return settle(from);
 	busy = true;
 	dragFrame(0);
-	stripTo(target, true);
 	await turnTo(target, Math.sign(dir), () => navigate(t.href));
 	busy = false;
-	stripTo(at);
 }
-function settle(from) {
-	settleFrame(from);
-	stripTo(at, true);
-}
-prev.addEventListener("click", () => go(-1));
-next.addEventListener("click", () => go(1));
+const settle = (from) => settleFrame(from);
+links.forEach((a, k) => a.addEventListener("click", (e) => {
+	e.preventDefault();
+	if (k !== at) go(k - at);
+	else frame$1.querySelector(".scroll")?.scrollTo({
+		top: 0,
+		behavior: "smooth"
+	});
+}));
 function wire(el, fromPage) {
 	let d = null;
 	el.addEventListener("pointerdown", (e) => {
@@ -5495,11 +5830,7 @@ function wire(el, fromPage) {
 			else d.kind = "stop";
 		}
 		d.x = dx;
-		if (d.kind === "turn") {
-			const x = dx * d.dir > 0 ? 0 : Math.max(-frame$1.offsetWidth, Math.min(frame$1.offsetWidth, dx));
-			strip.classList.remove("is-moving");
-			strip.style.transform = `translateX(${-at * STEP + x / frame$1.offsetWidth * STEP}px)`;
-		} else if (d.kind === "shut") {
+		if (d.kind === "shut") {
 			d.x = Math.max(0, dx);
 			dragFrame(Math.min(d.x * .3, 60));
 		}
@@ -5514,7 +5845,6 @@ function wire(el, fromPage) {
 		const w = frame$1.offsetWidth;
 		if (g.kind === "turn") {
 			if (up && g.x * g.dir < 0 && Math.abs(g.x) > Math.min(60, w * .15)) go(g.dir);
-			else stripTo(at, true);
 		} else if (g.kind === "shut") {
 			if (up && g.x > 50) {
 				dragFrame(0);
@@ -5580,7 +5910,6 @@ function openDock(h) {
 		left,
 		centers: SECTIONS.map((s, i) => left + DOCK_PAD + (i + .5) * DOCK_SLOT)
 	};
-	stripTo(at, true);
 	dock.style.left = `${(left - r.left).toFixed(1)}px`;
 	dock.style.transformOrigin = `${(h.x - left).toFixed(1)}px 100%`;
 	dockSlots.forEach((slot, i) => slot.classList.toggle("is-here", i === at));
@@ -5591,7 +5920,7 @@ function openDock(h) {
 		bar.setPointerCapture(h.id);
 	} catch {}
 }
-now.addEventListener("pointerdown", (e) => {
+bar.addEventListener("pointerdown", (e) => {
 	if (e.button || !e.isPrimary) return;
 	if (hold) clearTimeout(hold.timer);
 	const h = {
@@ -5604,7 +5933,7 @@ now.addEventListener("pointerdown", (e) => {
 	}, 380);
 	hold = h;
 });
-now.addEventListener("contextmenu", (e) => e.preventDefault());
+bar.addEventListener("contextmenu", (e) => e.preventDefault());
 bar.addEventListener("pointermove", (e) => {
 	if (hold && e.pointerId === hold.id && Math.hypot(e.clientX - hold.x, e.clientY - hold.y) >= 8) {
 		clearTimeout(hold.timer);

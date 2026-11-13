@@ -42,7 +42,9 @@ const textParts = (page) => [
   { kind: 'body', text: page.text || '', scale: page.textSize ?? 1, bold: false },
 ].filter((p) => p.text.trim());
 
-export async function renderPage(board, page, { selected = -1, editing = false } = {}) {
+// editing: the board editor's page (empty spots say what to do); mainHint:
+// the page's own title is being written, so show its box even while empty.
+export async function renderPage(board, page, { selected = -1, editing = false, mainHint = false } = {}) {
   const shape = SHAPES[board.shape];
   const t = pageTemplate(board, page);
   const el = document.createElement('div');
@@ -55,7 +57,7 @@ export async function renderPage(board, page, { selected = -1, editing = false }
     Object.assign(slot.style, { left: pct(s.x), top: pct(s.y), width: pct(s.w), height: pct(s.h) });
     el.append(slot);
     const im = page.images[i], rec = im && photoById(im.id);
-    if (!rec) return;
+    if (!rec) { if (editing) slot.innerHTML = '<span class="slot-hint">Tap a photo below</span>'; return; }
     const img = document.createElement('img');
     img.draggable = false;
     img.alt = '';
@@ -66,6 +68,8 @@ export async function renderPage(board, page, { selected = -1, editing = false }
   }));
   const parts = textParts(page);
   const cols = page.palette ? pagePalette(page, t) : [];
+  const hint = editing && mainHint && !parts.length;
+  if (hint) parts.push({ kind: 'title empty', text: 'Title', scale: page.titleSize ?? 1.5 });
   if (parts.length || cols.length) {
     const tx = document.createElement('div');
     tx.className = `page-text${t.text.overlay ? ' overlay' : ''}${page.textFill === false ? ' nofill' : ''}`;

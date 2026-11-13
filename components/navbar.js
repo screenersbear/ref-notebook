@@ -1,34 +1,28 @@
-// The bottom bar, the same idea as Callback's: the section you're in as one
-// icon with a little triangle each side. Mood boards comes first, then Tags;
-// before Mood boards, the left triangle shuts the notebook. A swipe on the page
-// does the same as one on the bar, and going between the two turns a page.
-import { ICONS } from './icons.js';
+// The section bar (round 2, as The Eye's): each section's mark over its
+// name, Mood boards first, then Tags. Tap one, or swipe along the bar, and
+// the notebook turns to it with a page turn; swiping right on Mood boards
+// shuts the notebook. A swipe on the page does the same as one on the bar.
 import { dragFrame, settleFrame, turnTo, isTurning } from './spread.js';
 
+// The marks: a board in quarters, and a half circle over a dot (styles/section-bar.css colours them).
+const q = (d, cls) => `<path class="${cls}" d="M12 12 ${d} Z"/>`;
+const MARKS = {
+  boards: `<svg viewBox="0 0 24 24" aria-hidden="true">${q('L0 12 A12 12 0 0 1 12 0', 'mk-1')}${q('L12 0 A12 12 0 0 1 24 12', 'mk-2')}${q('L24 12 A12 12 0 0 1 12 24', 'mk-1')}${q('L12 24 A12 12 0 0 1 0 12', 'mk-2')}</svg>`,
+  tags: '<svg viewBox="0 0 24 24" aria-hidden="true"><path class="mk-1" d="M0 12 A12 12 0 0 1 24 12 Z"/><circle class="mk-2" cx="12" cy="18" r="4"/></svg>',
+};
 const SECTIONS = [
-  { href: '#/boards', name: 'Mood boards', icon: ICONS.boards },
-  { href: '#/folders', name: 'Tags', icon: ICONS.folders },
+  { href: '#/boards', name: 'Mood boards', key: 'boards', icon: MARKS.boards },
+  { href: '#/folders', name: 'Tags', key: 'tags', icon: MARKS.tags },
 ];
-const STEP = 46; // px from one icon to the next on the strip
-const tri = '<svg viewBox="0 0 10 12" aria-hidden="true"><path d="M2.3 1.5Q5.6 3.8 8.7 6.1 5.5 8.3 2.2 10.5 2.5 6 2.3 1.5Z" fill="currentColor" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/></svg>';
 
 const bar = document.getElementById('navbar');
 const frame = document.getElementById('frame');
-bar.innerHTML = `
-  <div class="slider">
-    <button type="button" class="slide-arrow is-prev">${tri}</button>
-    <a class="slide-now"><span class="slide-strip" aria-hidden="true">${SECTIONS.map((s) => `<span class="slide-icon">${s.icon}</span>`).join('')}</span></a>
-    <button type="button" class="slide-arrow is-next">${tri}</button>
-  </div>`;
-const strip = bar.querySelector('.slide-strip');
-const now = bar.querySelector('.slide-now');
-const prev = bar.querySelector('.is-prev');
-const next = bar.querySelector('.is-next');
+bar.innerHTML = `<div class="sec-row">${SECTIONS.map((s, i) => `<a class="sec sec-${s.key}" href="${s.href}" data-sec="${i}">${s.icon}<span>${s.name}</span></a>`).join('')}</div>`;
+const links = [...bar.querySelectorAll('.sec')];
 
 let at = 0, busy = false, swiped = 0, onList = false, puller = null, landed = null;
-let docked = null; // the row of every section, while a finger holds the icon (below)
+let docked = null; // the row of every section, while a finger holds the bar (below)
 export const setPuller = (p) => { puller = p; };
-const stripTo = (i, moving) => { strip.classList.toggle('is-moving', !!moving); strip.style.transform = `translateX(${-i * STEP}px)`; };
 
 // Called after each route: which section it's in, or -1 for none. list: it's
 // that section's own first screen, where swiping the page moves through the book.
@@ -39,14 +33,7 @@ export function showSection(i, list = false) {
   if (landed) { landed(); landed = null; }
   if (i < 0) { frame.style.transform = ''; busy = false; return; }
   at = i;
-  const s = SECTIONS[i], p = SECTIONS[i - 1], n = SECTIONS[i + 1];
-  now.setAttribute('href', s.href);
-  now.setAttribute('aria-label', s.name);
-  prev.setAttribute('aria-label', p ? `Previous: ${p.name}` : 'Shut the notebook');
-  next.classList.toggle('is-off', !n);
-  next.disabled = !n;
-  next.setAttribute('aria-label', n ? `Next: ${n.name}` : 'Nothing after this');
-  if (!busy) stripTo(i);
+  links.forEach((a, k) => { if (k === i) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current'); });
 }
 
 // Changes the route; resolves once the new screen is on the page.
@@ -64,18 +51,17 @@ async function go(dir, from = 0) {
   if (!t) return settle(from);
   busy = true;
   dragFrame(0);
-  stripTo(target, true);
   await turnTo(target, Math.sign(dir), () => navigate(t.href));
   busy = false;
-  stripTo(at);
 }
-function settle(from) {
-  settleFrame(from);
-  stripTo(at, true);
-}
+const settle = (from) => settleFrame(from);
 
-prev.addEventListener('click', () => go(-1));
-next.addEventListener('click', () => go(1));
+// A tap on the other section turns to it; on this one, back to the top of its page.
+links.forEach((a, k) => a.addEventListener('click', (e) => {
+  e.preventDefault();
+  if (k !== at) go(k - at);
+  else frame.querySelector('.scroll')?.scrollTo({ top: 0, behavior: 'smooth' });
+}));
 
 // One finger across the bar or the page.
 function wire(el, fromPage) {
@@ -101,12 +87,7 @@ function wire(el, fromPage) {
       else d.kind = 'stop';
     }
     d.x = dx;
-    if (d.kind === 'turn') { // the bar's icons follow the finger; the page turns when you let go
-      const x = dx * d.dir > 0 ? 0 : Math.max(-frame.offsetWidth, Math.min(frame.offsetWidth, dx));
-      strip.classList.remove('is-moving');
-      strip.style.transform = `translateX(${-at * STEP + (x / frame.offsetWidth) * STEP}px)`;
-    }
-    else if (d.kind === 'shut') { d.x = Math.max(0, dx); dragFrame(Math.min(d.x * 0.3, 60)); } // a little give, then it shuts all the way
+    if (d.kind === 'shut') { d.x = Math.max(0, dx); dragFrame(Math.min(d.x * 0.3, 60)); } // a little give, then it shuts all the way
   });
   const end = (e) => {
     if (!d || e.pointerId !== d.id) return;
@@ -115,7 +96,7 @@ function wire(el, fromPage) {
     if (!g.moved) return;
     swiped = performance.now();
     const up = e.type === 'pointerup', w = frame.offsetWidth;
-    if (g.kind === 'turn') { if (up && g.x * g.dir < 0 && Math.abs(g.x) > Math.min(60, w * 0.15)) go(g.dir); else stripTo(at, true); }
+    if (g.kind === 'turn') { if (up && g.x * g.dir < 0 && Math.abs(g.x) > Math.min(60, w * 0.15)) go(g.dir); } // the page turns when you let go
     else if (g.kind === 'shut') { if (up && g.x > 50) { dragFrame(0); location.hash = '#/'; } else settle(Math.min(g.x * 0.3, 60)); }
     // nowhere to go that way: the page stays put
   };
@@ -169,7 +150,6 @@ function openDock(h) {
   // The section you're on sits right over the finger, as far as the screen allows.
   const left = Math.max(8, Math.min(vw - 8 - w, h.x - DOCK_PAD - (at + 0.5) * DOCK_SLOT));
   docked = { id: h.id, x0: h.x, y0: h.y, moved: false, at, left, centers: SECTIONS.map((s, i) => left + DOCK_PAD + (i + 0.5) * DOCK_SLOT) };
-  stripTo(at, true); // the bar's own icon goes back if a slide had nudged it
   dock.style.left = `${(left - r.left).toFixed(1)}px`;
   dock.style.transformOrigin = `${(h.x - left).toFixed(1)}px 100%`;
   dockSlots.forEach((slot, i) => slot.classList.toggle('is-here', i === at));
@@ -178,7 +158,7 @@ function openDock(h) {
   bar.classList.add('is-docked');
   try { bar.setPointerCapture(h.id); } catch {}
 }
-now.addEventListener('pointerdown', (e) => {
+bar.addEventListener('pointerdown', (e) => {
   if (e.button || !e.isPrimary) return;
   if (hold) clearTimeout(hold.timer);
   const h = { id: e.pointerId, x: e.clientX, y: e.clientY };
@@ -186,7 +166,7 @@ now.addEventListener('pointerdown', (e) => {
   hold = h;
 });
 // A long press on a link would bring up iOS's preview of it.
-now.addEventListener('contextmenu', (e) => e.preventDefault());
+bar.addEventListener('contextmenu', (e) => e.preventDefault());
 bar.addEventListener('pointermove', (e) => {
   if (hold && e.pointerId === hold.id && Math.hypot(e.clientX - hold.x, e.clientY - hold.y) >= 8) { clearTimeout(hold.timer); hold = null; }
   if (!docked || e.pointerId !== docked.id) return;

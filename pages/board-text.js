@@ -3,10 +3,11 @@
 import { sizeOf, stepSize, useDefault, saveDefault, isDefault, defaultSize } from '../components/textsize.js';
 import { pageTemplate } from '../components/board-page.js';
 import { toast } from '../components/toast.js';
+import { choiceSheet } from '../components/dialogs.js';
 import { esc, clamp } from '../components/util.js';
 
 export function addTextBoxes(ed) {
-  Object.assign(ed, { rectOf, paintTsel, dragBox, endBoxGesture, addNote, closePanel });
+  Object.assign(ed, { rectOf, paintTsel, dragBox, endBoxGesture, addNote, closePanel, textSheet });
   // ---- Text boxes ----
   // 'main' is the page's own title and text; a number is a box added with T.
   const keyOf = (v) => (v === 'main' ? 'main' : +v); ed.keyOf = keyOf;
@@ -70,14 +71,24 @@ export function addTextBoxes(ed) {
     openPanel(ed.tsel, true);
   }
 
+  // The T tool: the page's own title (any page can have one), or a box of
+  // words anywhere on it.
+  async function textSheet() {
+    const key = await choiceSheet({ title: 'Add text', options: [
+      { key: 'title', label: 'Title', detail: ed.page().title?.trim() ? 'This page\'s title' : 'A title for this page' },
+      { key: 'text', label: 'Text', detail: 'A box of words, anywhere on the page' },
+    ] });
+    if (key === 'title') { ed.sel = -1; openPanel('main', true); } else if (key === 'text') addNote();
+  }
+
   // The menu for a text box, smaller, in place of the photos at the bottom.
-  const tpanel = ed.view.querySelector('[data-tpanel]');
+  const tpanel = ed.view.querySelector('[data-tpanel]'), trayBox = ed.view.querySelector('[data-tray-box]');
   function closePanel() {
     if (ed.panel == null) return;
     const p = ed.page(), n = ed.panel === 'main' ? null : p?.notes?.[ed.panel];
     ed.panel = null;
     tpanel.hidden = true; tpanel.innerHTML = '';
-    ed.view.querySelectorAll('.show-row, [data-tray-head], [data-tray]').forEach((x) => { x.hidden = false; });
+    trayBox.hidden = false;
     if (n && !n.text.trim()) { p.notes.splice(p.notes.indexOf(n), 1); ed.tsel = null; ed.persist(); }
     ed.drawPage();
   }
@@ -88,7 +99,7 @@ export function addTextBoxes(ed) {
     if (key === -1) return;
     ed.panel = key; ed.tsel = key;
     const p = ed.page(), t = pageTemplate(ed.board, p), n = noteOf(key);
-    ed.view.querySelectorAll('.show-row, [data-tray-head], [data-tray]').forEach((x) => { x.hidden = true; });
+    trayBox.hidden = true;
     tpanel.hidden = false;
     tpanel.innerHTML = n ? `
         <textarea rows="2" data-note placeholder="Type here">${esc(n.text)}</textarea>
@@ -121,7 +132,7 @@ export function addTextBoxes(ed) {
       const b = e.target.closest('button');
       if (!b) return;
       if ('tdone' in b.dataset) { ed.tsel = null; closePanel(); ed.drawPage(); return; }
-      if ('tdel' in b.dataset) { ed.snapshot(); p.notes.splice(key, 1); ed.panel = null; ed.tsel = null; closePanel(); tpanel.hidden = true; ed.view.querySelectorAll('.show-row, [data-tray-head], [data-tray]').forEach((x) => { x.hidden = false; }); ed.persist(); ed.drawPage(); return; }
+      if ('tdel' in b.dataset) { ed.snapshot(); p.notes.splice(key, 1); ed.panel = null; ed.tsel = null; closePanel(); tpanel.hidden = true; trayBox.hidden = false; ed.persist(); ed.drawPage(); return; }
       const row = b.closest('[data-size]');
       if (!row) return;
       const kind = row.dataset.size, o = targetOf(kind), word = kind === 'title' ? 'Title' : 'Text';

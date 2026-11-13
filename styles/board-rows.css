@@ -1,0 +1,16 @@
+/* Mood boards (round 2, 01-mood-boards): each board one big cover (its
+   first photo, 196px tall, full width, radius 8), then its name (20px
+   light), "N pages · date", the shoots it's on as flags, and its ... menu. */
+.board-card { padding: 16px 0 14px; border-bottom: 1px solid #E1E1DC; }
+.card-cover { position: relative; display: block; height: 196px; border-radius: 8px; overflow: hidden; background: #EFEFEA; }
+.card-cover img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.card-info { display: flex; align-items: flex-start; gap: 8px; margin-top: 10px; }
+.card-words { flex: 1; min-width: 0; display: flex; flex-direction: column; color: var(--text); }
+.card-name { font: 300 20px/25px var(--ui); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.card-meta { font: 400 14px/19px var(--ui); color: var(--dim); font-variant-numeric: tabular-nums; }
+.flags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+/* A flag (DESIGN.md 9.5): a 20px pill with a 1px berry blade black outline. */
+.flag { display: inline-flex; align-items: center; max-width: 100%; height: 20px; padding: 0 7px; border-radius: 10px; box-shadow: inset 0 0 0 1px var(--text);
+  font: 700 10px/12px var(--ui); letter-spacing: .1em; text-transform: uppercase; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.card-more { width: 44px; height: 44px; margin: -8px -10px 0 0; color: var(--text); }
+.card-more svg { width: 22px; height: 22px; }

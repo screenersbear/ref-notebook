@@ -7,12 +7,23 @@ import { toast } from './toast.js';
 import { remember } from './undo.js';
 import { esc } from './util.js';
 
+const PLUS = '<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>';
+
 export async function newFolder() {
   const name = await promptSheet({ title: 'New tag', label: 'Tag name', confirmLabel: 'Make it' });
   if (!name) return null;
   const f = await db.saveFolder({ name });
   await refresh();
   return f;
+}
+
+// What Ref found in a photo, changed by hand in the viewer: saved, kept
+// from the tagger from now on, and undoable.
+export async function relabel(p, tags) {
+  const before = { tags: p.tags, tagsEdited: p.tagsEdited };
+  await db.patchPhoto(p.id, { tags, tagsEdited: true });
+  await refresh();
+  remember('changing what is in it', () => db.patchPhoto(p.id, before));
 }
 
 // Saves new folders or favorites for some photos, and remembers how to undo it.
@@ -43,9 +54,9 @@ export function fileSheet(ids) {
             const on = changes.has(f.id) ? changes.get(f.id) : inCount(f.id) === photos.length;
             return `<label class="tick" data-name="${esc(f.name.toLowerCase())}"><input type="checkbox" value="${esc(f.id)}"${on ? ' checked' : ''} /><span>${esc(f.name)}</span></label>`;
           }).join('')}
-          <button type="button" class="tick add" data-new>+ New tag</button>
+          <button type="button" class="tick add" data-new>${PLUS}New tag</button>
         </div>
-        <div class="sheet-actions"><button type="button" class="btn secondary" data-close>Cancel</button><button type="button" class="btn primary" data-save>Save</button></div>`;
+        <div class="sheet-actions one"><button type="button" class="btn primary" data-save>Done</button></div>`;
       s.body.querySelectorAll('.tick input').forEach((box) => {
         const n = inCount(box.value);
         box.indeterminate = !changes.has(box.value) && n > 0 && n < photos.length;

@@ -11,7 +11,8 @@ import { photoById, thumbUrl } from './library.js';
 import { pageToCanvas } from '../components/board-page.js';
 import { SHAPES } from './templates.js';
 import { openSheet } from '../components/sheet.js';
-import { choiceSheet, confirmSheet } from '../components/dialogs.js';
+import { confirmSheet } from '../components/dialogs.js';
+import { pickShoot } from '../components/shoot-picker.js';
 import { toast, hideToast } from '../components/toast.js';
 import { esc, canvasToBlob } from '../components/util.js';
 
@@ -20,6 +21,7 @@ const LONG_EDGE = 1600;      // each page picture, on its longer side
 const COVER = 800;           // the cover, square
 const BIG_FILE = 25 * 1048576; // a file this big gets a word first
 const UPCOMING = ['prospect', 'planning', 'waiting_to_shoot', 'rescheduled'];
+const STATUS = { prospect: 'Prospect', planning: 'Active planning', waiting_to_shoot: 'Shoot ready', rescheduled: 'Postponed' }; // The Eye's words
 
 // ---------- Drawing a board ----------
 // What a board looks like, as a short key: its pictures are drawn again only
@@ -84,12 +86,13 @@ function eyeShoots() {
   return { shoots: st.shoots.filter((s) => s && s.id), mode: st.titleDisplayMode };
 }
 const dateOf = (ymd) => { const [y, m, d] = String(ymd).split('-').map(Number); return new Date(y, m - 1, d); };
+// As The Eye says it: Thu 26 Nov (and the year when it isn't this one).
 function shootDay(ymd) {
-  if (!ymd) return 'No date yet';
+  if (!ymd) return 'Date not set';
   const d = dateOf(ymd);
-  const opts = { weekday: 'short', month: 'short', day: 'numeric' };
+  const opts = { weekday: 'short', day: 'numeric', month: 'short' };
   if (d.getFullYear() !== new Date().getFullYear()) opts.year = 'numeric';
-  return d.toLocaleDateString(undefined, opts);
+  return d.toLocaleDateString('en-GB', opts).replace(',', '');
 }
 // Still to come, soonest first; no date yet at the end.
 function upcomingShoots() {
@@ -100,11 +103,10 @@ function upcomingShoots() {
     .map((s) => {
       const name = D.eyeShootName(s, mode);
       const other = D.eyeShootName(s, mode === 'title' ? 'talent' : 'title'); // the shoot's title under a talent's name, or the other way round
-      return { id: s.id, name, other: other !== name ? other : '', date: s.date || '' };
+      return { id: s.id, name, other: other !== name ? other : '', date: s.date || '', status: STATUS[s.status || 'prospect'], photo: s.projectPhoto || '' };
     });
 }
-const shortDay = (ymd) => (ymd ? dateOf(ymd).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) : '');
-// The shoots each board is on: { boardId: ['Ana Rivera', ...] }. Shoots since deleted are left out.
+// The shoots each board is on, by name: { boardId: ['Ana Rivera', ...] }. Shoots since deleted are left out.
 export async function boardShoots() {
   if (!D || !D.inSuite()) return {};
   const { shoots, mode } = eyeShoots();
@@ -112,7 +114,7 @@ export async function boardShoots() {
   const out = {};
   for (const l of await D.linksWhere({ fromApp: 'ref', toApp: 'the-eye', type: 'moodboard' })) {
     const s = byId.get(l.toId);
-    if (s) (out[l.fromId] = out[l.fromId] || []).push(`${D.eyeShootName(s, mode)}${s.date ? ` (${shortDay(s.date)})` : ''}`);
+    if (s) (out[l.fromId] = out[l.fromId] || []).push(D.eyeShootName(s, mode));
   }
   return out;
 }
@@ -124,16 +126,11 @@ export async function sendToShoot(board) {
   const links = await D.linksWhere({ fromApp: 'ref', fromId: board.id, toApp: 'the-eye', type: 'moodboard' });
   const has = new Set(links.map((l) => l.toId));
   const shoots = upcomingShoots();
-  const key = await choiceSheet({
-    title: 'Send to which shoot?',
-    message: shoots.length ? '' : 'No shoots coming up in The Eye.',
-    options: [
-      ...shoots.map((s) => ({ key: s.id, label: s.name, detail: [shootDay(s.date), s.other, has.has(s.id) ? 'Has this board' : ''].filter(Boolean).join(' · '), current: has.has(s.id) })),
-      { key: '+new', label: '+ New shoot from this board' },
-    ],
+  const key = await pickShoot({
+    boardName: board.name,
+    shoots: shoots.map((s) => ({ id: s.id, name: s.name, photo: s.photo, has: has.has(s.id), line: [shootDay(s.date), s.status, has.has(s.id) ? 'Has this board' : ''].filter(Boolean).join(' · ') })),
   });
   if (!key) return;
-  if (key !== '+new' && has.has(key)) { toast('That shoot has this board already'); return; }
   let drawn;
   try {
     drawn = await drawBoard(board, (i) => toast(`Getting page ${i + 1} of ${board.pages.length} ready`, { ms: 60000 }));

@@ -18,5 +18,6 @@ export const ICONS = {
   text: svg('<path d="M5 7V4.5h14V7M12 4.5v15M9 19.5h6"/>'),
   undo: svg('<path d="M8 5L4 9l4 4M4 9h10a5.5 5.5 0 0 1 0 11H9"/>'),
   share: svg('<path d="M12 15V3M8 7l4-4 4 4M6 11H4.5v10h15V11H18"/>'),
+  download: svg('<path d="M12 4v11M7.5 10.5L12 15l4.5-4.5M5 20h14"/>'),
   page: svg('<rect x="5" y="3.5" width="14" height="17"/><path d="M12 8.5v7M8.5 12h7"/>'),
 };

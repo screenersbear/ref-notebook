@@ -2,19 +2,6 @@
    every section a held finger opens. */
 .tools { position: fixed; left: 0; right: 0; top: calc(var(--app-h) - var(--nb-bar)); height: var(--nb-bar); max-width: 620px; margin: 0 auto; display: flex; justify-content: space-evenly; align-items: center; padding: 0 0 var(--nb-pad); background: #fff; z-index: 3; }
 .nav-bar { position: fixed; left: 0; right: 0; top: calc(var(--app-h) - var(--nb-bar)); height: var(--nb-bar); max-width: 620px; margin: 0 auto; padding: 0 0 var(--nb-pad); background: #fff; z-index: 0; touch-action: none; user-select: none; -webkit-user-select: none; }
-.slider { display: flex; align-items: center; justify-content: center; height: 50px; }
-.slide-arrow { width: 44px; height: 44px; display: grid; place-items: center; color: var(--text); }
-.slide-arrow.is-prev { justify-items: end; margin-right: -5px; position: relative; z-index: 1; }
-.slide-arrow.is-next { justify-items: start; margin-left: -5px; position: relative; z-index: 1; }
-.slide-arrow:active { opacity: .5; }
-.slide-arrow.is-off { visibility: hidden; }
-.slide-arrow svg { width: 9px; height: 11px; display: block; }
-.slide-arrow.is-prev svg { transform: scaleX(-1); }
-.slide-now { display: block; flex: none; width: 46px; height: 40px; overflow: hidden; color: var(--text); }
-.slide-strip { display: flex; }
-.slide-strip.is-moving { transition: transform .19s cubic-bezier(.3,.6,.3,1); }
-.slide-icon { flex: 0 0 46px; height: 40px; display: grid; place-items: center; }
-.slide-icon svg { width: 27px; height: 27px; stroke-width: 1.7; }
 /* Held, the bar's icon swells into a row of every section (navbar.js). No card
    around it (user, 11-12): just the icons and the name, on a soft white haze. */
 .nav-bar { -webkit-touch-callout: none; }

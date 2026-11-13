@@ -1,14 +1,21 @@
-// The photo viewer: full screen, swipe between photos, pinch or double-tap to zoom.
-// Tapping a color in the strip opens every photo with that color.
+// The photo viewer (round 2, dark): full screen, swipe between photos, pinch
+// or double-tap to zoom. Under the photo, the tags it's in, what Ref found in
+// it (take any away, add more), and its colors: tapping one opens every
+// photo with that color. Favorite, Tag, Undo and Delete at the foot.
 import * as db from '../data/db.js';
 import { photoById, thumbUrl, fullUrl, refresh, lib, photosOfColor } from '../data/library.js';
-import { fileSheet, changePhotos } from '../components/filing.js';
+import { fileSheet, changePhotos, relabel } from '../components/filing.js';
 import { remember, canUndo, undoLast } from '../components/undo.js';
-import { confirmSheet } from '../components/dialogs.js';
+import { confirmSheet, promptSheet } from '../components/dialogs.js';
 import { sheetIsOpen } from '../components/sheet.js';
 import { toast } from '../components/toast.js';
 import { ICONS } from '../components/icons.js';
 import { esc, clamp } from '../components/util.js';
+import { BACK } from '../components/band.js';
+
+const X = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg>';
+const SMALL_X = '<svg viewBox="0 0 24 24" aria-hidden="true"><line x1="7" y1="7" x2="17" y2="17"/><line x1="17" y1="7" x2="7" y2="17"/></svg>';
+const SMALL_PLUS = '<svg viewBox="0 0 24 24" aria-hidden="true"><line x1="12" y1="6" x2="12" y2="18"/><line x1="6" y1="12" x2="18" y2="12"/></svg>';
 
 export function openViewer(ids, start, onChange) {
   let list = [...ids];
@@ -18,15 +25,25 @@ export function openViewer(ids, start, onChange) {
   const el = document.createElement('div');
   el.className = 'viewer';
   el.innerHTML = `
+    <div class="v-top">
+      <button type="button" class="ring-btn v-close" data-close aria-label="Close"><span>${X}</span></button>
+      <span class="v-count"></span>
+      <span class="v-top-gap" aria-hidden="true"></span>
+    </div>
     <div class="v-stage"><img class="v-img" alt="" draggable="false" /></div>
-    <div class="v-top"><span class="v-name"></span><span class="v-count"></span></div>
-    <div class="v-palette"></div>
+    <div class="v-info">
+      <p class="v-label">Tags</p>
+      <div class="v-chips v-tags"></div>
+      <p class="v-label">What is in it <span>(found by Ref, edit any)</span></p>
+      <div class="v-chips v-found"></div>
+      <div class="v-palette"></div>
+      <p class="v-hint">Tap a color to see every photo with it</p>
+    </div>
     <nav class="v-tools">
-      <button type="button" data-v="close" aria-label="Close">${ICONS.back}</button>
-      <button type="button" data-v="fav" aria-label="Favorite"></button>
-      <button type="button" data-v="file" aria-label="Tag this photo">${ICONS.file}</button>
-      <button type="button" data-v="undo" aria-label="Undo"${canUndo() ? '' : ' disabled'}>${ICONS.undo}</button>
-      <button type="button" data-v="delete" aria-label="Delete">${ICONS.trash}</button>
+      <button type="button" data-v="fav"></button>
+      <button type="button" data-v="file" aria-label="Tag this photo">${ICONS.file}<span aria-hidden="true">Tag</span></button>
+      <button type="button" data-v="undo"${canUndo() ? '' : ' disabled'}>${ICONS.undo}<span>Undo</span></button>
+      <button type="button" data-v="delete">${ICONS.trash}<span>Delete</span></button>
     </nav>`;
   document.body.append(el);
   const img = el.querySelector('.v-img');
@@ -38,10 +55,14 @@ export function openViewer(ids, start, onChange) {
     if (!p) return close();
     scale = 1; tx = 0; ty = 0; place();
     img.src = thumbUrl(p);
-    el.querySelector('.v-name').textContent = p.folderIds.map((id) => lib.folders.find((f) => f.id === id)?.name).filter(Boolean).join(', ') || 'Incoming';
+    const tags = p.folderIds.map((id) => lib.folders.find((f) => f.id === id)?.name).filter(Boolean);
+    el.querySelector('.v-tags').innerHTML = (tags.length ? tags : ['Incoming']).map((t) => `<span class="v-chip">${esc(t)}</span>`).join('');
+    el.querySelector('.v-found').innerHTML = (p.tags || []).map((t) => `<button type="button" class="v-chip found" data-untag="${esc(t)}" aria-label="Remove ${esc(t)}">${esc(t)}${SMALL_X}</button>`).join('')
+      + `<button type="button" class="v-chip add" data-addtag>${SMALL_PLUS}Add</button>`;
     el.querySelector('.v-count').textContent = `${i + 1} of ${list.length}`;
     el.querySelector('.v-palette').innerHTML = (p.palette || []).map((c) => `<button type="button" data-color="${esc(c.hex)}" aria-label="Photos with this color" style="background:${esc(c.hex)};flex:${c.w}"></button>`).join('');
-    el.querySelector('[data-v=fav]').innerHTML = p.favorite ? ICONS.heartOn : ICONS.heart;
+    el.querySelector('[data-v=fav]').innerHTML = `${p.favorite ? ICONS.heartOn : ICONS.heart}<span>Favorite</span>`;
+    el.querySelector('[data-v=fav]').setAttribute('aria-pressed', String(!!p.favorite));
     const want = list[i];
     const u = await fullUrl(want);
     if (u && want === list[i]) img.src = u;
@@ -65,14 +86,30 @@ export function openViewer(ids, start, onChange) {
     const b = e.target.closest('[data-color]');
     if (b) openColorPage(b.dataset.color, again);
   });
+  el.querySelector('[data-close]').addEventListener('click', () => close());
+  // What Ref found: tap one to take it away, Add for one more.
+  el.querySelector('.v-found').addEventListener('click', async (e) => {
+    const p = photoById(list[i]);
+    if (!p) return;
+    const now = p.tags || [];
+    let next = null;
+    const gone = e.target.closest('[data-untag]');
+    if (gone) next = now.filter((t) => t !== gone.dataset.untag);
+    else if (e.target.closest('[data-addtag]')) {
+      const word = (await promptSheet({ title: 'What is in it', label: 'A word for something in the photo', confirmLabel: 'Add' }))?.trim().toLowerCase();
+      if (word && !now.includes(word)) next = [...now, word];
+    }
+    if (!next) return;
+    try { await relabel(p, next); changed = true; show(); }
+    catch (err) { console.error(err); toast('Could not save that. Try once more.'); }
+  });
   const go = (d) => { const n = i + d; if (n >= 0 && n < list.length) { i = n; show(); } else { place(); } };
 
   el.querySelector('.v-tools').addEventListener('click', async (e) => {
     const b = e.target.closest('[data-v]');
     if (!b) return;
     const p = photoById(list[i]);
-    if (b.dataset.v === 'close') close();
-    else if (b.dataset.v === 'undo') {
+    if (b.dataset.v === 'undo') {
       const gone = list[i];
       await undoLast();
       changed = true;
@@ -159,10 +196,10 @@ function openColorPage(hex, onBack) {
   const draw = () => {
     list = photosOfColor(hex);
     el.innerHTML = `
-      <header class="folder-head">
-        <button type="button" class="icon-btn" data-back aria-label="Back to the photo">${ICONS.back}</button>
-        <span class="color-swatch" style="background:${esc(hex)}"></span>
-        <span class="count">${list.length}</span>
+      <header class="band band-short">
+        <button type="button" class="ring-btn" data-back aria-label="Back to the photo"><span>${BACK}</span></button>
+        <p class="band-line"><span class="color-swatch" style="background:${esc(hex)}"></span><b class="count">${list.length} ${list.length === 1 ? 'photo' : 'photos'}</b></p>
+        <span class="ring-btn" aria-hidden="true"></span>
       </header>
       <div class="scroll"><div class="grid">
         ${list.map((p, n) => `<button type="button" class="tile" data-i="${n}" aria-label="${esc(p.name)}"><img src="${thumbUrl(p)}" alt="" decoding="async" draggable="false" /></button>`).join('')}

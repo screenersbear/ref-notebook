@@ -38,6 +38,20 @@ built/app.css
   styles/toast.css
   styles/showboard.css
   styles/header-band.css
+  styles/band-colors.css
+  styles/band.css
+  styles/section-bar.css
+  styles/board-rows.css
+  styles/tag-rows.css
+  styles/folder-grid.css
+  styles/sheets.css
+  styles/viewer-dark.css
+  styles/option-cards.css
+  styles/switch.css
+  styles/new-board-guide.css
+  styles/board-editor.css
+  styles/options-sheet.css
+  styles/send-sheet.css
 
 # The scripts: app.js and every ES module it imports (and those import), joined
 # by following the imports, so they aren't listed one by one.

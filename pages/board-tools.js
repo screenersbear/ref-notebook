@@ -8,6 +8,7 @@ import { openSheet } from '../components/sheet.js';
 import { choiceSheet, confirmSheet } from '../components/dialogs.js';
 import { toast, hideToast } from '../components/toast.js';
 import { esc, clone, slug, canvasToBlob, downloadBlob } from '../components/util.js';
+import { cardHtml } from '../components/option-card.js';
 
 export function addTools(ed) {
   Object.assign(ed, { layoutSheet, addPage, moreSheet, exportPdf });
@@ -17,7 +18,11 @@ export function addTools(ed) {
     const list = TEMPLATES[ed.board.shape].filter((t) => !t.guide);
     const sh = openSheet({
       title: 'Layout',
-      body: `<div class="style-grid">${list.map((t) => `<button type="button" class="style${t.id === ed.page().template ? ' on' : ''}" data-tpl="${esc(t.id)}"><svg viewBox="0 0 ${W} ${H}" aria-hidden="true"><rect class="paper-r" width="${W}" height="${H}"/>${t.slots.map((b) => `<rect x="${b.x * W}" y="${b.y * H}" width="${b.w * W}" height="${b.h * H}"/>`).join('')}</svg><span>${esc(t.name)}</span></button>`).join('')}</div>`,
+      body: `<div class="opt-cards" role="radiogroup" aria-label="Layout">${list.map((t) => cardHtml({
+        attr: `data-tpl="${esc(t.id)}"`, on: t.id === ed.page().template,
+        picture: `<svg viewBox="0 0 ${W} ${H}" style="width:${s.W > s.H ? 80 : 60}px" aria-hidden="true"><rect class="paper-r" width="${W}" height="${H}"/>${t.slots.map((b) => `<rect x="${b.x * W}" y="${b.y * H}" width="${b.w * W}" height="${b.h * H}"/>`).join('')}</svg>`,
+        name: t.name,
+      })).join('')}</div>`,
     });
     sh.body.addEventListener('click', (e) => {
       const b = e.target.closest('[data-tpl]');

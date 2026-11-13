@@ -1,4 +1,5 @@
-// Mood boards: every mood board on one page that scrolls.
+// Mood boards: every mood board on one page that scrolls, each a big cover
+// (its first photo) with its name, pages, date and the shoots it's on.
 import * as db from '../data/db.js';
 import { lib, thumbUrl, photoById } from '../data/library.js';
 import { remember, undoLast } from '../components/undo.js';
@@ -7,27 +8,40 @@ import { choiceSheet, confirmSheet, promptSheet } from '../components/dialogs.js
 import { toast } from '../components/toast.js';
 import { ICONS } from '../components/icons.js';
 import { esc, shortDate } from '../components/util.js';
+import { bandHtml, wireBand } from '../components/band.js';
 
 export async function boardsScreen(view) {
   const boards = await db.listBoards();
   const onShoots = await boardShoots().catch(() => ({})); // inside Documenting Fictions: the shoots each board was sent to
   const firstPhoto = (b) => b.pages.flatMap((p) => p.images).map((im) => im && photoById(im.id)).find(Boolean);
+  const card = (b) => {
+    const p = firstPhoto(b);
+    const href = `#/board/${esc(b.id)}`;
+    const flags = (onShoots[b.id] || []).map((s) => `<span class="flag">For ${esc(s)}</span>`).join('');
+    return `
+      <div class="board-card" data-b>
+        <a class="card-cover" href="${href}" aria-label="Open ${esc(b.name)}">${p ? `<img src="${thumbUrl(p)}" alt="" />` : ''}</a>
+        <div class="card-info">
+          <a class="card-words" href="${href}">
+            <span class="card-name">${esc(b.name)}</span>
+            <span class="card-meta">${b.pages.length} ${b.pages.length === 1 ? 'page' : 'pages'} · ${esc(shortDate(b.updatedAt))}</span>
+            ${flags ? `<span class="flags">${flags}</span>` : ''}
+          </a>
+          <button type="button" class="icon-btn card-more" data-more="${esc(b.id)}" aria-label="More for ${esc(b.name)}">${ICONS.more}</button>
+        </div>
+      </div>`;
+  };
   view.innerHTML = `
-    <div class="screen">
-      ${window.DF_SUITE ? `<h1 class="head head-add"><button type="button" class="icon-btn head-plus head-menu" data-app-menu aria-label="Menu">${ICONS.menu}</button>Mood boards</h1>` : '<h1 class="head">Mood boards</h1>'}
-      <div class="scroll rows">
-        ${boards.map((b) => { const p = firstPhoto(b); return `
-          <div class="row" data-b>
-            <a class="row-open" href="#/board/${esc(b.id)}">
-              <span class="thumb">${p ? `<img src="${thumbUrl(p)}" alt="" />` : ''}</span>
-              <span class="row-text"><span class="row-name">${esc(b.name)}</span><span class="row-meta">${b.pages.length} ${b.pages.length === 1 ? 'page' : 'pages'}, ${esc(shortDate(b.updatedAt))}</span>${onShoots[b.id] ? `<span class="row-meta row-shoots">For ${esc(onShoots[b.id].join(', '))}</span>` : ''}</span>
-            </a>
-            <button type="button" class="icon-btn" data-more="${esc(b.id)}" aria-label="More for ${esc(b.name)}">${ICONS.more}</button>
-          </div>`; }).join('')}
-        <a class="row row-open" href="#/new"><span class="thumb add">${ICONS.plus}</span><span class="row-name">New board</span></a>
+    <div class="screen has-band">
+      <div class="scroll">
+        ${bandHtml({ title: 'Ref', place: 'Mood boards', add: 'New board' })}
+        <div class="list-head"><h2>Boards <span>${boards.length}</span></h2><a class="list-act" href="#/new">${ICONS.plus}New board</a></div>
+        <div class="list-rule"></div>
+        ${boards.map(card).join('')}
         ${!lib.photos.length ? '<p class="note">Start in <a href="#/folder/incoming">Incoming</a>: bring in the photos you want to work with, then make a board from them.</p>' : ''}
       </div>
     </div>`;
+  wireBand(view, () => { location.hash = '#/new'; });
   view.querySelectorAll('[data-more]').forEach((btn) => btn.addEventListener('click', async () => {
     const b = boards.find((x) => x.id === btn.dataset.more);
     const key = await choiceSheet({ title: b.name, options: [{ key: 'send', label: 'Send to shoot' }, { key: 'rename', label: 'Rename' }, { key: 'delete', label: 'Delete', danger: true }] });

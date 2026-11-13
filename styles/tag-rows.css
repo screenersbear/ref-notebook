@@ -1,0 +1,18 @@
+/* Tags (round 2, 03-tags): the find box (with more than eight tags), then
+   Incoming, Favorites and All photos, then YOUR TAGS; each row its newest
+   photo (52px, radius 8), the name, how many, a chevron. */
+.find-box { flex: none; display: flex; align-items: center; gap: 10px; height: 44px; margin: 8px 0 8px; padding: 0 14px; border-radius: 10px; background: #EFEFEA; color: var(--dim); }
+.find-box svg { flex: none; width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; }
+.find-box .find { flex: 1; min-width: 0; margin: 0; padding: 0; border: 0; background: none; font: 400 16px/20px var(--ui); color: var(--text); outline: none; -webkit-appearance: none; }
+.find-box .find::placeholder { color: var(--dim); }
+.tag-top { margin-top: 8px; }
+.find-box + .tag-top { margin-top: 0; }
+.tag-row { display: flex; align-items: center; gap: 14px; min-height: 68px; padding: 8px 0; border-bottom: 1px solid #E1E1DC; color: var(--text); }
+.tag-thumb { position: relative; flex: none; display: block; width: 52px; height: 52px; border-radius: 8px; overflow: hidden; background: #EFEFEA; }
+.tag-thumb img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.tag-name { flex: 1; min-width: 0; font: 400 17px/22px var(--ui); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tag-row.special .tag-name { font-weight: 500; }
+.tag-count { font: 400 15px/20px var(--ui); color: var(--dim); font-variant-numeric: tabular-nums; }
+.chevron { flex: none; width: 16px; height: 16px; fill: none; stroke: #9AA3A8; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.tag-mine-head { margin-top: 20px; }
+.tag-new { margin-top: 8px; }

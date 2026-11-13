@@ -1,176 +1,92 @@
-// The sun on the shut notebook (inside Documenting Fictions, the menu at the
-// top of Mood boards): how the app looks and where it opens.
+// Options (the ≡ in the band, and the sun on the shut notebook), in the round
+// 2 look (09-options): the notebook's colour as swatches, then rows for the
+// boards (default page size, recognizing what's in new photos), backups and
+// help. On its own (not in the suite) also where it starts and the stickers.
+// Backups are in options-backup.js, stickers in options-stickers.js.
 import { openSheet } from '../components/sheet.js';
-import { confirmSheet } from '../components/dialogs.js';
-import { toast } from '../components/toast.js';
-import { pickFiles } from '../data/photos.js';
-import { stickers, cropSticker, placeSticker, removeSticker, stickerThumb } from '../components/stickers.js';
-import { esc } from '../components/util.js';
+import { choiceSheet } from '../components/dialogs.js';
+import { tagsOn, turnOnTags, turnOffTags } from '../data/tagger.js';
 import { openIntro } from './intro.js';
+import { saveBackup, restoreBackup } from './options-backup.js';
+import { stickerSheet } from './options-stickers.js';
 
 const BOOK_KEY = 'ref-notebook-book'; // also read in index.html, before the first paint
 const START_KEY = 'ref-notebook-start';
-const COLORS = [['orange', 'Orange'], ['mango', 'Mango'], ['berry', 'Berry'], ['fern', 'Fern'], ['ocean', 'Ocean'], ['ink', 'Black']];
-const startsOpen = () => { try { return localStorage.getItem(START_KEY) === 'open'; } catch { return false; } };
+export const SHAPE_KEY = 'ref-notebook-shape'; // the new board guide starts with it
+const COLORS = [['mango', 'Mango'], ['orange', 'Orange'], ['berry', 'Berry'], ['fern', 'Fern'], ['ocean', 'Ocean'], ['leaf', 'Leaf'], ['ink', 'Black']];
+const SHAPES = [['letter-portrait', 'Tall'], ['wide-16x9', 'Wide']];
+const read = (k) => { try { return localStorage.getItem(k); } catch { return null; } };
+const write = (k, v) => { try { localStorage.setItem(k, v); } catch {} };
+const startsOpen = () => read(START_KEY) === 'open';
 export const startPage = () => (startsOpen() ? '#/boards' : '');
+export const defaultShape = () => (SHAPES.some(([k]) => k === read(SHAPE_KEY)) ? read(SHAPE_KEY) : 'letter-portrait');
+
+const TICK = '<svg viewBox="0 0 24 24" aria-hidden="true"><polyline points="5 12.5 10 17 19 7"/></svg>';
+const CHEVRON = '<svg class="opt-chevron" viewBox="0 0 24 24" aria-hidden="true"><polyline points="9 5 16 12 9 19"/></svg>';
+const recognizeLine = () => (tagsOn() ? 'On. Runs on this phone, nothing is uploaded' : 'Off. New photos are not looked at');
 
 function useBook(name) {
   document.documentElement.dataset.book = name;
-  try { localStorage.setItem(BOOK_KEY, name); } catch {}
+  write(BOOK_KEY, name);
 }
 
+// A swatch for each colour: the band with its partner's line and half circle,
+// ticked when it's the one.
+function colorsHtml() {
+  const now = document.documentElement.dataset.book || 'ocean';
+  return `<div class="opt-colors" role="radiogroup" aria-label="Notebook color">${COLORS.map(([key, name]) => `
+    <button type="button" class="opt-color" role="radio" data-color="${key}" aria-checked="${key === now}">
+      <span class="opt-swatch" data-swatch="${key}"><span class="opt-swatch-line"></span><span class="opt-swatch-sun"></span>${key === now ? `<span class="opt-swatch-tick">${TICK}</span>` : ''}</span>
+      <span class="opt-color-name">${name}</span>
+    </button>`).join('')}</div>`;
+}
+const row = (attr, name, sub = '') => `<button type="button" class="opt-row" ${attr}><span class="opt-row-words"><span class="opt-row-name">${name}</span>${sub ? `<span class="opt-row-sub">${sub}</span>` : ''}</span>${CHEVRON}</button>`;
+
 export function openOptions() {
-  const now = document.documentElement.dataset.book;
+  const alone = !window.DF_SUITE;
+  const shapeName = () => SHAPES.find(([k]) => k === defaultShape())[1];
   const s = openSheet({
     title: 'Options',
+    className: 'opt-sheet',
     body: `
-      <span class="field-label">App color</span>
-      <div class="opt-colors">
-        ${COLORS.map(([key, name]) => `
-          <button type="button" class="opt-color" data-color="${key}" aria-pressed="${key === now}">
-            <span class="opt-book" style="background-image:url(art/${key}-cover.webp)"></span>
-            <span>${name}</span>
-          </button>`).join('')}
-      </div>
-      ${window.DF_SUITE ? '' : `<span class="field-label opt-gap">Stickers</span>
-      <button type="button" class="btn secondary opt-wide" data-stickers>Stickers</button>`}
-      ${window.DF_SUITE ? '' : `<span class="field-label opt-gap">Always start</span>
-      <div class="seg opt-seg">
+      <span class="opt-label">Notebook color</span>
+      <div data-colors>${colorsHtml()}</div>
+      ${alone ? `<span class="opt-label opt-gap">Always start</span>
+      <div class="opt-seg">
         <button type="button" data-start="shut"${startsOpen() ? '' : ' class="on"'}>In the notebook</button>
         <button type="button" data-start="open"${startsOpen() ? ' class="on"' : ''}>On the first page</button>
-      </div>`}
-      <span class="field-label opt-gap">Backup</span>
-      <button type="button" class="btn secondary opt-wide" data-save-backup>Save a backup</button>
-      <button type="button" class="btn secondary opt-wide" data-restore-backup>Restore a backup</button>
-      <button type="button" class="btn secondary opt-wide opt-gap" data-intro>How it works</button>`,
+      </div>` : ''}
+      <span class="opt-label opt-gap">Boards</span>
+      <div class="opt-rows">
+        ${row('data-shape-row', 'Default page size', `<span data-shape-now>${shapeName()}</span>`)}
+        <label class="opt-row opt-switch-row"><span class="opt-row-words"><span class="opt-row-name">Recognize what's in new photos</span><span class="opt-row-sub" data-recognize-line>${recognizeLine()}</span></span>
+          <input type="checkbox" class="switch" role="switch" data-recognize${tagsOn() ? ' checked' : ''} /></label>
+      </div>
+      ${alone ? `<span class="opt-label opt-gap">Cover</span><div class="opt-rows">${row('data-stickers', 'Stickers')}</div>` : ''}
+      <span class="opt-label opt-gap">Backups</span>
+      <div class="opt-rows">${row('data-save-backup', 'Save a backup')}${row('data-restore-backup', 'Restore a backup')}</div>
+      <span class="opt-label opt-gap">Help</span>
+      <div class="opt-rows">${row('data-intro', 'How it works')}</div>`,
   });
-  s.body.addEventListener('click', (e) => {
+  s.body.addEventListener('click', async (e) => {
     const c = e.target.closest('[data-color]');
-    if (c) {
-      useBook(c.dataset.color);
-      s.body.querySelectorAll('[data-color]').forEach((b) => b.setAttribute('aria-pressed', String(b === c)));
-    }
+    if (c) { useBook(c.dataset.color); s.body.querySelector('[data-colors]').innerHTML = colorsHtml(); return; }
     const st = e.target.closest('[data-start]');
     if (st) {
-      try { localStorage.setItem(START_KEY, st.dataset.start); } catch {}
+      write(START_KEY, st.dataset.start);
       s.body.querySelectorAll('[data-start]').forEach((b) => b.classList.toggle('on', b === st));
+    }
+    if (e.target.closest('[data-shape-row]')) {
+      const key = await choiceSheet({ title: 'Default page size', options: SHAPES.map(([k, name]) => ({ key: k, label: name, current: k === defaultShape(), detail: k === 'wide-16x9' ? 'For screens and sharing' : 'For printing and bringing to a shoot' })) });
+      if (key) { write(SHAPE_KEY, key); s.body.querySelector('[data-shape-now]').textContent = shapeName(); }
     }
     if (e.target.closest('[data-stickers]')) stickerSheet(s);
     if (e.target.closest('[data-intro]')) { s.close(); openIntro(); }
     if (e.target.closest('[data-save-backup]')) saveBackup();
-    if (e.target.closest('[data-restore-backup]')) restoreBackup(() => s.close());
+    if (e.target.closest('[data-restore-backup]')) restoreBackup(() => s.close(), BOOK_KEY);
   });
-}
-
-// Everything in the notebook as one file, and back: the notebooks' zip
-// (df-data.js), put together from what's stored so the phone never has to
-// hold the notebook in memory. Made first, then saved from a tap of its
-// own, as an iPhone only shares a file straight from a tap. Backups made
-// the first way (one .json) still go back in, and so does this notebook's
-// part of a backup of all four from the shelf.
-function saveBackup() {
-  const D = window.DFData;
-  let open = true;
-  let made = null;
-  const s = openSheet({
-    title: 'Save a backup',
-    className: 'sheet-small',
-    body: '<p class="sheet-message" data-msg>Putting it together</p>',
-    onClose: () => { open = false; if (made) made.done(); },
-  });
-  const msg = s.body.querySelector('[data-msg]');
-  D.zipBackup({
-    app: 'ref',
-    databases: ['ref-notebook'],
-    extra: { book: document.documentElement.dataset.book || '' },
-    filename: `ref-backup-${D.todayStr()}.zip`,
-    onProgress: (f) => { if (open) msg.textContent = `Putting it together, ${Math.floor(f * 100)}%`; },
-  }).then((m) => {
-    made = m;
-    if (!open) { if (m) m.done(); return; }
-    if (!m) { msg.textContent = 'There is nothing to back up yet.'; return; }
-    const steps = D.backupSteps(m); // one file, or a few on a phone: a tap each
-    msg.textContent = steps.note;
-    msg.insertAdjacentHTML('afterend', `<button type="button" class="btn secondary opt-wide" data-save>${steps.label}</button>`);
-    const btn = s.body.querySelector('[data-save]');
-    btn.addEventListener('click', async () => {
-      try {
-        if (!(await steps.tap())) { btn.textContent = steps.label; return; }
-        s.close();
-        toast('Backup saved');
-      } catch (err) {
-        console.error(err);
-        toast(err.message || 'The backup wasn\'t saved.');
-      }
-    });
-  }).catch((err) => {
-    console.error(err);
-    if (open) msg.textContent = err.message || 'The backup couldn\'t be made.';
-  });
-}
-async function restoreBackup(close) {
-  const D = window.DFData;
-  const files = await D.pickFiles('.zip,application/zip,.json,application/json'); // straight from the tap, or iOS won't open the picker
-  if (!files.length) return;
-  if (!(await confirmSheet({ title: 'Restore backup', message: 'Everything in ref now is swapped for what\'s in the file.', confirmLabel: 'Restore', danger: true }))) return;
-  toast('Restoring the backup', { ms: 600000 });
-  try {
-    const r = (await D.isZipFile(files[0]))
-      ? await D.restoreZip(files, { databases: ['ref-notebook'] }) // a backup saved as a few files comes back as all of them
-      : await D.importDb(files[0], 'ref-notebook', { app: 'ref', replace: true });
-    const book = (r.extra && r.extra.book) || (r.local ? await r.local(BOOK_KEY) : null);
-    if (book) { try { localStorage.setItem(BOOK_KEY, book); } catch {} }
-    close();
-    toast('Backup restored');
-    setTimeout(() => location.reload(), 700); // everything on screen read fresh
-  } catch (err) {
-    console.error(err);
-    toast(err.message || 'That backup couldn\'t be restored.');
-  }
-}
-
-function stickerSheet(options) {
-  const s = openSheet({
-    title: 'Stickers',
-    body: `
-      <div class="sticker-kinds">
-        <button type="button" class="sticker-kind" data-shape="circle"><span class="shape circle"></span><span>Circle</span></button>
-        <button type="button" class="sticker-kind" data-shape="square"><span class="shape square"></span><span>Square</span></button>
-        <button type="button" class="sticker-kind" data-shape="rect"><span class="shape rect"></span><span>Rectangle</span></button>
-      </div>
-      ${stickers.length ? '<button type="button" class="btn secondary opt-wide" data-remove>Remove sticker</button>' : ''}`,
-  });
-  s.body.addEventListener('click', (e) => {
-    const k = e.target.closest('[data-shape]');
-    if (k) {
-      pickFiles(false).then(async ([file]) => { // straight from the tap, or iOS blocks it
-        if (!file) return;
-        try {
-          s.close();
-          options.close();
-          const bytes = await cropSticker(file, k.dataset.shape);
-          if (bytes) placeSticker(k.dataset.shape, bytes);
-        } catch (err) {
-          console.error(err);
-          toast('Could not read that photo');
-        }
-      });
-    }
-    if (e.target.closest('[data-remove]')) { s.close(); removeSheet(); }
-  });
-}
-
-function removeSheet() {
-  const s = openSheet({ title: 'Remove sticker', onClose: () => window.removeEventListener('ref-stickers', draw) });
-  function draw() {
-    if (!stickers.length) { s.close(); return; }
-    s.body.innerHTML = `<div class="sticker-list">${[...stickers].reverse().map((st) => `<button type="button" class="sticker-pick ${esc(st.shape)}" data-id="${esc(st.id)}" aria-label="Remove this sticker"><img src="${stickerThumb(st)}" alt="" /></button>`).join('')}</div>`;
-  }
-  window.addEventListener('ref-stickers', draw); // Undo brings one back
-  draw();
-  s.body.addEventListener('click', async (e) => {
-    const b = e.target.closest('[data-id]');
-    if (!b) return;
-    await removeSticker(stickers.find((x) => x.id === b.dataset.id));
+  s.body.querySelector('[data-recognize]').addEventListener('change', (e) => {
+    if (e.target.checked) turnOnTags(); else turnOffTags();
+    s.body.querySelector('[data-recognize-line]').textContent = recognizeLine();
   });
 }

@@ -1,0 +1,22 @@
+/* Option cards (round 2, 07-new-board-layout): one choice of several, white
+   cards three across (two when they carry a line of words), the picked one
+   ringed in berry blade black. The page drawings are in the notebook's
+   colour. The new board guide and the Layout sheet use them. */
+.opt-cards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-top: 16px; }
+.opt-cards.two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.opt-card {
+  display: flex; flex-direction: column; align-items: center; gap: 10px; min-width: 0; padding: 14px 10px 10px;
+  border: 0; border-radius: 12px; background: #FFFFFF; color: var(--text); text-align: center;
+}
+.opt-card[aria-checked="true"] { box-shadow: inset 0 0 0 2px var(--text); }
+.opt-card svg { display: block; height: auto; fill: var(--ink); }
+.opt-card .paper-r { fill: #FAFAF7; stroke: none; }
+.opt-name { font: 400 14px/18px var(--ui); }
+.opt-card[aria-checked="true"] .opt-name { font-weight: 500; }
+.opt-blurb { margin-top: -6px; font: 400 13px/18px var(--ui); color: var(--dim); }
+.opt-cards.two .opt-name { font-size: 15px; }
+/* A page's shape (Tall, Wide) and a start's page, drawn. */
+.opt-shape { display: block; box-shadow: inset 0 0 0 2px var(--ink); background: #FAFAF7; }
+.opt-shape.tall { width: 46px; height: 60px; }
+.opt-shape.wide { width: 80px; height: 45px; margin: 7px 0 8px; }
+.opt-glyph:not(.filled) svg rect:not(.paper-r) { fill: none; stroke: var(--ink); stroke-width: 1.2; stroke-dasharray: 2 2; }
