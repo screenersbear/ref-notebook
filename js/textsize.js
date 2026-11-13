@@ -17,10 +17,11 @@ export function setSize(page, kind, rel) {
 }
 export function stepSize(page, kind, dir) {
   const cur = sizeOf(page, kind);
-  let k = TEXT_STEPS.findIndex((v) => v >= cur - 1e-6);
-  if (k === -1) k = TEXT_STEPS.length - 1;
-  if (TEXT_STEPS[k] !== cur && dir < 0) k++; // between steps: round toward the tap
-  setSize(page, kind, TEXT_STEPS[Math.max(0, Math.min(TEXT_STEPS.length - 1, k + dir))]);
+  const on = TEXT_STEPS.findIndex((v) => Math.abs(v - cur) < 1e-7);
+  const above = TEXT_STEPS.filter((v) => v < cur).length; // the first step over cur
+  // On a step: that many steps on. Between two: the next step in the tap's direction.
+  const k = on !== -1 ? on + dir : dir > 0 ? above + dir - 1 : above + dir;
+  setSize(page, kind, TEXT_STEPS[Math.max(0, Math.min(TEXT_STEPS.length - 1, k))]);
 }
 export const useDefault = (page, kind) => setSize(page, kind, defaultSize(kind));
 export function saveDefault(page, kind) {

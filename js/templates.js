@@ -109,7 +109,7 @@ export function templateFor(shape, id) {
 // Sensible default for a page with n images.
 export function defaultTemplate(shape, n) {
   const list = TEMPLATES[shape].filter((t) => !t.guide && !t.cover);
-  return list.find((t) => t.slots.length >= Math.max(1, n) && !t.id.endsWith('bleed')) || list[list.length - 1];
+  return list.find((t) => t.slots.length >= Math.max(1, n) && !t.id.endsWith('bleed')) || list.reduce((a, t) => (t.slots.length > a.slots.length ? t : a));
 }
 
 // A cover page for a board: its first image big, the board's name as a large

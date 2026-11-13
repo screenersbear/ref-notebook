@@ -12,7 +12,7 @@
   "art/ocean-cover.webp": "b4c5cecc86bccc3020f01633760d9ecb31172074c0126473e45bbd90977aa004",
   "art/orange-block.webp": "d42df2ec4af2615b5fe071c8463992afdf1291570200f832b6bff31b72ae9ee2",
   "art/orange-cover.webp": "c6432866813aba06a94e743c7166f0ac1c432d7d02221d970c6da5770534dcff",
-  "df-data.js": "37a17549bcfbd0d7b22ddf4eac29fca4b85c41637a455142cd08290340d02d15",
+  "df-data.js": "5f6336acd5ec23e94fc6e04631a6e7487eb419ba4180699898a705334305efe0",
   "fonts/ArchivoBlack-OFL.txt": "3173acd82f8c6159b5b1037b539fcbd4edff68e65c2ea8b9412b5a5ca97b08ff",
   "fonts/Inter-OFL.txt": "5b9321a4298cfeb6b34354164a1c3afc3db114569984c502b9b35d988fd58c57",
   "fonts/KaiseiDecol-OFL.txt": "6c5445d4febbf6d84025b874a85c51e7e4bfa7495279eccdb4c317a6de857b46",
@@ -26,7 +26,7 @@
   "icons/icon-512.png": "6a4dec5363413d6cb540bb08536904501881afe876f557b7f936f12bfe9eaacc",
   "index.html": "5f9e1f12c50c6c0828496efd49f8a466ee9f8cc45bc6c60c701127910072511c",
   "js/app.js": "d30c317527e7b98b1f4d789bde59367fa770896473648928f0257acd3a6e69ae",
-  "js/db.js": "4c248d7e0d60847dbe1489bad6be3ac594f653f385e548abc1ae340580e39b40",
+  "js/db.js": "f1a72e0b9148a8fec856250463c8758b603597e84551bfcd674104447161ef24",
   "js/editor.js": "9194e91a463eab95c0967f258172b9446ab2257a8acacb529846c97b6a13b6ac",
   "js/filing.js": "7b412ffb67c287a5d46f2f97e66fc8144ed7f8ba016daf51f148e4e855b60fb4",
   "js/icons.js": "d718aa6a5ace850d7a77a9f828088f7fae45ef36ffbe3c246de756e08f803ce1",
@@ -45,8 +45,8 @@
   "js/stickers.js": "b3310951cf2a9e1deacbd906aab8c36b91bc933e55aa6cf2b7a64cf9de04de25",
   "js/tagger-worker.js": "3547cb0eae5ea91f5b109d9f2508025fb215098eb20ff5a30d955815daf3b557",
   "js/tagger.js": "907745a6a0e4533211334fe29a097948114fc2f06e212b09994b12aa9f10f7a0",
-  "js/templates.js": "dccd26a7e607e04fad37be604a3fe36f34dbd06b28286918f4594a875889e3d8",
-  "js/textsize.js": "0b24176fe569d72abb11c1968798105e225d582e5ecb99660fe0ac54fe38cbf2",
+  "js/templates.js": "922a236d1a6c978bca88123d9453b348d5f60c008788512dccb677b890b24d80",
+  "js/textsize.js": "98970cfafff5ce4662e71f0e304c8aa38b64698e93c7e9f3c3c834529ccb8358",
   "js/ui.js": "460901c0f7667d4ef0c76256d5e3b4d311cc7c2349955c3129189bdfc1922f12",
   "js/undo.js": "53b0f61fc901f3b3ceed44d778dffff379b07a9bd59dd7d4922f947870a200f0",
   "js/util.js": "82b8d150ea6304e722581c66b69dd4690f9e61bc8beff3d8e08cb2e15a956e08",
@@ -62,7 +62,7 @@
   "ml/ort-wasm-simd-threaded.jsep.wasm": "c46655e8a94afc45338d4cb2b840475f88e5012d524509916e505079c00bfa39",
   "ml/transformers.min.js": "aa5002b70e789798da263f5f99c62bd3e8fcd0c119258a493c40c180648365fa",
   "style.css": "89007a68522a2d259a582428968062cb2f372cfa767db8de1f40c9300667044a",
-  "sw.js": "669a5f405e234ebea31edb547eb26236be0d664269f22c426784c78d28ac2d14"
+  "sw.js": "0a30b4ddf0ee9dc868853039b9f93b0f3c275b6a605225680154af062b8b7362"
  },
  "keep": [
   ".DS_Store",
@@ -79,6 +79,6 @@
  ],
  "name": "Ref",
  "notebook": "ref",
- "suite": "0d58a51",
- "suite_folder": "../../../../../../../../private/tmp/claude-501/-Users-starkyproductions-Library-CloudStorage-OneDrive-SharedLibraries-Onedrive-Documents-Claude/eb4d2f99-11c2-4f78-82fd-4869b227ac5f/scratchpad/dfclean"
+ "suite": "9dbc74a",
+ "suite_folder": "../../../../../../../../private/tmp/claude-501/-Users-starkyproductions-Library-CloudStorage-OneDrive-SharedLibraries-Onedrive-Documents-Claude/c95c4b1a-0018-47fd-8e7f-7614c230c7b3/scratchpad/df-export"
 }

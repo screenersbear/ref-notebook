@@ -41,7 +41,7 @@ async function tx(stores, mode, fn) {
     const t = db.transaction(stores, mode);
     let out;
     t.oncomplete = () => resolve(out);
-    t.onerror = () => reject(t.error);
+    // A failed write aborts the transaction, which then carries that write's error.
     t.onabort = () => reject(t.error || new Error('Could not save. Your phone may be out of space.'));
     Promise.resolve(fn(t, (v) => { out = v; })).catch(reject);
   });
