@@ -21,8 +21,8 @@ tabHits.addEventListener('click', (e) => { const b = e.target.closest('[data-go]
 const RATIO = 1000 / 1360; // same size as Documenting Fictions' notebook
 const TAB_OUT = 0.08;      // how far the side tabs stick out, of the book's width
 const STACK = 16;
-const TURNED = (20 * Math.PI) / 180; // matches style.css
-const PERSPECTIVE = 1100;            // matches .nb in style.css
+const TURNED = (20 * Math.PI) / 180; // matches styles/cover.css
+const PERSPECTIVE = 1100;            // matches .nb in styles/cover.css
 const OPEN_MS = 900, ZOOM_MS = 760;
 const OVER = 12; // zoomed in, the white of the page reaches this far past the screen's edges
 document.getElementById('bookStack').innerHTML =

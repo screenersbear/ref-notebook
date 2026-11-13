@@ -13,6 +13,9 @@
   "art/ocean-cover.webp": "b4c5cecc86bccc3020f01633760d9ecb31172074c0126473e45bbd90977aa004",
   "art/orange-block.webp": "d42df2ec4af2615b5fe071c8463992afdf1291570200f832b6bff31b72ae9ee2",
   "art/orange-cover.webp": "c6432866813aba06a94e743c7166f0ac1c432d7d02221d970c6da5770534dcff",
+  "built/app.css": "128ea245d918fcd2c98cfc4fb4ee4bf98d1b77f44cc3862d17ac1ded35623916",
+  "built/app.js": "47ca09791fc91f0d4c4052ab2063788ae665009bbe631d47409cc00de9833696",
+  "built/shared-data.js": "022998949d22b685c35a6d2efdabc725b0330db6288cbe016d234f52b77ab0ce",
   "components/board-page.js": "0efc2bfe7925e7452938b6fa178569e17f94d1e5c16cf18552287ac9629bade8",
   "components/dialogs.js": "342322868e722d46ef7286daff515e3e35c8c08944b562342566615b739d941c",
   "components/filing.js": "787e67d2234e13d624713080500a84591c894d0c1b2123a9579696d93bc591a6",
@@ -48,6 +51,7 @@
   "data/tagger-worker.js": "3547cb0eae5ea91f5b109d9f2508025fb215098eb20ff5a30d955815daf3b557",
   "data/tagger.js": "907745a6a0e4533211334fe29a097948114fc2f06e212b09994b12aa9f10f7a0",
   "data/templates.js": "922a236d1a6c978bca88123d9453b348d5f60c008788512dccb677b890b24d80",
+  "files.txt": "52efa31a8adfd5a95dab3d1a926d2cde0b8ad60d42eadea6607c62fa596393ba",
   "fonts/ArchivoBlack-OFL.txt": "3173acd82f8c6159b5b1037b539fcbd4edff68e65c2ea8b9412b5a5ca97b08ff",
   "fonts/Figtree-OFL.txt": "140d37233e7f3ce7313798befa9600893bcceaf41a55fa0fa5ad52f7f657a268",
   "fonts/KaiseiDecol-OFL.txt": "6c5445d4febbf6d84025b874a85c51e7e4bfa7495279eccdb4c317a6de857b46",
@@ -59,7 +63,7 @@
   "icons/icon-180.png": "789d90047d7e5f121e16cfbc31de3569c8b24766c236c1367b43096e8a5080d8",
   "icons/icon-192.png": "ea65371e099c606d99a1e384ad0604044aaa673c1392d4af058c782afd8c8486",
   "icons/icon-512.png": "6a4dec5363413d6cb540bb08536904501881afe876f557b7f936f12bfe9eaacc",
-  "index.html": "891b911f3520124fdbc238af76e5a0ad03a1fcc62f0d5997035781c32a1ebd2d",
+  "index.html": "e56a5995ea74e43cf1eb0d4056269d3b37464d906bdf43876e9791d38086d38e",
   "manifest.json": "3ca330227895e800a4e0868b746e2857aa4c149b9ac618185ed85b2fb5925181",
   "ml/LICENSE-transformers.js.txt": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
   "ml/labels.json": "c039677112217513c23b95c395712182789c2aedf7571a892a1212b839334399",
@@ -75,7 +79,7 @@
   "pages/board.js": "34eea86c1c7d86b7b0ee68b40f7b582c02cf2d59b67738ee6f0cecd2d33351bd",
   "pages/boards.js": "cd98c2655627020bd951c1513b3160c335e0d56f1a8e713e79dce792636298c1",
   "pages/cover-spin.js": "76b392660b21fce7f3b7118b4556994b14c0e74cc6b640cf70c2fd84ceca3d0b",
-  "pages/cover.js": "b51e1b48f091d3d7f1acecf88312c6007b03cefe01ec0a1be958fd780bab021a",
+  "pages/cover.js": "ff8b76f0b6ed09d67f6ec38655ca83a515a521e380d590ffde9c30d3bc999e32",
   "pages/folder.js": "cbb03c61538391a2740bd6265beacbfa0389cfdd8f659c09b16c33bb73f0e767",
   "pages/folders.js": "560a62ae49421fbac54d98726ce2010ebf76d2d6414987c4d0f5d1b67dbb9a0c",
   "pages/intro.js": "32a2051e71bd73127b77a37801e0c917ac3c225e73216422e3fdf36ed52fe52f",
@@ -102,7 +106,7 @@
   "styles/spread.css": "01cb316d1223197ebbec53f346c8761a166e315bf4912c41fa6aaf7ba487afd5",
   "styles/toast.css": "d36945aa1d166cf23e6ebf6b8085d53c6fbad4ce788bd5d5c915f9dfe075daae",
   "styles/viewer.css": "509fd883d6320417cdf33d2fd089e93f72857c5e55b34af0bbfe31d1766e3a3c",
-  "sw.js": "3f61d80f39e8c8672a8ba3af9ec3055b732358c2f473f1dcb38d774c17b01b9d"
+  "sw.js": "774cd2d73b7710576cb19023e5a6b369b84f89e70a58e3c27963978f95747465"
  },
  "keep": [
   ".DS_Store",
@@ -119,6 +123,6 @@
  ],
  "name": "Ref",
  "notebook": "ref",
- "suite": "49725c2 + changes not committed",
+ "suite": "77404f8 + changes not committed",
  "suite_folder": "../Documenting Fictions"
 }
