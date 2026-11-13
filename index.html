@@ -5,8 +5,18 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <title>ref, do something</title>
 <meta name="description" content="A reference notebook for your phone: tagged photos and mood boards made from them." />
-<!-- What the notebooks share (copied in from the suite's shared/df-data.js). -->
-<script src="df-data.js"></script>
+<!-- What the notebooks share, window.DFData (copied in from the suite's shared/data/). -->
+<script src="data/shared/basics.js"></script>
+<script src="data/shared/files.js"></script>
+<script src="data/shared/overthoughts.js"></script>
+<script src="data/shared/the-eye.js"></script>
+<script src="data/shared/journal-move.js"></script>
+<script src="data/shared/json-backup.js"></script>
+<script src="data/shared/zip-format.js"></script>
+<script src="data/shared/zip-backup.js"></script>
+<script src="data/shared/zip-restore.js"></script>
+<script src="data/shared/links.js"></script>
+<script src="data/shared/df-data.js"></script>
 <link rel="manifest" href="manifest.json" />
 <meta name="theme-color" content="#ffffff" />
 <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -17,7 +27,24 @@
 <link rel="preload" href="fonts/kaisei-decol-500-latin.woff2" as="font" type="font/woff2" crossorigin />
 <link rel="icon" type="image/png" href="icons/icon-192.png" />
 <script>try { var book = localStorage.getItem('ref-notebook-book'); if (book) document.documentElement.dataset.book = book; } catch (e) {}</script>
-<link rel="stylesheet" href="style.css" />
+<link rel="stylesheet" href="styles/base.css" />
+<link rel="stylesheet" href="styles/spread.css" />
+<link rel="stylesheet" href="styles/cover.css" />
+<link rel="stylesheet" href="styles/screen.css" />
+<link rel="stylesheet" href="styles/navbar.css" />
+<link rel="stylesheet" href="styles/buttons.css" />
+<link rel="stylesheet" href="styles/lists.css" />
+<link rel="stylesheet" href="styles/folder.css" />
+<link rel="stylesheet" href="styles/newboard.css" />
+<link rel="stylesheet" href="styles/board.css" />
+<link rel="stylesheet" href="styles/board-page.css" />
+<link rel="stylesheet" href="styles/viewer.css" />
+<link rel="stylesheet" href="styles/sheet.css" />
+<link rel="stylesheet" href="styles/options.css" />
+<link rel="stylesheet" href="styles/forms.css" />
+<link rel="stylesheet" href="styles/toast.css" />
+<link rel="stylesheet" href="styles/showboard.css" />
+<link rel="stylesheet" href="styles/header-band.css" />
 </head>
 <body>
 <div id="frame" class="frame" data-side="right">
@@ -49,6 +76,6 @@
 </div>
 <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
 <noscript><p>This app needs JavaScript turned on.</p></noscript>
-<script type="module" src="js/app.js"></script>
+<script type="module" src="app.js"></script>
 </body>
 </html>

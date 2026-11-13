@@ -1,0 +1,17 @@
+/* The notebook, open: its plain pages, the page turn between sections,
+   and the cover coming in as you swipe it shut. */
+/* ---------- The notebook, open: plain white pages the size of the screen ---------- */
+.frame {
+  position: fixed; top: var(--nb-top); height: calc(var(--app-h) - var(--nb-top) - var(--nb-bar));
+  left: max(0px, calc(50% - 310px)); right: max(0px, calc(50% - 310px));
+  z-index: 1; /* above the bar, so a screen's own tools show over it */
+}
+.frame[data-swipe="1"] #view { touch-action: pan-y; }
+/* Going between Mood boards and Tags: the page turns over at its left edge. */
+.turn-leaf { position: absolute; z-index: 1; inset: 0; background: #fff; overflow: hidden; transform-origin: 0 50%; backface-visibility: hidden; -webkit-backface-visibility: hidden; box-shadow: 0 0 18px rgba(0, 0, 0, .12); }
+.turn-leaf > i { position: absolute; inset: 0; background: #000; opacity: 0; pointer-events: none; }
+.paper { position: absolute; inset: 0; background: #fff; overflow: hidden; }
+#view { position: absolute; inset: 0; outline: none; }
+/* The cover, coming in from the right edge as you swipe to shut the notebook. */
+.pull { position: fixed; left: 0; top: var(--nb-top); height: calc(var(--app-h) - var(--nb-top) - var(--nb-bar)); width: 0; z-index: 15; background: var(--ink) var(--book-cover) right center / auto 100% no-repeat; border-radius: 0 12px 12px 0; box-shadow: 6px 0 18px rgba(30, 50, 80, .25); }
+.pull.back { transition: width .18s ease-out; }

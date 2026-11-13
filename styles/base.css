@@ -1,0 +1,44 @@
+/* Ref's basics: fonts, colours, and the page itself. The other
+   stylesheets in this folder are listed in index.html, in the order they apply. */
+/* ref, do something as a phone notebook: floating shut on white, open in a frame with white around it. */
+@font-face { font-family: "Klee One"; src: url("../fonts/klee-one-latin.woff") format("woff"); font-display: swap; } /* Klee One, resized inside the file to Mansalva's width and line height (Safari has no ascent-override), so no layout moved */
+@font-face { font-family: "Kaisei Decol"; src: url("../fonts/kaisei-decol-500-latin.woff2") format("woff2"); font-weight: 500; font-display: swap; size-adjust: 85.4%; } /* the headers, in capitals: Kaisei Decol Medium, sized so its capitals stand as tall as Klee One's */
+
+:root {
+  --ink: #175ba9;      /* the notebook's color */
+  --on-ink: #fff;
+  --book-cover: url(../art/ocean-cover.webp);
+  --book-block: url(../art/ocean-block.webp);
+  --mango: #ffd103;
+  --text: #313d45;     /* berry blade black */
+  --dim: #5c666d;
+  --line: #d6dadd;
+  --hand: "Klee One", "Bradley Hand", "Noteworthy", cursive;
+  --head: "Kaisei Decol", "Klee One", Georgia, serif; /* headers, always in capitals */
+  --mono: "Courier New", Courier, monospace;
+  --safe-t: env(safe-area-inset-top, 0px);
+  --safe-b: env(safe-area-inset-bottom, 0px);
+  --nb-top: max(var(--safe-t), 10px);
+  --nb-rim: 10px; /* the slot Contact Sheet's notebook edge is drawn in; the line itself is about half */
+  --nb-pad: max(5px, calc(var(--safe-b) - 19px)); /* the bar's icon 25px + this above the screen's edge: where an iPhone's home button used to be (the safe area + 6px, 30px at least; user, 11-12), the same in all four notebooks and on the shelf */
+  --nb-bar: calc(50px + var(--nb-pad));
+  --app-h: 100vh;      /* set from the real height in ui.js */
+}
+:root[data-book="orange"] { --ink: #d9641a; --book-cover: url(../art/orange-cover.webp); --book-block: url(../art/orange-block.webp); }
+:root[data-book="mango"] { --ink: #e0b012; --on-ink: #313d45; --book-cover: url(../art/mango-cover.webp); --book-block: url(../art/mango-block.webp); }
+:root[data-book="berry"] { --ink: #a80a73; --book-cover: url(../art/berry-cover.webp); --book-block: url(../art/berry-block.webp); }
+:root[data-book="fern"] { --ink: #286b4a; --book-cover: url(../art/fern-cover.webp); --book-block: url(../art/fern-block.webp); }
+:root[data-book="ink"] { --ink: #2a353c; --book-cover: url(../art/ink-cover.webp); --book-block: url(../art/ink-block.webp); }
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+[hidden] { display: none !important; }
+html, body { height: 100%; margin: 0; background: #fff; color: var(--text); font-family: var(--hand); font-weight: 400; font-synthesis: none; overscroll-behavior: none; }
+/* The other page and the book's art reach past the screen's sides: never let them widen the page. */
+html, body { overflow-x: clip; }
+body { overflow: hidden; -webkit-text-size-adjust: 100%; }
+html.ios-nudge body, html.ios-hold body { min-height: calc(var(--screen-h, 100vh) + 160px); overflow-x: clip; overflow-y: visible; }
+html.is-short { --nb-pad: max(5px, calc(var(--safe-b) - 19px - var(--short-by, 0px))); } /* the bottom edge is already --short-by above the screen's: the icon ends up at the same height as everywhere else */
+button, input, textarea { font: inherit; color: inherit; }
+button { background: none; border: 0; padding: 0; cursor: pointer; }
+button:disabled { opacity: .35; cursor: default; }
+a { color: inherit; text-decoration: none; }
+svg { display: block; }

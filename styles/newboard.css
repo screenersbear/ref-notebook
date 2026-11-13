@@ -1,0 +1,51 @@
+/* New mood board: the form and the step-by-step wizard. */
+/* new board */
+.form-page { padding: 12px 0 10px; display: flex; flex-direction: column; gap: 16px; }
+.group { display: block; flex: none; }
+.row-group { display: flex; align-items: center; justify-content: space-between; }
+.label { font: 400 19px var(--hand); color: var(--dim); }
+.small { margin: 3px 0 0; font-size: 16px; color: var(--dim); }
+.hand-input { display: block; width: 100%; border: 0; border-bottom: 2px solid var(--ink); border-radius: 0; padding: 4px 0; font: 400 26px var(--hand); background: none; outline: none; }
+.pick-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; max-height: 148px; overflow-y: auto; }
+.pick { min-height: 40px; padding: 0 12px; border: 2px solid var(--ink); font: 400 18px var(--hand); }
+.pick.on { background: var(--ink); color: var(--on-ink); }
+.check { display: flex; align-items: center; gap: 8px; margin-top: 8px; font-size: 18px; }
+.check input { width: 20px; height: 20px; margin: 0; accent-color: var(--ink); }
+.style-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-top: 8px; }
+.style { padding: 7px 4px 6px; border: 2px solid var(--line); font-size: 15px; line-height: 1.2; }
+.style svg { width: 62%; margin: 0 auto 5px; fill: var(--ink); }
+.style .paper-r { fill: #fff; stroke: var(--line); stroke-width: 1; }
+.style.on { background: var(--mango); border-color: var(--mango); }
+.seg { display: flex; }
+.seg button { height: 38px; padding: 0 16px; border: 2px solid var(--ink); font-size: 18px; }
+.seg button + button { border-left: 0; }
+.seg .on { background: var(--ink); color: var(--on-ink); }
+.stepper { display: flex; align-items: center; gap: 8px; }
+.stepper button { width: 40px; height: 40px; border: 2px solid var(--ink); font-size: 22px; }
+.stepper b { font: 400 24px var(--hand); width: 30px; text-align: center; }
+/* The new board wizard. */
+.wz-step { margin: 6px 0 4px; text-align: center; font-size: 17px; color: var(--dim); flex: none; }
+.wz-cards { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-top: 8px; }
+.wz-card { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 10px 8px 9px; border: 2px solid var(--line); text-align: center; font-size: 15px; line-height: 1.2; color: var(--dim); }
+.wz-card strong { font: 400 19px var(--hand); color: var(--text); }
+.wz-card.on { border-color: var(--mango); background: var(--mango); color: var(--text); }
+.wz-shape { display: block; border: 2px solid var(--ink); background: #fff; margin: 4px 0 6px; }
+.wz-shape.tall { width: 46px; height: 60px; }
+.wz-shape.wide { width: 80px; height: 45px; margin-top: 11px; margin-bottom: 10px; }
+.wz-pages { display: flex; gap: 3px; justify-content: center; margin-bottom: 4px; }
+.wz-pages svg, .wz-glyph svg { fill: var(--ink); display: block; }
+.wz-pages .paper-r, .wz-glyph .paper-r { fill: #fff; stroke: var(--line); stroke-width: 1; }
+.wz-glyph { margin: 2px 0 4px; }
+.wz-glyph:not(.wz-glyph-fill) svg rect:not(.paper-r) { fill: none; stroke: var(--ink); stroke-width: 1.2; stroke-dasharray: 2 2; }
+.wz-section { border: 2px solid var(--line); padding: 8px 10px 10px; }
+.wz-sechead { display: flex; align-items: center; gap: 8px; }
+.wz-secnum { flex: none; width: 26px; height: 26px; border-radius: 50%; background: var(--ink); color: var(--on-ink); display: grid; place-items: center; font-size: 16px; }
+.wz-secname { flex: 1; min-width: 0; font-size: 21px; }
+.wz-add { align-self: flex-start; }
+.wz-summary { display: flex; flex-direction: column; }
+.wz-sumrow { display: flex; justify-content: space-between; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--line); font-size: 19px; }
+.wz-dots { display: flex; gap: 6px; padding: 0 4px; }
+.wz-dots i { width: 7px; height: 7px; border-radius: 50%; background: var(--line); }
+.wz-dots i.on { background: var(--ink); }
+.foot { flex: none; display: flex; align-items: center; gap: 8px; padding: 6px 0 0; }
+.cta { flex: 1; height: 48px; background: var(--mango); font-size: 21px; }

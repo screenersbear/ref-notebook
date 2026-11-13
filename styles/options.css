@@ -1,0 +1,22 @@
+/* Options' colours and the cover's stickers. */
+.opt-colors { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px 8px; margin-top: 10px; }
+.opt-color { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 8px 0; font-size: 17px; }
+.opt-book { width: 48px; height: 65px; border-radius: 0 5px 5px 0; background: center / 100% 100% no-repeat; }
+.opt-color[aria-pressed="true"] .opt-book { outline: 1.5px solid var(--text); outline-offset: 3px; }
+.opt-gap { display: block; margin-top: 16px; }
+.opt-wide { display: block; width: 100%; margin-top: 8px; }
+.opt-seg { margin-top: 8px; }
+.opt-seg button { flex: 1; padding: 0 6px; }
+.sticker-kinds { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.sticker-kind { display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 8px; padding: 14px 0 10px; border: 2px solid var(--ink); font-size: 18px; }
+.shape { width: 58px; height: 58px; background: var(--ink); display: block; }
+.shape.circle { border-radius: 50%; }
+.shape.square { border-radius: 4px; }
+.shape.rect { width: 72px; height: 48px; margin: 5px 0; border-radius: 4px; }
+.sticker-kinds + .opt-wide { margin-top: 12px; }
+.sticker-list { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+.sticker-pick { aspect-ratio: 1; overflow: hidden; }
+.sticker-pick.circle { border-radius: 50%; }
+.sticker-pick.square { border-radius: 4px; }
+.sticker-pick.rect { aspect-ratio: 3 / 2; align-self: center; border-radius: 4px; }
+.sticker-pick img { width: 100%; height: 100%; object-fit: cover; display: block; }

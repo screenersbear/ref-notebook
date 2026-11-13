@@ -1,0 +1,4 @@
+/* The toast at the bottom of the screen. */
+.toast { position: fixed; left: 50%; bottom: calc(70px + var(--safe-b)); transform: translateX(-50%); z-index: 90; max-width: 86vw; padding: 10px 16px; background: var(--text); color: #fff; font-size: 18px; display: flex; gap: 12px; align-items: center; white-space: nowrap; }
+.toast.show { animation: page-in .2s ease-out; }
+.toast-action { color: var(--mango); }

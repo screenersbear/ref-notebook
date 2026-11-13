@@ -1,0 +1,25 @@
+/* Sheets: confirmations, choices and their buttons. */
+/* ---------- Sheets ---------- */
+.sheet-overlay { position: fixed; left: 0; right: 0; top: var(--vv-top, 0px); height: var(--vv-height, 100%); background: rgba(49, 61, 69, .42); display: flex; align-items: flex-end; justify-content: center; }
+.sheet { width: 100%; max-width: 620px; max-height: calc(var(--vv-height, 100svh) * .9); background: #fff; display: flex; flex-direction: column; outline: none; border-radius: 14px 14px 0 0; }
+.sheet-header { display: flex; align-items: center; justify-content: space-between; padding: 12px 10px 10px 18px; border-bottom: 1px solid var(--line); flex: none; }
+.sheet-header h2 { margin: 0; font: 500 26px var(--head); text-transform: uppercase; letter-spacing: .08em; }
+.close-btn { width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; }
+.x-icon { width: 18px; height: 18px; }
+.sheet-body { padding: 14px 18px calc(16px + var(--safe-b)); overflow-y: auto; -webkit-overflow-scrolling: touch; }
+.sheet-message { margin: 0 0 14px; font-size: 19px; line-height: 1.4; }
+.sheet-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 16px; }
+.sheet-actions.one { grid-template-columns: 1fr; }
+.intro-dots { justify-content: center; }
+.intro .sheet-message { min-height: 5.6em; }
+.btn { height: 48px; font-size: 21px; }
+.btn.primary { background: var(--mango); }
+.btn.secondary { border: 2px solid var(--ink); }
+.btn.danger { background: var(--text); color: #fff; }
+.choice-list { display: flex; flex-direction: column; }
+.choice { display: flex; align-items: center; min-height: 50px; padding: 8px 2px; border-bottom: 1px solid var(--line); text-align: left; width: 100%; }
+.choice:last-child { border-bottom: 0; }
+.choice-text { display: flex; flex-direction: column; }
+.choice-label { font-size: 21px; }
+.choice.current .choice-label { text-decoration: underline; text-decoration-color: var(--mango); text-decoration-thickness: 3px; }
+.choice-detail { font-size: 16px; color: var(--dim); }

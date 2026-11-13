@@ -1,0 +1,36 @@
+/* The bottom bars (the board tools and the section bar), and the row of
+   every section a held finger opens. */
+.tools { position: fixed; left: 0; right: 0; top: calc(var(--app-h) - var(--nb-bar)); height: var(--nb-bar); max-width: 620px; margin: 0 auto; display: flex; justify-content: space-evenly; align-items: center; padding: 0 0 var(--nb-pad); background: #fff; z-index: 3; }
+.nav-bar { position: fixed; left: 0; right: 0; top: calc(var(--app-h) - var(--nb-bar)); height: var(--nb-bar); max-width: 620px; margin: 0 auto; padding: 0 0 var(--nb-pad); background: #fff; z-index: 0; touch-action: none; user-select: none; -webkit-user-select: none; }
+.slider { display: flex; align-items: center; justify-content: center; height: 50px; }
+.slide-arrow { width: 44px; height: 44px; display: grid; place-items: center; color: var(--text); }
+.slide-arrow.is-prev { justify-items: end; margin-right: -5px; position: relative; z-index: 1; }
+.slide-arrow.is-next { justify-items: start; margin-left: -5px; position: relative; z-index: 1; }
+.slide-arrow:active { opacity: .5; }
+.slide-arrow.is-off { visibility: hidden; }
+.slide-arrow svg { width: 9px; height: 11px; display: block; }
+.slide-arrow.is-prev svg { transform: scaleX(-1); }
+.slide-now { display: block; flex: none; width: 46px; height: 40px; overflow: hidden; color: var(--text); }
+.slide-strip { display: flex; }
+.slide-strip.is-moving { transition: transform .19s cubic-bezier(.3,.6,.3,1); }
+.slide-icon { flex: 0 0 46px; height: 40px; display: grid; place-items: center; }
+.slide-icon svg { width: 27px; height: 27px; stroke-width: 1.7; }
+/* Held, the bar's icon swells into a row of every section (navbar.js). No card
+   around it (user, 11-12): just the icons and the name, on a soft white haze. */
+.nav-bar { -webkit-touch-callout: none; }
+.nav-bar.is-docked { z-index: 2; } /* over the page while the row is up */
+/* A line along the bar's top, so a page scrolling under it is cut off by
+   something (user, 11-12). Drawn inside, so nothing moves. */
+:is(.tools, .nav-bar) { box-shadow: inset 0 2px 0 var(--line); }
+/* Installed, the bars show once iOS has its height right (ui.js adds
+   .settled), so they never show high and then drop. */
+@media (display-mode: standalone) { html:not(.settled) :is(.tools, .nav-bar) { visibility: hidden; } }
+.nav-dock { position: absolute; bottom: calc(100% + 8px); left: 0; z-index: 3; display: flex; align-items: flex-end; padding: 8px 10px; border-radius: 26px; background: #fff; box-shadow: 0 0 14px 10px #fff; pointer-events: none; opacity: 0; visibility: hidden; transform: translateY(8px) scale(.9); transition: opacity .14s ease, transform .16s ease, visibility 0s linear .16s; }
+.nav-dock.is-open { opacity: 1; visibility: visible; transform: none; transition: opacity .14s ease, transform .16s ease, visibility 0s; }
+.nav-dock-slot { position: relative; flex: 0 0 46px; height: 44px; display: flex; align-items: flex-end; justify-content: center; }
+.nav-dock-icon { display: grid; place-items: center; width: 30px; height: 30px; color: var(--text); transform-origin: 50% 100%; transition: transform .09s ease-out; }
+.nav-dock-icon svg { display: block; width: 27px; height: 27px; stroke-width: 1.7; }
+.nav-dock-slot.is-here::after { content: ''; position: absolute; left: 50%; bottom: -6px; width: 4px; height: 4px; margin-left: -2px; border-radius: 50%; background: var(--text); }
+.nav-dock-label { position: absolute; left: 0; bottom: calc(100% + 10px); transform: translateX(-50%); white-space: nowrap; padding: 0 6px; background: #fff; box-shadow: 0 0 8px 6px #fff; border-radius: 10px; color: var(--text); font-family: var(--head); font-size: 16px; line-height: 22px; }
+@media (prefers-reduced-motion: reduce) { .nav-dock, .nav-dock.is-open, .nav-dock-icon { transition: none; } }
+.tool, .icon-btn { display: flex; align-items: center; justify-content: center; width: 46px; height: 46px; flex: none; }

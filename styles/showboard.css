@@ -1,0 +1,13 @@
+/* A mood board full screen. */
+/* A mood board full screen. */
+.show { position: fixed; inset: 0; z-index: 40; background: #1f272c; color: #fff; display: flex; flex-direction: column; touch-action: none; user-select: none; -webkit-user-select: none; }
+.show-top, .show-foot { flex: none; display: flex; align-items: center; justify-content: space-between; padding: 0 10px; }
+.show-top { padding-top: calc(var(--safe-t) + 4px); }
+.show-foot { padding-bottom: max(8px, var(--safe-b)); justify-content: center; gap: 48px; }
+.show-count { font-size: 18px; padding-right: 8px; color: rgba(255, 255, 255, .75); }
+.show-btn { width: 48px; height: 48px; display: grid; place-items: center; color: #fff; }
+.show-btn svg { width: 26px; height: 26px; }
+.show-btn.flip svg { transform: scaleX(-1); }
+.show-btn:disabled { opacity: .25; }
+.show-stage { flex: 1; min-height: 0; position: relative; display: flex; align-items: center; justify-content: center; margin: 4px 12px; overflow: hidden; }
+.show-page { position: absolute; box-shadow: none; }

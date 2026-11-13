@@ -1,0 +1,8 @@
+/* Icon buttons (on the bars and in headings), the handwriting, and notes. */
+.tool svg, .icon-btn svg { width: 27px; height: 27px; }
+.tool.on svg { stroke-width: 2.8; }
+.sel-count { font: 400 21px var(--hand); }
+.hand { font-family: var(--hand); font-weight: 400; }
+.note { font-size: 18px; line-height: 1.4; color: var(--dim); margin: 14px 2px; }
+.note a { color: var(--text); text-decoration: underline; }
+.note.center { text-align: center; margin-top: 40%; }
