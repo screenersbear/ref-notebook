@@ -61,8 +61,8 @@
   "ml/ort-wasm-simd-threaded.jsep.mjs": "08fb86ec433c78bfb032c5d84a68b8e8e5a8d81268fa39e24314179a5767a5b9",
   "ml/ort-wasm-simd-threaded.jsep.wasm": "c46655e8a94afc45338d4cb2b840475f88e5012d524509916e505079c00bfa39",
   "ml/transformers.min.js": "aa5002b70e789798da263f5f99c62bd3e8fcd0c119258a493c40c180648365fa",
-  "style.css": "02ce47e742e900b7ba75a304bc7119c599d7b99e0518c99138aa628cdd5e5d54",
-  "sw.js": "0a17bb60e6f0581035f1ffe70c3d9d1292d232c93cce02061a837b45bc1ed977"
+  "style.css": "b92ea0a776aedc99a499548f14d7181551e89f3cb82effbbc0b00ae1a2584f90",
+  "sw.js": "7b453c210c65af2eb004dfc56f0471c502d6d13508fe8bead760393f0e050061"
  },
  "keep": [
   ".DS_Store",
@@ -79,6 +79,6 @@
  ],
  "name": "Ref",
  "notebook": "ref",
- "suite": "86b56c3",
+ "suite": "24798a0",
  "suite_folder": "../../../../../../../../private/tmp/claude-501/-Users-starkyproductions-Library-CloudStorage-OneDrive-SharedLibraries-Onedrive-Documents-Claude/c95c4b1a-0018-47fd-8e7f-7614c230c7b3/scratchpad/df-export"
 }

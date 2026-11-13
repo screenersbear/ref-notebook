@@ -18,7 +18,7 @@
   --safe-b: env(safe-area-inset-bottom, 0px);
   --nb-top: max(var(--safe-t), 10px);
   --nb-rim: 10px; /* the slot Contact Sheet's notebook edge is drawn in; the line itself is about half */
-  --nb-pad: max(10px, var(--safe-b)); /* the bar's icon 25px + this above the screen's edge: the same height in all four notebooks and on the shelf */
+  --nb-pad: calc(10px + max(10px, var(--safe-b))); /* the bar's icon 25px + this above the screen's edge (35px + the safe area since 11-12, the user's mark): the same height in all four notebooks and on the shelf */
   --nb-bar: calc(50px + var(--nb-pad));
   --app-h: 100vh;      /* set from the real height in ui.js */
 }
