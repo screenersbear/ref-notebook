@@ -178,6 +178,9 @@ html.settled .nb.closed:not(.placing) .nb-sun { opacity: 1; pointer-events: auto
    around it (user, 11-12): just the icons and the name, on a soft white haze. */
 .nav-bar { -webkit-touch-callout: none; }
 .nav-bar.is-docked { z-index: 2; } /* over the page while the row is up */
+/* Installed, the bars show once iOS has its height right (ui.js adds
+   .settled), so they never show high and then drop. */
+@media (display-mode: standalone) { html:not(.settled) :is(.tools, .nav-bar) { visibility: hidden; } }
 .nav-dock { position: absolute; bottom: calc(100% + 8px); left: 0; z-index: 3; display: flex; align-items: flex-end; padding: 8px 10px; border-radius: 26px; background: #fff; box-shadow: 0 0 14px 10px #fff; pointer-events: none; opacity: 0; visibility: hidden; transform: translateY(8px) scale(.9); transition: opacity .14s ease, transform .16s ease, visibility 0s linear .16s; }
 .nav-dock.is-open { opacity: 1; visibility: visible; transform: none; transition: opacity .14s ease, transform .16s ease, visibility 0s; }
 .nav-dock-slot { position: relative; flex: 0 0 46px; height: 44px; display: flex; align-items: flex-end; justify-content: center; }

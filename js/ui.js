@@ -104,6 +104,8 @@ function markShort(gap) {
 if (iPhoneApp) {
   let soonTimer = 0; // load, pageshow and coming back can all land together
   const soon = (ms) => clearTimeout(soonTimer) || (soonTimer = setTimeout(() => {
+    // Short again (coming back): the bars go out of sight while it's put right.
+    if (!nudging && screenGap() > 0) html.classList.remove('settled');
     nudgeScreen().then(async (gap) => {
       // This page doesn't scroll, and iOS can fall short again the moment it
       // can't. If so, leave it scrollable: everything on screen is pinned,
