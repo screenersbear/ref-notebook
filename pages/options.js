@@ -2,6 +2,8 @@
 // 2 look (09-options): the notebook's colour as swatches, then rows for the
 // boards (default page size, recognizing what's in new photos), backups and
 // help. On its own (not in the suite) also where it starts and the stickers.
+// A yes from Rounds whose board isn't started yet (its slip tucked away)
+// waits under Boards as Start a board for <name>.
 // Backups are in options-backup.js, stickers in options-stickers.js.
 import { openSheet } from '../components/sheet.js';
 import { choiceSheet } from '../components/dialogs.js';
@@ -9,6 +11,8 @@ import { tagsOn, turnOnTags, turnOffTags } from '../data/tagger.js';
 import { openIntro } from './intro.js';
 import { saveBackup, restoreBackup } from './options-backup.js';
 import { stickerSheet } from './options-stickers.js';
+import { clientOffers, startClientBoard } from './client-slip.js';
+import { esc } from '../components/util.js';
 
 const BOOK_KEY = 'ref-notebook-book'; // also read in index.html, before the first paint
 const START_KEY = 'ref-notebook-start';
@@ -57,7 +61,7 @@ export function openOptions() {
         <button type="button" data-start="open"${startsOpen() ? ' class="on"' : ''}>On the first page</button>
       </div>` : ''}
       <span class="opt-label opt-gap">Boards</span>
-      <div class="opt-rows">
+      <div class="opt-rows" data-board-rows>
         ${row('data-shape-row', 'Default page size', `<span data-shape-now>${shapeName()}</span>`)}
         <label class="opt-row opt-switch-row"><span class="opt-row-words"><span class="opt-row-name">Recognize what's in new photos</span><span class="opt-row-sub" data-recognize-line>${recognizeLine()}</span></span>
           <input type="checkbox" class="switch" role="switch" data-recognize${tagsOn() ? ' checked' : ''} /></label>
@@ -80,11 +84,17 @@ export function openOptions() {
       const key = await choiceSheet({ title: 'Default page size', options: SHAPES.map(([k, name]) => ({ key: k, label: name, current: k === defaultShape(), detail: k === 'wide-16x9' ? 'For screens and sharing' : 'For printing and bringing to a shoot' })) });
       if (key) { write(SHAPE_KEY, key); s.body.querySelector('[data-shape-now]').textContent = shapeName(); }
     }
+    const offer = e.target.closest('[data-offer]');
+    if (offer) { s.close(); startClientBoard(offer.dataset.offer, defaultShape()); }
     if (e.target.closest('[data-stickers]')) stickerSheet(s);
     if (e.target.closest('[data-intro]')) { s.close(); openIntro(); }
     if (e.target.closest('[data-save-backup]')) saveBackup();
     if (e.target.closest('[data-restore-backup]')) restoreBackup(() => s.close(), BOOK_KEY);
   });
+  clientOffers().then((offers) => {
+    const rows = offers.map((l) => row(`data-offer="${esc(l.id)}"`, `Start a board for ${esc(l.name || 'a new client')}`, 'Said yes in Rounds')).join('');
+    if (rows) s.body.querySelector('[data-board-rows]').insertAdjacentHTML('afterbegin', rows);
+  }).catch(() => {});
   s.body.querySelector('[data-recognize]').addEventListener('change', (e) => {
     if (e.target.checked) turnOnTags(); else turnOffTags();
     s.body.querySelector('[data-recognize-line]').textContent = recognizeLine();

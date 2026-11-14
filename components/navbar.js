@@ -21,7 +21,9 @@ const frame = document.getElementById('frame');
 bar.innerHTML = `<div class="sec-row">${SECTIONS.map((s, i) => `<a class="sec sec-${s.key}" href="${s.href}" data-sec="${i}">${s.icon}<span>${s.name}</span></a>`).join('')}</div>`;
 const links = [...bar.querySelectorAll('.sec')];
 
-let at = 0, busy = false, swiped = 0, onList = false, puller = null, landed = null;
+// swiped: when a swipe last ended (never, to start: a tap just after the
+// notebook opens isn't one to swallow).
+let at = 0, busy = false, swiped = -Infinity, onList = false, puller = null, landed = null;
 let docked = null; // the row of every section, while a finger holds the bar (below)
 export const setPuller = (p) => { puller = p; };
 

@@ -5,7 +5,9 @@
 // the shoot is still to come, Ref draws them again whenever the board changes
 // (keepUp); once the shoot is shot, The Eye freezes them. On its own (a Ref
 // installed by itself can't see The Eye's shoots) the board becomes a file
-// to share, which The Eye takes in with + Import board.
+// to share, which The Eye takes in with + Import board. A client's board
+// (one started from a yes in Rounds) carries the client along, so a new
+// shoot made from it in The Eye has them as its talent.
 import * as db from './db.js';
 import { photoById, thumbUrl } from './library.js';
 import { pageToCanvas } from '../components/board-page.js';
@@ -15,6 +17,7 @@ import { confirmSheet } from '../components/dialogs.js';
 import { pickShoot } from '../components/shoot-picker.js';
 import { toast, hideToast } from '../components/toast.js';
 import { esc, canvasToBlob } from '../components/util.js';
+import { boardClient } from './client-board.js';
 
 const D = window.DFData;
 const LONG_EDGE = 1600;      // each page picture, on its longer side
@@ -144,6 +147,7 @@ export async function sendToShoot(board) {
     fromApp: 'ref', fromId: board.id, toApp: 'the-eye', toId: key === '+new' ? null : key, type: 'moodboard',
     name: board.name, pageCount: drawn.about.pageCount, photoCount: drawn.about.photoCount,
     drawnAt: D.nowIso(), drawnOf: boardKey(board), frozenAt: null, importedAt: null, pending: key === '+new',
+    client: boardClient(board),
   };
   const saved = await D.saveLink(link, drawn.pictures);
   // A new shoot is made by The Eye itself, with this board on it.

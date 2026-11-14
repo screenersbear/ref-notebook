@@ -1919,8 +1919,141 @@ function pickShoot({ boardName, shoots }) {
 	});
 }
 
+// components/textsize.js
+const KEYS = {
+	title: {
+		size: "titleSize",
+		def: 1.5
+	},
+	body: {
+		size: "textSize",
+		def: 1
+	},
+	note: {
+		size: "size",
+		def: 1.6
+	}
+};
+const TEXT_STEPS = [
+	.6,
+	.75,
+	.9,
+	1,
+	1.15,
+	1.3,
+	1.5,
+	1.75,
+	2,
+	2.5,
+	3,
+	4
+];
+const STORE = "ref-notebook-text-defaults";
+function savedDefaults() {
+	try {
+		return JSON.parse(localStorage.getItem(STORE)) || {};
+	} catch {
+		return {};
+	}
+}
+const defaultSize = (kind) => Number(savedDefaults()[kind]) > 0 ? Number(savedDefaults()[kind]) : 1;
+const sizeOf = (page, kind) => (page?.[KEYS[kind].size] ?? KEYS[kind].def) / KEYS[kind].def;
+function setSize(page, kind, rel) {
+	const k = KEYS[kind];
+	const v = Math.round(rel * k.def * 1e3) / 1e3;
+	if (v === k.def) delete page[k.size];
+	else page[k.size] = v;
+}
+function stepSize(page, kind, dir) {
+	const cur = sizeOf(page, kind);
+	const on = TEXT_STEPS.findIndex((v) => Math.abs(v - cur) < 1e-7);
+	const above = TEXT_STEPS.filter((v) => v < cur).length;
+	const k = on !== -1 ? on + dir : dir > 0 ? above + dir - 1 : above + dir;
+	setSize(page, kind, TEXT_STEPS[Math.max(0, Math.min(TEXT_STEPS.length - 1, k))]);
+}
+const useDefault = (page, kind) => setSize(page, kind, defaultSize(kind));
+function saveDefault(page, kind) {
+	const all = savedDefaults();
+	all[kind] = sizeOf(page, kind);
+	try {
+		localStorage.setItem(STORE, JSON.stringify(all));
+	} catch {}
+}
+const isDefault = (page, kind) => Math.abs(sizeOf(page, kind) - defaultSize(kind)) < 1e-6;
+function withTextDefaults(page) {
+	for (const kind of ["title", "body"]) {
+		if (page[KEYS[kind].size] !== undefined) continue;
+		const d = defaultSize(kind);
+		if (d !== 1) setSize(page, kind, d);
+	}
+	return page;
+}
+
+// data/client-board.js
+const MONTHS = [
+	"Jan",
+	"Feb",
+	"Mar",
+	"Apr",
+	"May",
+	"Jun",
+	"Jul",
+	"Aug",
+	"Sep",
+	"Oct",
+	"Nov",
+	"Dec"
+];
+const BLANK_PAGES = 3;
+const CLIENT_STYLE = "mosaic";
+function dayWords(v) {
+	const s = String(v ?? "");
+	const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s);
+	const d = m ? new Date(+m[1], +m[2] - 1, +m[3]) : new Date(s);
+	return s && !Number.isNaN(d.getTime()) ? `${d.getDate()} ${MONTHS[d.getMonth()]}` : "";
+}
+const nameOf = (link) => String(link.name ?? "").trim();
+const firstName = (name) => name.split(/\s+/)[0];
+function clientSlip(link) {
+	const name = nameOf(link) || "Someone";
+	const pitched = dayWords(link.pitched);
+	const said = dayWords(link.createdAt);
+	return {
+		title: `${name} said yes`,
+		line: `A new board for the shoot, named for ${firstName(name)}.`,
+		handle: link.handle ? `@${link.handle}` : "",
+		when: pitched ? `Pitched ${pitched}.` : said ? `Said yes ${said}.` : ""
+	};
+}
+function clientBoard(link, shape) {
+	const name = nameOf(link) || "New client";
+	const pages = Array.from({ length: 3 }, (_, n) => withTextDefaults({
+		template: styleTemplate(shape, CLIENT_STYLE, n),
+		images: []
+	}));
+	return {
+		name,
+		shape,
+		style: CLIENT_STYLE,
+		pages,
+		client: {
+			name,
+			handle: link.handle || "",
+			from: link.id
+		}
+	};
+}
+function boardClient(board) {
+	const c = board && board.client;
+	return c && String(c.name ?? "").trim() ? {
+		name: c.name.trim(),
+		handle: c.handle || ""
+	} : null;
+}
+const offersOf = (links) => (links || []).filter((l) => l && l.type === "new-client" && !l.toId);
+
 // data/sendshoot.js
-const D = window.DFData;
+const D$1 = window.DFData;
 const LONG_EDGE = 1600;
 const COVER$1 = 800;
 const BIG_FILE = 25 * 1048576;
@@ -2022,7 +2155,7 @@ async function drawBoard(board, say) {
 	};
 }
 function eyeShoots() {
-	const st = D.eyeState();
+	const st = D$1.eyeState();
 	if (!st || !Array.isArray(st.shoots)) return {
 		shoots: [],
 		mode: null
@@ -2050,8 +2183,8 @@ function shootDay(ymd) {
 function upcomingShoots() {
 	const { shoots, mode } = eyeShoots();
 	return shoots.filter((s) => !s.archived && UPCOMING.includes(s.status || "prospect")).sort((a, b) => (a.date ? 0 : 1) - (b.date ? 0 : 1) || String(a.date || "").localeCompare(String(b.date || ""))).map((s) => {
-		const name = D.eyeShootName(s, mode);
-		const other = D.eyeShootName(s, mode === "title" ? "talent" : "title");
+		const name = D$1.eyeShootName(s, mode);
+		const other = D$1.eyeShootName(s, mode === "title" ? "talent" : "title");
 		return {
 			id: s.id,
 			name,
@@ -2063,27 +2196,27 @@ function upcomingShoots() {
 	});
 }
 async function boardShoots() {
-	if (!D || !D.inSuite()) return {};
+	if (!D$1 || !D$1.inSuite()) return {};
 	const { shoots, mode } = eyeShoots();
 	const byId = new Map(shoots.map((s) => [s.id, s]));
 	const out = {};
-	for (const l of await D.linksWhere({
+	for (const l of await D$1.linksWhere({
 		fromApp: "ref",
 		toApp: "the-eye",
 		type: "moodboard"
 	})) {
 		const s = byId.get(l.toId);
-		if (s) (out[l.fromId] = out[l.fromId] || []).push(D.eyeShootName(s, mode));
+		if (s) (out[l.fromId] = out[l.fromId] || []).push(D$1.eyeShootName(s, mode));
 	}
 	return out;
 }
 async function sendToShoot(board) {
-	if (!D) return;
-	if (!D.inSuite()) {
+	if (!D$1) return;
+	if (!D$1.inSuite()) {
 		await sendAsFile(board);
 		return;
 	}
-	const links = await D.linksWhere({
+	const links = await D$1.linksWhere({
 		fromApp: "ref",
 		fromId: board.id,
 		toApp: "the-eye",
@@ -2124,15 +2257,16 @@ async function sendToShoot(board) {
 		name: board.name,
 		pageCount: drawn.about.pageCount,
 		photoCount: drawn.about.photoCount,
-		drawnAt: D.nowIso(),
+		drawnAt: D$1.nowIso(),
 		drawnOf: boardKey(board),
 		frozenAt: null,
 		importedAt: null,
-		pending: key === "+new"
+		pending: key === "+new",
+		client: boardClient(board)
 	};
-	const saved = await D.saveLink(link, drawn.pictures);
+	const saved = await D$1.saveLink(link, drawn.pictures);
 	if (key === "+new") {
-		location.href = D.notebookUrl("the-eye", { newShootFromBoard: saved.id });
+		location.href = D$1.notebookUrl("the-eye", { newShootFromBoard: saved.id });
 		return;
 	}
 	const shoot = shoots.find((s) => s.id === key);
@@ -2144,14 +2278,14 @@ async function sendToShoot(board) {
 	});
 	sh.body.querySelector("[data-done]").addEventListener("click", () => sh.close());
 	sh.body.querySelector("[data-open]").addEventListener("click", () => {
-		location.href = D.notebookUrl("the-eye", { shoot: key });
+		location.href = D$1.notebookUrl("the-eye", { shoot: key });
 	});
 }
 async function sendAsFile(board) {
 	let file;
 	try {
 		const drawn = await drawBoard(board, (i) => toast(`Getting page ${i + 1} of ${board.pages.length} ready`, { ms: 6e4 }));
-		file = await D.boardFile(drawn.about, drawn.pictures);
+		file = await D$1.boardFile(drawn.about, drawn.pictures);
 	} catch (e) {
 		console.error(e);
 		toast("The board couldn't be made into a file");
@@ -2170,18 +2304,18 @@ async function sendAsFile(board) {
 		body: `<p class="sheet-message">${board.pages.length} ${board.pages.length === 1 ? "page" : "pages"}, ${mb} MB. In The Eye, open the shoot and tap <b>+ Import board</b>.</p><div class="sheet-actions one"><button type="button" class="btn primary" data-send>Save or share</button></div>`
 	});
 	sh.body.querySelector("[data-send]").addEventListener("click", async () => {
-		const how = await D.saveFile(file);
+		const how = await D$1.saveFile(file);
 		if (how !== "cancelled") sh.close();
 	});
 }
 let running$1 = Promise.resolve();
 function keepUp(boardId) {
-	if (!D || !D.inSuite()) return running$1;
+	if (!D$1 || !D$1.inSuite()) return running$1;
 	running$1 = running$1.then(() => catchUp(boardId)).catch((e) => console.error(e));
 	return running$1;
 }
 async function catchUp(boardId) {
-	const live = (await D.linksWhere({
+	const live = (await D$1.linksWhere({
 		fromApp: "ref",
 		toApp: "the-eye",
 		type: "moodboard"
@@ -2193,14 +2327,14 @@ async function catchUp(boardId) {
 		if (l.drawnOf ? l.drawnOf === boardKey(board) : l.drawnAt && board.updatedAt <= l.drawnAt) continue;
 		if (!drawnFor.has(board.id)) drawnFor.set(board.id, await drawBoard(board));
 		const drawn = drawnFor.get(board.id);
-		const now = await D.getLink(l.id);
+		const now = await D$1.getLink(l.id);
 		if (!now || now.frozenAt) continue;
-		await D.saveLink({
+		await D$1.saveLink({
 			...now,
 			name: board.name,
 			pageCount: drawn.about.pageCount,
 			photoCount: drawn.about.photoCount,
-			drawnAt: D.nowIso(),
+			drawnAt: D$1.nowIso(),
 			drawnOf: boardKey(board)
 		}, drawn.pictures);
 	}
@@ -2270,258 +2404,67 @@ function shortBandHtml({ name, back = "", backAttr = "", backLabel = "Back", mor
     </header>`;
 }
 
-// pages/boards.js
-async function boardsScreen(view) {
-	const boards = await listBoards();
-	const onShoots = await boardShoots().catch(() => ({}));
-	const firstPhoto = (b) => b.pages.flatMap((p) => p.images).map((im) => im && photoById(im.id)).find(Boolean);
-	const card = (b) => {
-		const p = firstPhoto(b);
-		const href = `#/board/${esc(b.id)}`;
-		const flags = (onShoots[b.id] || []).map((s) => `<span class="flag">For ${esc(s)}</span>`).join("");
-		return `
-      <div class="board-card" data-b>
-        <a class="card-cover" href="${href}" aria-label="Open ${esc(b.name)}">${p ? `<img src="${thumbUrl(p)}" alt="" />` : ""}</a>
-        <div class="card-info">
-          <a class="card-words" href="${href}">
-            <span class="card-name">${esc(b.name)}</span>
-            <span class="card-meta">${b.pages.length} ${b.pages.length === 1 ? "page" : "pages"} · ${esc(shortDate(b.updatedAt))}</span>
-            ${flags ? `<span class="flags">${flags}</span>` : ""}
-          </a>
-          <button type="button" class="icon-btn card-more" data-more="${esc(b.id)}" aria-label="More for ${esc(b.name)}">${ICONS.more}</button>
-        </div>
-      </div>`;
-	};
-	view.innerHTML = `
-    <div class="screen has-band">
-      <div class="scroll">
-        ${bandHtml({
-		title: "Ref",
-		place: "Mood boards"
-	})}
-        <div class="list-head"><h2>Boards <span>${boards.length}</span></h2><a class="list-act" href="#/new">${ICONS.plus}New board</a></div>
-        <div class="list-rule"></div>
-        ${boards.map(card).join("")}
-        ${!lib.photos.length ? "<p class=\"note\">Start in <a href=\"#/folder/incoming\">Incoming</a>: bring in the photos you want to work with, then make a board from them.</p>" : ""}
-      </div>
-    </div>`;
-	wireBand(view);
-	view.querySelectorAll("[data-more]").forEach((btn) => btn.addEventListener("click", async () => {
-		const b = boards.find((x) => x.id === btn.dataset.more);
-		const key = await choiceSheet({
-			title: b.name,
-			options: [
-				{
-					key: "send",
-					label: "Send to shoot"
-				},
-				{
-					key: "rename",
-					label: "Rename"
-				},
-				{
-					key: "delete",
-					label: "Delete",
-					danger: true
-				}
-			]
-		});
-		if (key === "send") {
-			await sendToShoot(b);
-			if ((location.hash || "") === "#/boards") boardsScreen(view);
-		} else if (key === "rename") {
-			const name = await promptSheet({
-				title: "Rename board",
-				value: b.name
-			});
-			if (name) {
-				await saveBoard({
-					...b,
-					name
-				});
-				boardsScreen(view);
-				keepUp(b.id);
-			}
-		} else if (key === "delete") {
-			if (await confirmSheet({
-				title: "Delete this board?",
-				message: `<b>${esc(b.name)}</b> will be gone. Its photos stay in the notebook.`,
-				confirmLabel: "Delete",
-				danger: true
-			})) {
-				await deleteBoard(b.id);
-				boardsScreen(view);
-				const back = async () => {
-					await saveBoard(b);
-				};
-				remember("deleting a board", back);
-				toast("Board deleted", { action: {
-					label: "Undo",
-					run: () => undoLast().then(() => boardsScreen(view))
-				} });
-			}
+// pages/client-slip.js
+const D = () => window.DFData;
+const C = () => window.DFConnect;
+const ready = () => !!(D() && C() && D().linksWhere);
+async function clientOffers() {
+	if (!ready()) return [];
+	return offersOf(await D().linksWhere({
+		toApp: "ref",
+		type: "new-client"
+	})).reverse();
+}
+async function photoUrl(link, urls) {
+	const pics = await D().linkPictures(link.id).catch(() => null);
+	const url = pics && pics.cover ? D().pictureUrl(pics.cover) : "";
+	if (url) urls.push(url);
+	return url;
+}
+async function clientSlipsHtml(urls) {
+	if (!ready()) return "";
+	const waiting = (await C().slipsFor("ref")).filter((l) => l.type === "new-client" && !l.toId);
+	const out = [];
+	for (const link of waiting) {
+		const w = clientSlip(link);
+		const url = await photoUrl(link, urls);
+		out.push(C().slipHtml({
+			link,
+			title: w.title,
+			line: w.line,
+			body: `<div class="ref-slip-who"><span class="ref-slip-photo" aria-hidden="true">${url ? `<img src="${url}" alt="" />` : ""}</span>
+        <span class="ref-slip-words">${w.handle ? `<span class="ref-slip-handle">${esc(w.handle)}</span>` : ""}${w.when ? `<span class="ref-slip-when">${esc(w.when)}</span>` : ""}</span></div>`,
+			main: "Start the board"
+		}));
+	}
+	return out.join("");
+}
+async function startClientBoard(linkId, shape) {
+	const link = await D().getLink(linkId);
+	if (!link) return null;
+	const had = link.toId ? await getBoard(link.toId) : null;
+	const board = had || await saveBoard(clientBoard(link, shape));
+	if (!had || !link.openedAt) await D().saveLink({
+		...link,
+		toId: board.id,
+		openedAt: link.openedAt || D().nowIso()
+	});
+	location.hash = `#/board/${encodeURIComponent(board.id)}`;
+	return board;
+}
+function wireClientSlips(root, redraw, shape) {
+	root.querySelectorAll(".df-slip[data-slip]").forEach((slip) => slip.addEventListener("click", async (e) => {
+		const go = e.target.closest("[data-slip-open]");
+		if (!go && !e.target.closest("[data-slip-later]")) return;
+		if (go) {
+			await startClientBoard(slip.dataset.slip, shape);
+			return;
 		}
+		const link = await D().getLink(slip.dataset.slip);
+		if (link) await C().tuckSlip(link);
+		slip.remove();
+		redraw();
 	}));
-}
-
-// components/filing.js
-const PLUS = "<svg viewBox=\"0 0 24 24\" width=\"24\" height=\"24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" aria-hidden=\"true\"><line x1=\"12\" y1=\"5\" x2=\"12\" y2=\"19\"/><line x1=\"5\" y1=\"12\" x2=\"19\" y2=\"12\"/></svg>";
-async function newFolder() {
-	const name = await promptSheet({
-		title: "New tag",
-		label: "Tag name",
-		confirmLabel: "Make it"
-	});
-	if (!name) return null;
-	const f = await saveFolder({ name });
-	await refresh();
-	return f;
-}
-async function relabel(p, tags) {
-	const before = {
-		tags: p.tags,
-		tagsEdited: p.tagsEdited
-	};
-	await patchPhoto(p.id, {
-		tags,
-		tagsEdited: true
-	});
-	await refresh();
-	remember("changing what is in it", () => patchPhoto(p.id, before));
-}
-async function changePhotos(photos, change, label) {
-	const before = photos.map((p) => ({
-		id: p.id,
-		folderIds: p.folderIds,
-		favorite: p.favorite
-	}));
-	await savePhotos(photos.map((p) => ({
-		...p,
-		...change(p)
-	})));
-	await refresh();
-	remember(label, async () => {
-		for (const b of before) await patchPhoto(b.id, {
-			folderIds: b.folderIds,
-			favorite: b.favorite
-		});
-	});
-}
-function fileSheet(ids) {
-	return new Promise((resolve) => {
-		const photos = ids.map(photoById).filter(Boolean);
-		const inCount = (id) => photos.filter((p) => p.folderIds.includes(id)).length;
-		const changes = new Map();
-		let saved = false;
-		const s = openSheet({
-			title: photos.length === 1 ? "Tag this photo" : `Tag ${photos.length} photos`,
-			onClose: () => resolve(saved)
-		});
-		const draw = () => {
-			s.body.innerHTML = `
-        ${lib.folders.length > 8 ? "<input class=\"find\" type=\"search\" placeholder=\"Find a folder\" autocomplete=\"off\" />" : ""}
-        <div class="tick-list">
-          ${lib.folders.map((f) => {
-				const on = changes.has(f.id) ? changes.get(f.id) : inCount(f.id) === photos.length;
-				return `<label class="tick" data-name="${esc(f.name.toLowerCase())}"><input type="checkbox" value="${esc(f.id)}"${on ? " checked" : ""} /><span>${esc(f.name)}</span></label>`;
-			}).join("")}
-          <button type="button" class="tick add" data-new>${PLUS}New tag</button>
-        </div>
-        <div class="sheet-actions one"><button type="button" class="btn primary" data-save>Done</button></div>`;
-			s.body.querySelectorAll(".tick input").forEach((box) => {
-				const n = inCount(box.value);
-				box.indeterminate = !changes.has(box.value) && n > 0 && n < photos.length;
-			});
-			s.body.querySelector(".find")?.addEventListener("input", (e) => {
-				const q = e.target.value.trim().toLowerCase();
-				s.body.querySelectorAll(".tick[data-name]").forEach((t) => {
-					t.hidden = !t.dataset.name.includes(q);
-				});
-			});
-		};
-		draw();
-		s.body.addEventListener("change", (e) => {
-			if (e.target.type === "checkbox") changes.set(e.target.value, e.target.checked);
-		});
-		s.body.addEventListener("click", async (e) => {
-			if (e.target.closest("[data-new]")) {
-				const f = await newFolder();
-				if (f) {
-					changes.set(f.id, true);
-					draw();
-				}
-			} else if (e.target.closest("[data-save]")) {
-				if (!changes.size) {
-					s.close();
-					return;
-				}
-				const apply = (p) => {
-					const next = new Set(p.folderIds);
-					for (const [id, on] of changes) {
-						if (on) next.add(id);
-						else next.delete(id);
-					}
-					return { folderIds: [...next] };
-				};
-				try {
-					await changePhotos(photos, apply, "filing");
-				} catch (err) {
-					console.error(err);
-					toast("Could not save that. Try once more.");
-					return;
-				}
-				saved = true;
-				s.close();
-				const home = photos.every((p) => !apply(p).folderIds.length);
-				toast(home ? "Back in Incoming" : "Filed");
-			}
-		});
-	});
-}
-
-// pages/folders.js
-const CHEVRON$1 = "<svg class=\"chevron\" viewBox=\"0 0 24 24\" aria-hidden=\"true\"><polyline points=\"9 5 16 12 9 19\"/></svg>";
-const SEARCH = "<svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><circle cx=\"11\" cy=\"11\" r=\"6.5\"/><line x1=\"16\" y1=\"16\" x2=\"20.5\" y2=\"20.5\"/></svg>";
-function foldersScreen(view) {
-	const row = (f, cls = "") => {
-		const list = sortList(photosIn(f.id), "newest");
-		return `
-      <a class="tag-row ${cls}" href="#/folder/${esc(f.id)}" data-t data-name="${esc(f.name.toLowerCase())}">
-        <span class="tag-thumb">${list[0] ? `<img src="${thumbUrl(list[0])}" alt="" loading="lazy" />` : ""}</span>
-        <span class="tag-name">${esc(f.name)}</span>
-        <span class="tag-count" aria-label="${list.length} ${list.length === 1 ? "photo" : "photos"}">${list.length.toLocaleString()}</span>
-        ${CHEVRON$1}
-      </a>`;
-	};
-	view.innerHTML = `
-    <div class="screen has-band">
-      <div class="scroll tag-rows">
-        ${bandHtml({
-		title: "Tags",
-		place: "Ref"
-	})}
-        ${lib.folders.length > 8 ? `<label class="find-box">${SEARCH}<input class="find" type="search" placeholder="Find a tag" autocomplete="off" /></label>` : ""}
-        <div class="list-rule tag-top"></div>
-        ${row(folderById("incoming"), "special")}
-        ${row(folderById("favorites"), "special")}
-        ${row(folderById("all"), "special")}
-        <div class="list-head tag-mine-head" data-mine><h2>Your tags <span>${lib.folders.length}</span></h2><button type="button" class="list-act" data-new>${ICONS.plus}New tag</button></div>
-        <div class="list-rule" data-mine></div>
-        ${lib.folders.map((f) => row(f, "mine")).join("")}
-      </div>
-    </div>`;
-	const rows = [...view.querySelectorAll("[data-t]")];
-	const make = async () => {
-		if (await newFolder()) foldersScreen(view);
-	};
-	wireBand(view);
-	view.querySelector("[data-new]")?.addEventListener("click", make);
-	view.querySelector(".find")?.addEventListener("input", (e) => {
-		const q = e.target.value.trim().toLowerCase();
-		rows.forEach((r) => {
-			r.hidden = !!q && !r.dataset.name.includes(q);
-		});
-	});
 }
 
 // data/tagger.js
@@ -2713,657 +2656,6 @@ async function carryOn() {
 		return;
 	}
 	run();
-}
-
-// pages/viewer.js
-const X = "<svg viewBox=\"0 0 24 24\" width=\"18\" height=\"18\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" aria-hidden=\"true\"><line x1=\"6\" y1=\"6\" x2=\"18\" y2=\"18\"/><line x1=\"18\" y1=\"6\" x2=\"6\" y2=\"18\"/></svg>";
-const SMALL_X = "<svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><line x1=\"7\" y1=\"7\" x2=\"17\" y2=\"17\"/><line x1=\"17\" y1=\"7\" x2=\"7\" y2=\"17\"/></svg>";
-const SMALL_PLUS = "<svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><line x1=\"12\" y1=\"6\" x2=\"12\" y2=\"18\"/><line x1=\"6\" y1=\"12\" x2=\"18\" y2=\"12\"/></svg>";
-function openViewer(ids, start, onChange) {
-	let list = [...ids];
-	let i = start;
-	let scale = 1;
-	let tx = 0;
-	let ty = 0;
-	let changed = false;
-	const el = document.createElement("div");
-	el.className = "viewer";
-	el.innerHTML = `
-    <div class="v-top">
-      <button type="button" class="ring-btn v-close" data-close aria-label="Close"><span>${X}</span></button>
-      <span class="v-count"></span>
-      <span class="v-top-gap" aria-hidden="true"></span>
-    </div>
-    <div class="v-stage"><img class="v-img" alt="" draggable="false" /></div>
-    <div class="v-info">
-      <p class="v-label">Tags</p>
-      <div class="v-chips v-tags"></div>
-      <p class="v-label">What is in it <span>(found by Ref, edit any)</span></p>
-      <div class="v-chips v-found"></div>
-      <div class="v-palette"></div>
-      <p class="v-hint">Tap a color to see every photo with it</p>
-    </div>
-    <nav class="v-tools">
-      <button type="button" data-v="fav"></button>
-      <button type="button" data-v="file" aria-label="Tag this photo">${ICONS.file}<span aria-hidden="true">Tag</span></button>
-      <button type="button" data-v="undo"${canUndo() ? "" : " disabled"}>${ICONS.undo}<span>Undo</span></button>
-      <button type="button" data-v="delete">${ICONS.trash}<span>Delete</span></button>
-    </nav>`;
-	document.body.append(el);
-	const img = el.querySelector(".v-img");
-	const stage = el.querySelector(".v-stage");
-	const place = (dx = 0) => {
-		img.style.transform = `translate(${tx + dx}px, ${ty}px) scale(${scale})`;
-	};
-	async function show() {
-		const p = photoById(list[i]);
-		if (!p) return close();
-		scale = 1;
-		tx = 0;
-		ty = 0;
-		place();
-		img.src = thumbUrl(p);
-		const tags = p.folderIds.map((id) => lib.folders.find((f) => f.id === id)?.name).filter(Boolean);
-		el.querySelector(".v-tags").innerHTML = (tags.length ? tags : ["Incoming"]).map((t) => `<span class="v-chip">${esc(t)}</span>`).join("");
-		el.querySelector(".v-found").innerHTML = (p.tags || []).map((t) => `<button type="button" class="v-chip found" data-untag="${esc(t)}" aria-label="Remove ${esc(t)}">${esc(t)}${SMALL_X}</button>`).join("") + `<button type="button" class="v-chip add" data-addtag>${SMALL_PLUS}Add</button>`;
-		el.querySelector(".v-count").textContent = `${i + 1} of ${list.length}`;
-		el.querySelector(".v-palette").innerHTML = (p.palette || []).map((c) => `<button type="button" data-color="${esc(c.hex)}" aria-label="Photos with this color" style="background:${esc(c.hex)};flex:${c.w}"></button>`).join("");
-		el.querySelector("[data-v=fav]").innerHTML = `${p.favorite ? ICONS.heartOn : ICONS.heart}<span>Favorite</span>`;
-		el.querySelector("[data-v=fav]").setAttribute("aria-pressed", String(!!p.favorite));
-		const want = list[i];
-		const u = await fullUrl(want);
-		if (u && want === list[i]) img.src = u;
-	}
-	const paintUndo = () => {
-		el.querySelector("[data-v=undo]").disabled = !canUndo();
-	};
-	window.addEventListener("ref-undo", paintUndo);
-	function close() {
-		window.removeEventListener("ref-undo", paintUndo);
-		el.remove();
-		if (changed) onChange?.();
-	}
-	function again() {
-		changed = true;
-		list = list.filter((x) => photoById(x));
-		if (!list.length) return close();
-		i = Math.min(i, list.length - 1);
-		show();
-	}
-	el.querySelector(".v-palette").addEventListener("click", (e) => {
-		const b = e.target.closest("[data-color]");
-		if (b) openColorPage(b.dataset.color, again);
-	});
-	el.querySelector("[data-close]").addEventListener("click", () => close());
-	el.querySelector(".v-found").addEventListener("click", async (e) => {
-		const p = photoById(list[i]);
-		if (!p) return;
-		const now = p.tags || [];
-		let next = null;
-		const gone = e.target.closest("[data-untag]");
-		if (gone) next = now.filter((t) => t !== gone.dataset.untag);
-		else if (e.target.closest("[data-addtag]")) {
-			const word = (await promptSheet({
-				title: "What is in it",
-				label: "A word for something in the photo",
-				confirmLabel: "Add"
-			}))?.trim().toLowerCase();
-			if (word && !now.includes(word)) next = [...now, word];
-		}
-		if (!next) return;
-		try {
-			await relabel(p, next);
-			changed = true;
-			show();
-		} catch (err) {
-			console.error(err);
-			toast("Could not save that. Try once more.");
-		}
-	});
-	const go = (d) => {
-		const n = i + d;
-		if (n >= 0 && n < list.length) {
-			i = n;
-			show();
-		} else {
-			place();
-		}
-	};
-	el.querySelector(".v-tools").addEventListener("click", async (e) => {
-		const b = e.target.closest("[data-v]");
-		if (!b) return;
-		const p = photoById(list[i]);
-		if (b.dataset.v === "undo") {
-			const gone = list[i];
-			await undoLast();
-			changed = true;
-			if (photoById(gone)) show();
-			else again();
-		} else if (b.dataset.v === "fav") {
-			try {
-				await changePhotos([p], () => ({ favorite: !p.favorite }), "favorite");
-				changed = true;
-				show();
-			} catch (err) {
-				console.error(err);
-				toast("Could not save that. Try once more.");
-			}
-		} else if (b.dataset.v === "file") {
-			if (await fileSheet([p.id])) {
-				changed = true;
-				show();
-			}
-		} else if (b.dataset.v === "delete") {
-			const ok = await confirmSheet({
-				title: "Delete this photo?",
-				message: "It leaves this notebook and any boards it's on. Ref Notebook keeps its own copy, so if it's no longer on your phone, this is the last one.",
-				confirmLabel: "Delete",
-				danger: true
-			});
-			if (!ok) return;
-			const kept = await keepForUndo([p.id]);
-			await deletePhotos([p.id]);
-			await refresh();
-			changed = true;
-			remember("deleting", () => putBack(kept));
-			list.splice(i, 1);
-			if (!list.length) return close();
-			i = Math.min(i, list.length - 1);
-			show();
-		}
-	});
-	const pts = new Map();
-	let start0 = null;
-	let pinch = null;
-	let lastTap = 0;
-	const clampPan = () => {
-		const r = stage.getBoundingClientRect();
-		const mx = r.width * (scale - 1) / 2;
-		const my = r.height * (scale - 1) / 2;
-		tx = clamp(tx, -mx, mx);
-		ty = clamp(ty, -my, my);
-	};
-	stage.addEventListener("pointerdown", (e) => {
-		try {
-			stage.setPointerCapture(e.pointerId);
-		} catch {}
-		pts.set(e.pointerId, [e.clientX, e.clientY]);
-		if (pts.size === 1) start0 = {
-			x: e.clientX,
-			y: e.clientY,
-			tx,
-			ty,
-			t: performance.now()
-		};
-		if (pts.size === 2) {
-			const [a, b] = [...pts.values()];
-			pinch = {
-				d: Math.hypot(a[0] - b[0], a[1] - b[1]),
-				scale
-			};
-		}
-	});
-	stage.addEventListener("pointermove", (e) => {
-		if (!pts.has(e.pointerId)) return;
-		pts.set(e.pointerId, [e.clientX, e.clientY]);
-		if (pts.size === 2 && pinch) {
-			const [a, b] = [...pts.values()];
-			scale = clamp(pinch.scale * Math.hypot(a[0] - b[0], a[1] - b[1]) / pinch.d, 1, 6);
-			clampPan();
-			place();
-		} else if (pts.size === 1 && start0) {
-			const dx = e.clientX - start0.x;
-			const dy = e.clientY - start0.y;
-			if (scale > 1) {
-				tx = start0.tx + dx;
-				ty = start0.ty + dy;
-				clampPan();
-				place();
-			} else place(dx);
-		}
-	});
-	const up = (e) => {
-		if (!pts.has(e.pointerId)) return;
-		pts.delete(e.pointerId);
-		if (pts.size) {
-			pinch = null;
-			start0 = null;
-			return;
-		}
-		if (!start0) {
-			if (scale <= 1) {
-				scale = 1;
-				tx = ty = 0;
-				place();
-			}
-			return;
-		}
-		const dx = e.clientX - start0.x;
-		const dy = e.clientY - start0.y;
-		const still = Math.hypot(dx, dy) < 10;
-		if (still) {
-			const now = performance.now();
-			if (now - lastTap < 300) {
-				scale = scale > 1 ? 1 : 2.5;
-				tx = ty = 0;
-				place();
-				lastTap = 0;
-			} else lastTap = now;
-		} else if (scale === 1) {
-			if (Math.abs(dx) > 50) go(dx < 0 ? 1 : -1);
-			else place();
-		}
-		start0 = null;
-	};
-	stage.addEventListener("pointerup", up);
-	stage.addEventListener("pointercancel", up);
-	const key = (e) => {
-		if (!el.isConnected) return document.removeEventListener("keydown", key);
-		if (sheetIsOpen() || [...document.querySelectorAll(".viewer")].pop() !== el) return;
-		if (e.key === "ArrowRight") go(1);
-		else if (e.key === "ArrowLeft") go(-1);
-		else if (e.key === "Escape") close();
-	};
-	document.addEventListener("keydown", key);
-	show();
-	return { close };
-}
-function openColorPage(hex, onBack) {
-	const el = document.createElement("div");
-	el.className = "viewer color-page";
-	let list = [];
-	const draw = () => {
-		list = photosOfColor(hex);
-		el.innerHTML = `
-      <header class="band band-short">
-        <button type="button" class="ring-btn" data-back aria-label="Back to the photo"><span>${BACK}</span></button>
-        <p class="band-line"><span class="color-swatch" style="background:${esc(hex)}"></span><b class="count">${list.length} ${list.length === 1 ? "photo" : "photos"}</b></p>
-        <span class="ring-btn" aria-hidden="true"></span>
-      </header>
-      <div class="scroll"><div class="grid">
-        ${list.map((p, n) => `<button type="button" class="tile" data-i="${n}" aria-label="${esc(p.name)}"><img src="${thumbUrl(p)}" alt="" decoding="async" draggable="false" /></button>`).join("")}
-      </div></div>`;
-	};
-	draw();
-	document.body.append(el);
-	el.addEventListener("click", (e) => {
-		if (e.target.closest("[data-back]")) {
-			el.remove();
-			onBack();
-			return;
-		}
-		const t = e.target.closest("[data-i]");
-		if (t) openViewer(list.map((p) => p.id), +t.dataset.i, draw);
-	});
-}
-
-// pages/folder.js
-const SORT_ICON = "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" aria-hidden=\"true\"><line x1=\"4\" y1=\"7\" x2=\"20\" y2=\"7\"/><line x1=\"7\" y1=\"12\" x2=\"17\" y2=\"12\"/><line x1=\"10\" y1=\"17\" x2=\"14\" y2=\"17\"/></svg>";
-const TICK$1 = "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><polyline points=\"5 12.5 10 17 19 7\"/></svg>";
-const filterMemory = {};
-let stopListening = null;
-function folderScreen(view, id) {
-	const folder = folderById(id);
-	if (!folder) {
-		location.hash = "#/folders";
-		return;
-	}
-	const incoming = id === "incoming";
-	let selecting = false;
-	let current = [];
-	const sel = new Set();
-	const on = () => filterMemory[id] ||= [];
-	const shown = () => sortList(photosIn(id).filter((p) => matches(p, on())), sortOf(id));
-	async function bringIn(files) {
-		if (!files.length) return;
-		try {
-			await navigator.storage?.persist?.();
-		} catch {}
-		const r = await importFiles(files, (n, total) => toast(`Bringing in ${n} of ${total}`, { ms: 6e4 }));
-		await refresh();
-		toast(r.failed.length ? `${r.photos.length} added, ${r.failed.length} could not be read` : `${r.photos.length} ${r.photos.length === 1 ? "photo" : "photos"} added`);
-		draw();
-		carryOn();
-	}
-	const openPhone = () => pickFiles().then(bringIn);
-	const chipsHtml = () => chipsFor(photosIn(id), on(), id).map((c) => `<button type="button" class="chip kind-${c.kind}${on().includes(c.key) ? " on" : ""}" data-filter="${esc(c.key)}">${esc(c.label)}</button>`).join("");
-	const gridHtml = () => {
-		const total = photosIn(id).length;
-		if (!total && incoming) return `
-      <button type="button" class="open-phone" data-phone>
-        <span class="big-plus">${ICONS.plus}</span>
-        <span class="big-words">Open your phone's photos</span>
-        <span class="row-meta">Pick the ones you want to use. They wait here until you file them.</span>
-      </button>
-      ${isIOS() && !isStandalone() ? "<p class=\"note\">Add this to your Home Screen to keep your photos safe. Safari can clear what sites have saved if they go unused.</p>" : ""}`;
-		if (!total) return `<p class="note center">${id === "favorites" ? "Tap the heart on a photo to keep it here." : "Nothing here yet. File photos in from Incoming."}</p>`;
-		return `<div class="grid">
-      ${incoming && !selecting ? `<button type="button" class="tile add" data-phone aria-label="Add from your phone">${ICONS.plus}<span>Add from<br />your phone</span></button>` : ""}
-      ${current.map((p, i) => `<button type="button" class="tile${sel.has(p.id) ? " sel" : ""}" data-i="${i}" aria-label="${esc(p.name)}"><img src="${thumbUrl(p)}" alt="" decoding="async" draggable="false" />${p.favorite ? `<span class="fav">${ICONS.heartOn}</span>` : ""}${selecting ? `<span class="tile-tick">${TICK$1}</span>` : ""}</button>`).join("")}
-    </div>`;
-	};
-	const countText = () => {
-		const total = photosIn(id).length;
-		const sort = SORTS.find((s) => s.key === sortOf(id)).label;
-		return `${current.length === total ? "" : `${current.length} of `}${total} ${total === 1 ? "photo" : "photos"} · ${sort}`;
-	};
-	const scanHtml = () => {
-		if (!photosIn(id).length) return "";
-		if (scan.state === "failed") return "<button type=\"button\" class=\"scan-btn\" data-scan>This phone couldn't read them. Try again</button>";
-		const line = (pct, words) => `<p class="scan-line"><span class="scan-bar" aria-hidden="true"><span style="width:${Math.max(0, Math.min(100, pct))}%"></span></span>${words}</p>`;
-		if (scan.state === "loading") return line(scan.pct, `Getting ready, ${scan.pct}%`);
-		if (scan.state === "working") return line(scan.total ? scan.done / scan.total * 100 : 0, `Looking at your photos, ${scan.done} of ${scan.total}`);
-		return "";
-	};
-	function paintList() {
-		current = shown();
-		const chips = view.querySelector(".chips");
-		if (chips) {
-			const x = chips.scrollLeft;
-			chips.innerHTML = chipsHtml();
-			chips.scrollLeft = x;
-		}
-		const scroll = view.querySelector(".scroll");
-		if (scroll) {
-			const y = scroll.scrollTop;
-			scroll.innerHTML = gridHtml();
-			scroll.scrollTop = y;
-		}
-		const count = view.querySelector(".count");
-		if (count) count.textContent = countText();
-	}
-	const paintScan = () => {
-		const el = view.querySelector(".scan");
-		if (el) {
-			el.innerHTML = scanHtml();
-			el.hidden = !el.innerHTML;
-		}
-	};
-	const paintUndo = () => {
-		const b = view.querySelector("[data-undo]");
-		if (b) b.disabled = !canUndo();
-	};
-	function draw() {
-		const oldScroll = view.querySelector(".scroll")?.scrollTop || 0;
-		const oldChips = view.querySelector(".chips")?.scrollLeft || 0;
-		const stay = view.querySelector(".screen")?.dataset.folder === id;
-		current = shown();
-		const empty = !photosIn(id).length;
-		view.innerHTML = `
-      <div class="screen in-tag${stay ? " still" : ""}" data-folder="${esc(id)}">
-        ${shortBandHtml({
-			name: folder.name,
-			back: "#/folders",
-			backLabel: "Back to tags",
-			more: isSpecial(id) ? "" : "Tag options"
-		})}
-        ${empty ? "" : `
-          <div class="bar">
-            <span class="count">${countText()}</span>
-            <span class="bar-btns">
-              <button type="button" class="bar-icon" data-sort aria-label="Sort">${SORT_ICON}</button>
-              <button type="button" class="bar-icon" data-undo aria-label="Undo"${canUndo() ? "" : " disabled"}>${ICONS.undo}</button>
-              <button type="button" class="bar-text" data-select>${selecting ? "Done" : "Select"}</button>
-            </span>
-          </div>
-          <div class="chips">${chipsHtml()}</div>`}
-        <div class="scan"${scanHtml() ? "" : " hidden"}>${scanHtml()}</div>
-        <div class="scroll photos">${gridHtml()}</div>
-        ${selecting ? `
-          <nav class="tools" aria-label="Selection">
-            <span class="sel-count">${sel.size} picked</span>
-            <button type="button" class="tool" data-act="file"${sel.size ? "" : " disabled"}>${ICONS.file}<span>Tag</span></button>
-            <button type="button" class="tool" data-act="fav"${sel.size ? "" : " disabled"}>${ICONS.heart}<span>Favorite</span></button>
-            <button type="button" class="tool" data-act="delete"${sel.size ? "" : " disabled"}>${ICONS.trash}<span>Delete</span></button>
-          </nav>` : ""}
-      </div>`;
-		const sc = view.querySelector(".scroll");
-		if (sc) sc.scrollTop = oldScroll;
-		const ch = view.querySelector(".chips");
-		if (ch) ch.scrollLeft = oldChips;
-		wire();
-	}
-	function wire() {
-		view.querySelector("[data-select]")?.addEventListener("click", () => {
-			selecting = !selecting;
-			sel.clear();
-			draw();
-		});
-		view.querySelector("[data-undo]")?.addEventListener("click", async () => {
-			await undoLast();
-			draw();
-		});
-		view.querySelector("[data-sort]")?.addEventListener("click", async () => {
-			const key = await choiceSheet({
-				title: "Sort by",
-				options: SORTS.map((s) => ({
-					key: s.key,
-					label: s.label,
-					current: s.key === sortOf(id)
-				}))
-			});
-			if (key) {
-				setSort(id, key);
-				paintList();
-			}
-		});
-		view.querySelector(".chips")?.addEventListener("click", (e) => {
-			const b = e.target.closest("[data-filter]");
-			if (!b) return;
-			const k = b.dataset.filter;
-			if (!k) filterMemory[id] = [];
-			else filterMemory[id] = on().includes(k) ? on().filter((x) => x !== k) : [...on(), k];
-			paintList();
-		});
-		view.querySelector(".scan")?.addEventListener("click", (e) => {
-			if (e.target.closest("[data-scan]")) turnOnTags();
-		});
-		view.querySelector(".scroll")?.addEventListener("click", (e) => {
-			if (e.target.closest("[data-phone]")) {
-				openPhone();
-				return;
-			}
-			const t = e.target.closest("[data-i]");
-			if (!t) return;
-			const p = current[+t.dataset.i];
-			if (selecting) {
-				if (sel.has(p.id)) sel.delete(p.id);
-				else sel.add(p.id);
-				t.classList.toggle("sel", sel.has(p.id));
-				view.querySelector(".sel-count").textContent = `${sel.size} picked`;
-				view.querySelectorAll("[data-act]").forEach((b) => {
-					b.disabled = !sel.size;
-				});
-			} else openViewer(current.map((x) => x.id), +t.dataset.i, draw);
-		});
-		view.querySelectorAll("[data-act]").forEach((b) => b.addEventListener("click", async () => {
-			const ids = [...sel];
-			try {
-				if (b.dataset.act === "file") {
-					if (!await fileSheet(ids)) return;
-				} else if (b.dataset.act === "fav") {
-					const turnOn = !ids.every((x) => photoById(x).favorite);
-					await changePhotos(ids.map(photoById), () => ({ favorite: turnOn }), "favorites");
-				} else {
-					const ok = await confirmSheet({
-						title: `Delete ${ids.length} ${ids.length === 1 ? "photo" : "photos"}?`,
-						message: "They leave this notebook and any boards they're on. Ref Notebook keeps its own copies, so any that are no longer on your phone will be gone for good.",
-						confirmLabel: "Delete",
-						danger: true
-					});
-					if (!ok) return;
-					const kept = await keepForUndo(ids);
-					await deletePhotos(ids);
-					await refresh();
-					remember("deleting", () => putBack(kept));
-				}
-			} catch (err) {
-				console.error(err);
-				toast("Could not save that. Try once more.");
-				return;
-			}
-			selecting = false;
-			sel.clear();
-			draw();
-		}));
-		view.querySelector("[data-band-more]")?.addEventListener("click", async () => {
-			const key = await choiceSheet({
-				title: folder.name,
-				options: [{
-					key: "rename",
-					label: "Rename"
-				}, {
-					key: "delete",
-					label: "Delete tag",
-					danger: true
-				}]
-			});
-			if (key === "rename") {
-				const name = await promptSheet({
-					title: "Rename tag",
-					value: folder.name
-				});
-				if (name) {
-					await saveFolder({
-						...folder,
-						name
-					});
-					await refresh();
-					folder.name = name;
-					draw();
-				}
-			} else if (key === "delete") {
-				if (await confirmSheet({
-					title: "Delete this tag?",
-					message: `<b>${esc(folder.name)}</b> will be gone. Its photos stay in the notebook.`,
-					confirmLabel: "Delete",
-					danger: true
-				})) {
-					const had = photosIn(id).map((p) => p.id);
-					const copy = { ...folder };
-					await deleteFolder(id);
-					await refresh();
-					remember("deleting a tag", () => restoreFolder(copy, had));
-					location.hash = "#/folders";
-					toast("Tag deleted", { action: {
-						label: "Undo",
-						run: () => undoLast().then(() => {
-							location.hash = `#/folder/${encodeURIComponent(id)}`;
-						})
-					} });
-				}
-			}
-		});
-	}
-	stopListening?.();
-	const onScan = (e) => {
-		paintScan();
-		if (e.detail?.tagged && !selecting) paintList();
-	};
-	window.addEventListener("ref-scan", onScan);
-	window.addEventListener("ref-undo", paintUndo);
-	stopListening = () => {
-		window.removeEventListener("ref-scan", onScan);
-		window.removeEventListener("ref-undo", paintUndo);
-	};
-	draw();
-}
-
-// components/textsize.js
-const KEYS = {
-	title: {
-		size: "titleSize",
-		def: 1.5
-	},
-	body: {
-		size: "textSize",
-		def: 1
-	},
-	note: {
-		size: "size",
-		def: 1.6
-	}
-};
-const TEXT_STEPS = [
-	.6,
-	.75,
-	.9,
-	1,
-	1.15,
-	1.3,
-	1.5,
-	1.75,
-	2,
-	2.5,
-	3,
-	4
-];
-const STORE = "ref-notebook-text-defaults";
-function savedDefaults() {
-	try {
-		return JSON.parse(localStorage.getItem(STORE)) || {};
-	} catch {
-		return {};
-	}
-}
-const defaultSize = (kind) => Number(savedDefaults()[kind]) > 0 ? Number(savedDefaults()[kind]) : 1;
-const sizeOf = (page, kind) => (page?.[KEYS[kind].size] ?? KEYS[kind].def) / KEYS[kind].def;
-function setSize(page, kind, rel) {
-	const k = KEYS[kind];
-	const v = Math.round(rel * k.def * 1e3) / 1e3;
-	if (v === k.def) delete page[k.size];
-	else page[k.size] = v;
-}
-function stepSize(page, kind, dir) {
-	const cur = sizeOf(page, kind);
-	const on = TEXT_STEPS.findIndex((v) => Math.abs(v - cur) < 1e-7);
-	const above = TEXT_STEPS.filter((v) => v < cur).length;
-	const k = on !== -1 ? on + dir : dir > 0 ? above + dir - 1 : above + dir;
-	setSize(page, kind, TEXT_STEPS[Math.max(0, Math.min(TEXT_STEPS.length - 1, k))]);
-}
-const useDefault = (page, kind) => setSize(page, kind, defaultSize(kind));
-function saveDefault(page, kind) {
-	const all = savedDefaults();
-	all[kind] = sizeOf(page, kind);
-	try {
-		localStorage.setItem(STORE, JSON.stringify(all));
-	} catch {}
-}
-const isDefault = (page, kind) => Math.abs(sizeOf(page, kind) - defaultSize(kind)) < 1e-6;
-function withTextDefaults(page) {
-	for (const kind of ["title", "body"]) {
-		if (page[KEYS[kind].size] !== undefined) continue;
-		const d = defaultSize(kind);
-		if (d !== 1) setSize(page, kind, d);
-	}
-	return page;
-}
-
-// components/option-card.js
-function cardHtml({ attr, on, picture = "", name, blurb = "" }) {
-	return `<button type="button" class="opt-card" role="radio" aria-checked="${on}" ${attr}>${picture}<span class="opt-name">${esc(name)}</span>${blurb ? `<span class="opt-blurb">${esc(blurb)}</span>` : ""}</button>`;
-}
-
-// pages/newboard-parts.js
-function marksHtml(names, at) {
-	const last = names.length - 1;
-	const marks = names.map((_, i) => {
-		const line = i ? `<span class="guide-line${i <= at ? " inked" : ""}"></span>` : "";
-		return `${line}<span class="guide-mark${i === at ? " now" : i < at ? " done" : ""}"></span>`;
-	}).join("");
-	const words = names.map((n, i) => {
-		const where = i === 0 ? "left:0" : i === last ? "right:0" : `left:${i / last * 100}%`;
-		return `<span class="guide-mark-name${i <= at ? " reached" : ""}${i && i < last ? " mid" : ""}" style="${where}">${esc(n)}</span>`;
-	}).join("");
-	return `<div class="guide-marks" role="img" aria-label="Step ${at + 1} of ${names.length}: ${esc(names[at])}"><div class="guide-mark-row">${marks}</div><div class="guide-mark-names" aria-hidden="true">${words}</div></div>`;
-}
-function miniPage(shape, tid, w) {
-	const s = SHAPES$1[shape];
-	const t = templateFor(shape, tid);
-	const W = 60;
-	const H = 60 * s.H / s.W;
-	const r = (t?.slots || []).map((b) => `<rect x="${b.x * W}" y="${b.y * H}" width="${b.w * W}" height="${b.h * H}"/>`).join("");
-	return `<svg viewBox="0 0 ${W} ${H}" style="width:${w}px" aria-hidden="true"><rect class="paper-r" width="${W}" height="${H}"/>${r}</svg>`;
 }
 
 // pages/intro.js
@@ -3974,8 +3266,8 @@ const write = (k, v) => {
 const startsOpen = () => read(START_KEY) === "open";
 const startPage = () => startsOpen() ? "#/boards" : "";
 const defaultShape = () => SHAPES.some(([k]) => k === read("ref-notebook-shape")) ? read(SHAPE_KEY) : "letter-portrait";
-const TICK = "<svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><polyline points=\"5 12.5 10 17 19 7\"/></svg>";
-const CHEVRON = "<svg class=\"opt-chevron\" viewBox=\"0 0 24 24\" aria-hidden=\"true\"><polyline points=\"9 5 16 12 9 19\"/></svg>";
+const TICK$1 = "<svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><polyline points=\"5 12.5 10 17 19 7\"/></svg>";
+const CHEVRON$1 = "<svg class=\"opt-chevron\" viewBox=\"0 0 24 24\" aria-hidden=\"true\"><polyline points=\"9 5 16 12 9 19\"/></svg>";
 const recognizeLine = () => tagsOn() ? "On. Runs on this phone, nothing is uploaded" : "Off. New photos are not looked at";
 function useBook(name) {
 	document.documentElement.dataset.book = name;
@@ -3985,11 +3277,11 @@ function colorsHtml() {
 	const now = document.documentElement.dataset.book || "ocean";
 	return `<div class="opt-colors" role="radiogroup" aria-label="Notebook color">${COLORS.map(([key, name]) => `
     <button type="button" class="opt-color" role="radio" data-color="${key}" aria-checked="${key === now}">
-      <span class="opt-swatch" data-swatch="${key}"><span class="opt-swatch-line"></span><span class="opt-swatch-sun"></span>${key === now ? `<span class="opt-swatch-tick">${TICK}</span>` : ""}</span>
+      <span class="opt-swatch" data-swatch="${key}"><span class="opt-swatch-line"></span><span class="opt-swatch-sun"></span>${key === now ? `<span class="opt-swatch-tick">${TICK$1}</span>` : ""}</span>
       <span class="opt-color-name">${name}</span>
     </button>`).join("")}</div>`;
 }
-const row = (attr, name, sub = "") => `<button type="button" class="opt-row" ${attr}><span class="opt-row-words"><span class="opt-row-name">${name}</span>${sub ? `<span class="opt-row-sub">${sub}</span>` : ""}</span>${CHEVRON}</button>`;
+const row = (attr, name, sub = "") => `<button type="button" class="opt-row" ${attr}><span class="opt-row-words"><span class="opt-row-name">${name}</span>${sub ? `<span class="opt-row-sub">${sub}</span>` : ""}</span>${CHEVRON$1}</button>`;
 function openOptions() {
 	const alone = !window.DF_SUITE;
 	const shapeName = () => SHAPES.find(([k]) => k === defaultShape())[1];
@@ -4005,7 +3297,7 @@ function openOptions() {
         <button type="button" data-start="open"${startsOpen() ? " class=\"on\"" : ""}>On the first page</button>
       </div>` : ""}
       <span class="opt-label opt-gap">Boards</span>
-      <div class="opt-rows">
+      <div class="opt-rows" data-board-rows>
         ${row("data-shape-row", "Default page size", `<span data-shape-now>${shapeName()}</span>`)}
         <label class="opt-row opt-switch-row"><span class="opt-row-words"><span class="opt-row-name">Recognize what's in new photos</span><span class="opt-row-sub" data-recognize-line>${recognizeLine()}</span></span>
           <input type="checkbox" class="switch" role="switch" data-recognize${tagsOn() ? " checked" : ""} /></label>
@@ -4043,6 +3335,11 @@ function openOptions() {
 				s.body.querySelector("[data-shape-now]").textContent = shapeName();
 			}
 		}
+		const offer = e.target.closest("[data-offer]");
+		if (offer) {
+			s.close();
+			startClientBoard(offer.dataset.offer, defaultShape());
+		}
 		if (e.target.closest("[data-stickers]")) stickerSheet(s);
 		if (e.target.closest("[data-intro]")) {
 			s.close();
@@ -4051,11 +3348,858 @@ function openOptions() {
 		if (e.target.closest("[data-save-backup]")) saveBackup();
 		if (e.target.closest("[data-restore-backup]")) restoreBackup(() => s.close(), BOOK_KEY);
 	});
+	clientOffers().then((offers) => {
+		const rows = offers.map((l) => row(`data-offer="${esc(l.id)}"`, `Start a board for ${esc(l.name || "a new client")}`, "Said yes in Rounds")).join("");
+		if (rows) s.body.querySelector("[data-board-rows]").insertAdjacentHTML("afterbegin", rows);
+	}).catch(() => {});
 	s.body.querySelector("[data-recognize]").addEventListener("change", (e) => {
 		if (e.target.checked) turnOnTags();
 		else turnOffTags();
 		s.body.querySelector("[data-recognize-line]").textContent = recognizeLine();
 	});
+}
+
+// pages/boards.js
+const sending = () => !window.DFConnect || window.DFConnect.connectOn("moodboards");
+let slipUrls = [];
+async function boardsScreen(view) {
+	const boards = await listBoards();
+	const onShoots = await boardShoots().catch(() => ({}));
+	slipUrls.forEach((u) => URL.revokeObjectURL(u));
+	slipUrls = [];
+	const slips = await clientSlipsHtml(slipUrls).catch(() => "");
+	const firstPhoto = (b) => b.pages.flatMap((p) => p.images).map((im) => im && photoById(im.id)).find(Boolean);
+	const card = (b) => {
+		const p = firstPhoto(b);
+		const href = `#/board/${esc(b.id)}`;
+		const shoots = (onShoots[b.id] || []).map((s) => `<span class="flag">For ${esc(s)}</span>`).join("");
+		const flags = shoots || (b.client && b.client.handle ? `<span class="flag flag-handle">@${esc(b.client.handle)}</span>` : "");
+		return `
+      <div class="board-card" data-b>
+        <a class="card-cover" href="${href}" aria-label="Open ${esc(b.name)}">${p ? `<img src="${thumbUrl(p)}" alt="" />` : ""}</a>
+        <div class="card-info">
+          <a class="card-words" href="${href}">
+            <span class="card-name">${esc(b.name)}</span>
+            <span class="card-meta">${b.pages.length} ${b.pages.length === 1 ? "page" : "pages"} · ${esc(shortDate(b.updatedAt))}</span>
+            ${flags ? `<span class="flags">${flags}</span>` : ""}
+          </a>
+          <button type="button" class="icon-btn card-more" data-more="${esc(b.id)}" aria-label="More for ${esc(b.name)}">${ICONS.more}</button>
+        </div>
+      </div>`;
+	};
+	view.innerHTML = `
+    <div class="screen has-band">
+      <div class="scroll">
+        ${bandHtml({
+		title: "Ref",
+		place: "Mood boards"
+	})}
+        ${slips}
+        <div class="list-head"><h2>Boards <span>${boards.length}</span></h2><a class="list-act" href="#/new">${ICONS.plus}New board</a></div>
+        <div class="list-rule"></div>
+        ${boards.map(card).join("")}
+        ${!lib.photos.length ? "<p class=\"note\">Start in <a href=\"#/folder/incoming\">Incoming</a>: bring in the photos you want to work with, then make a board from them.</p>" : ""}
+      </div>
+    </div>`;
+	wireBand(view);
+	wireClientSlips(view, () => boardsScreen(view), defaultShape());
+	view.querySelectorAll("[data-more]").forEach((btn) => btn.addEventListener("click", async () => {
+		const b = boards.find((x) => x.id === btn.dataset.more);
+		const key = await choiceSheet({
+			title: b.name,
+			options: [
+				...sending() ? [{
+					key: "send",
+					label: "Send to shoot"
+				}] : [],
+				{
+					key: "rename",
+					label: "Rename"
+				},
+				{
+					key: "delete",
+					label: "Delete",
+					danger: true
+				}
+			]
+		});
+		if (key === "send") {
+			await sendToShoot(b);
+			if ((location.hash || "") === "#/boards") boardsScreen(view);
+		} else if (key === "rename") {
+			const name = await promptSheet({
+				title: "Rename board",
+				value: b.name
+			});
+			if (name) {
+				await saveBoard({
+					...b,
+					name
+				});
+				boardsScreen(view);
+				keepUp(b.id);
+			}
+		} else if (key === "delete") {
+			if (await confirmSheet({
+				title: "Delete this board?",
+				message: `<b>${esc(b.name)}</b> will be gone. Its photos stay in the notebook.`,
+				confirmLabel: "Delete",
+				danger: true
+			})) {
+				await deleteBoard(b.id);
+				boardsScreen(view);
+				const back = async () => {
+					await saveBoard(b);
+				};
+				remember("deleting a board", back);
+				toast("Board deleted", { action: {
+					label: "Undo",
+					run: () => undoLast().then(() => boardsScreen(view))
+				} });
+			}
+		}
+	}));
+}
+
+// components/filing.js
+const PLUS = "<svg viewBox=\"0 0 24 24\" width=\"24\" height=\"24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" aria-hidden=\"true\"><line x1=\"12\" y1=\"5\" x2=\"12\" y2=\"19\"/><line x1=\"5\" y1=\"12\" x2=\"19\" y2=\"12\"/></svg>";
+async function newFolder() {
+	const name = await promptSheet({
+		title: "New tag",
+		label: "Tag name",
+		confirmLabel: "Make it"
+	});
+	if (!name) return null;
+	const f = await saveFolder({ name });
+	await refresh();
+	return f;
+}
+async function relabel(p, tags) {
+	const before = {
+		tags: p.tags,
+		tagsEdited: p.tagsEdited
+	};
+	await patchPhoto(p.id, {
+		tags,
+		tagsEdited: true
+	});
+	await refresh();
+	remember("changing what is in it", () => patchPhoto(p.id, before));
+}
+async function changePhotos(photos, change, label) {
+	const before = photos.map((p) => ({
+		id: p.id,
+		folderIds: p.folderIds,
+		favorite: p.favorite
+	}));
+	await savePhotos(photos.map((p) => ({
+		...p,
+		...change(p)
+	})));
+	await refresh();
+	remember(label, async () => {
+		for (const b of before) await patchPhoto(b.id, {
+			folderIds: b.folderIds,
+			favorite: b.favorite
+		});
+	});
+}
+function fileSheet(ids) {
+	return new Promise((resolve) => {
+		const photos = ids.map(photoById).filter(Boolean);
+		const inCount = (id) => photos.filter((p) => p.folderIds.includes(id)).length;
+		const changes = new Map();
+		let saved = false;
+		const s = openSheet({
+			title: photos.length === 1 ? "Tag this photo" : `Tag ${photos.length} photos`,
+			onClose: () => resolve(saved)
+		});
+		const draw = () => {
+			s.body.innerHTML = `
+        ${lib.folders.length > 8 ? "<input class=\"find\" type=\"search\" placeholder=\"Find a folder\" autocomplete=\"off\" />" : ""}
+        <div class="tick-list">
+          ${lib.folders.map((f) => {
+				const on = changes.has(f.id) ? changes.get(f.id) : inCount(f.id) === photos.length;
+				return `<label class="tick" data-name="${esc(f.name.toLowerCase())}"><input type="checkbox" value="${esc(f.id)}"${on ? " checked" : ""} /><span>${esc(f.name)}</span></label>`;
+			}).join("")}
+          <button type="button" class="tick add" data-new>${PLUS}New tag</button>
+        </div>
+        <div class="sheet-actions one"><button type="button" class="btn primary" data-save>Done</button></div>`;
+			s.body.querySelectorAll(".tick input").forEach((box) => {
+				const n = inCount(box.value);
+				box.indeterminate = !changes.has(box.value) && n > 0 && n < photos.length;
+			});
+			s.body.querySelector(".find")?.addEventListener("input", (e) => {
+				const q = e.target.value.trim().toLowerCase();
+				s.body.querySelectorAll(".tick[data-name]").forEach((t) => {
+					t.hidden = !t.dataset.name.includes(q);
+				});
+			});
+		};
+		draw();
+		s.body.addEventListener("change", (e) => {
+			if (e.target.type === "checkbox") changes.set(e.target.value, e.target.checked);
+		});
+		s.body.addEventListener("click", async (e) => {
+			if (e.target.closest("[data-new]")) {
+				const f = await newFolder();
+				if (f) {
+					changes.set(f.id, true);
+					draw();
+				}
+			} else if (e.target.closest("[data-save]")) {
+				if (!changes.size) {
+					s.close();
+					return;
+				}
+				const apply = (p) => {
+					const next = new Set(p.folderIds);
+					for (const [id, on] of changes) {
+						if (on) next.add(id);
+						else next.delete(id);
+					}
+					return { folderIds: [...next] };
+				};
+				try {
+					await changePhotos(photos, apply, "filing");
+				} catch (err) {
+					console.error(err);
+					toast("Could not save that. Try once more.");
+					return;
+				}
+				saved = true;
+				s.close();
+				const home = photos.every((p) => !apply(p).folderIds.length);
+				toast(home ? "Back in Incoming" : "Filed");
+			}
+		});
+	});
+}
+
+// pages/folders.js
+const CHEVRON = "<svg class=\"chevron\" viewBox=\"0 0 24 24\" aria-hidden=\"true\"><polyline points=\"9 5 16 12 9 19\"/></svg>";
+const SEARCH = "<svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><circle cx=\"11\" cy=\"11\" r=\"6.5\"/><line x1=\"16\" y1=\"16\" x2=\"20.5\" y2=\"20.5\"/></svg>";
+function foldersScreen(view) {
+	const row = (f, cls = "") => {
+		const list = sortList(photosIn(f.id), "newest");
+		return `
+      <a class="tag-row ${cls}" href="#/folder/${esc(f.id)}" data-t data-name="${esc(f.name.toLowerCase())}">
+        <span class="tag-thumb">${list[0] ? `<img src="${thumbUrl(list[0])}" alt="" loading="lazy" />` : ""}</span>
+        <span class="tag-name">${esc(f.name)}</span>
+        <span class="tag-count" aria-label="${list.length} ${list.length === 1 ? "photo" : "photos"}">${list.length.toLocaleString()}</span>
+        ${CHEVRON}
+      </a>`;
+	};
+	view.innerHTML = `
+    <div class="screen has-band">
+      <div class="scroll tag-rows">
+        ${bandHtml({
+		title: "Tags",
+		place: "Ref"
+	})}
+        ${lib.folders.length > 8 ? `<label class="find-box">${SEARCH}<input class="find" type="search" placeholder="Find a tag" autocomplete="off" /></label>` : ""}
+        <div class="list-rule tag-top"></div>
+        ${row(folderById("incoming"), "special")}
+        ${row(folderById("favorites"), "special")}
+        ${row(folderById("all"), "special")}
+        <div class="list-head tag-mine-head" data-mine><h2>Your tags <span>${lib.folders.length}</span></h2><button type="button" class="list-act" data-new>${ICONS.plus}New tag</button></div>
+        <div class="list-rule" data-mine></div>
+        ${lib.folders.map((f) => row(f, "mine")).join("")}
+      </div>
+    </div>`;
+	const rows = [...view.querySelectorAll("[data-t]")];
+	const make = async () => {
+		if (await newFolder()) foldersScreen(view);
+	};
+	wireBand(view);
+	view.querySelector("[data-new]")?.addEventListener("click", make);
+	view.querySelector(".find")?.addEventListener("input", (e) => {
+		const q = e.target.value.trim().toLowerCase();
+		rows.forEach((r) => {
+			r.hidden = !!q && !r.dataset.name.includes(q);
+		});
+	});
+}
+
+// pages/viewer.js
+const X = "<svg viewBox=\"0 0 24 24\" width=\"18\" height=\"18\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" aria-hidden=\"true\"><line x1=\"6\" y1=\"6\" x2=\"18\" y2=\"18\"/><line x1=\"18\" y1=\"6\" x2=\"6\" y2=\"18\"/></svg>";
+const SMALL_X = "<svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><line x1=\"7\" y1=\"7\" x2=\"17\" y2=\"17\"/><line x1=\"17\" y1=\"7\" x2=\"7\" y2=\"17\"/></svg>";
+const SMALL_PLUS = "<svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><line x1=\"12\" y1=\"6\" x2=\"12\" y2=\"18\"/><line x1=\"6\" y1=\"12\" x2=\"18\" y2=\"12\"/></svg>";
+function openViewer(ids, start, onChange) {
+	let list = [...ids];
+	let i = start;
+	let scale = 1;
+	let tx = 0;
+	let ty = 0;
+	let changed = false;
+	const el = document.createElement("div");
+	el.className = "viewer";
+	el.innerHTML = `
+    <div class="v-top">
+      <button type="button" class="ring-btn v-close" data-close aria-label="Close"><span>${X}</span></button>
+      <span class="v-count"></span>
+      <span class="v-top-gap" aria-hidden="true"></span>
+    </div>
+    <div class="v-stage"><img class="v-img" alt="" draggable="false" /></div>
+    <div class="v-info">
+      <p class="v-label">Tags</p>
+      <div class="v-chips v-tags"></div>
+      <p class="v-label">What is in it <span>(found by Ref, edit any)</span></p>
+      <div class="v-chips v-found"></div>
+      <div class="v-palette"></div>
+      <p class="v-hint">Tap a color to see every photo with it</p>
+    </div>
+    <nav class="v-tools">
+      <button type="button" data-v="fav"></button>
+      <button type="button" data-v="file" aria-label="Tag this photo">${ICONS.file}<span aria-hidden="true">Tag</span></button>
+      <button type="button" data-v="undo"${canUndo() ? "" : " disabled"}>${ICONS.undo}<span>Undo</span></button>
+      <button type="button" data-v="delete">${ICONS.trash}<span>Delete</span></button>
+    </nav>`;
+	document.body.append(el);
+	const img = el.querySelector(".v-img");
+	const stage = el.querySelector(".v-stage");
+	const place = (dx = 0) => {
+		img.style.transform = `translate(${tx + dx}px, ${ty}px) scale(${scale})`;
+	};
+	async function show() {
+		const p = photoById(list[i]);
+		if (!p) return close();
+		scale = 1;
+		tx = 0;
+		ty = 0;
+		place();
+		img.src = thumbUrl(p);
+		const tags = p.folderIds.map((id) => lib.folders.find((f) => f.id === id)?.name).filter(Boolean);
+		el.querySelector(".v-tags").innerHTML = (tags.length ? tags : ["Incoming"]).map((t) => `<span class="v-chip">${esc(t)}</span>`).join("");
+		el.querySelector(".v-found").innerHTML = (p.tags || []).map((t) => `<button type="button" class="v-chip found" data-untag="${esc(t)}" aria-label="Remove ${esc(t)}">${esc(t)}${SMALL_X}</button>`).join("") + `<button type="button" class="v-chip add" data-addtag>${SMALL_PLUS}Add</button>`;
+		el.querySelector(".v-count").textContent = `${i + 1} of ${list.length}`;
+		el.querySelector(".v-palette").innerHTML = (p.palette || []).map((c) => `<button type="button" data-color="${esc(c.hex)}" aria-label="Photos with this color" style="background:${esc(c.hex)};flex:${c.w}"></button>`).join("");
+		el.querySelector("[data-v=fav]").innerHTML = `${p.favorite ? ICONS.heartOn : ICONS.heart}<span>Favorite</span>`;
+		el.querySelector("[data-v=fav]").setAttribute("aria-pressed", String(!!p.favorite));
+		const want = list[i];
+		const u = await fullUrl(want);
+		if (u && want === list[i]) img.src = u;
+	}
+	const paintUndo = () => {
+		el.querySelector("[data-v=undo]").disabled = !canUndo();
+	};
+	window.addEventListener("ref-undo", paintUndo);
+	function close() {
+		window.removeEventListener("ref-undo", paintUndo);
+		el.remove();
+		if (changed) onChange?.();
+	}
+	function again() {
+		changed = true;
+		list = list.filter((x) => photoById(x));
+		if (!list.length) return close();
+		i = Math.min(i, list.length - 1);
+		show();
+	}
+	el.querySelector(".v-palette").addEventListener("click", (e) => {
+		const b = e.target.closest("[data-color]");
+		if (b) openColorPage(b.dataset.color, again);
+	});
+	el.querySelector("[data-close]").addEventListener("click", () => close());
+	el.querySelector(".v-found").addEventListener("click", async (e) => {
+		const p = photoById(list[i]);
+		if (!p) return;
+		const now = p.tags || [];
+		let next = null;
+		const gone = e.target.closest("[data-untag]");
+		if (gone) next = now.filter((t) => t !== gone.dataset.untag);
+		else if (e.target.closest("[data-addtag]")) {
+			const word = (await promptSheet({
+				title: "What is in it",
+				label: "A word for something in the photo",
+				confirmLabel: "Add"
+			}))?.trim().toLowerCase();
+			if (word && !now.includes(word)) next = [...now, word];
+		}
+		if (!next) return;
+		try {
+			await relabel(p, next);
+			changed = true;
+			show();
+		} catch (err) {
+			console.error(err);
+			toast("Could not save that. Try once more.");
+		}
+	});
+	const go = (d) => {
+		const n = i + d;
+		if (n >= 0 && n < list.length) {
+			i = n;
+			show();
+		} else {
+			place();
+		}
+	};
+	el.querySelector(".v-tools").addEventListener("click", async (e) => {
+		const b = e.target.closest("[data-v]");
+		if (!b) return;
+		const p = photoById(list[i]);
+		if (b.dataset.v === "undo") {
+			const gone = list[i];
+			await undoLast();
+			changed = true;
+			if (photoById(gone)) show();
+			else again();
+		} else if (b.dataset.v === "fav") {
+			try {
+				await changePhotos([p], () => ({ favorite: !p.favorite }), "favorite");
+				changed = true;
+				show();
+			} catch (err) {
+				console.error(err);
+				toast("Could not save that. Try once more.");
+			}
+		} else if (b.dataset.v === "file") {
+			if (await fileSheet([p.id])) {
+				changed = true;
+				show();
+			}
+		} else if (b.dataset.v === "delete") {
+			const ok = await confirmSheet({
+				title: "Delete this photo?",
+				message: "It leaves this notebook and any boards it's on. Ref Notebook keeps its own copy, so if it's no longer on your phone, this is the last one.",
+				confirmLabel: "Delete",
+				danger: true
+			});
+			if (!ok) return;
+			const kept = await keepForUndo([p.id]);
+			await deletePhotos([p.id]);
+			await refresh();
+			changed = true;
+			remember("deleting", () => putBack(kept));
+			list.splice(i, 1);
+			if (!list.length) return close();
+			i = Math.min(i, list.length - 1);
+			show();
+		}
+	});
+	const pts = new Map();
+	let start0 = null;
+	let pinch = null;
+	let lastTap = 0;
+	const clampPan = () => {
+		const r = stage.getBoundingClientRect();
+		const mx = r.width * (scale - 1) / 2;
+		const my = r.height * (scale - 1) / 2;
+		tx = clamp(tx, -mx, mx);
+		ty = clamp(ty, -my, my);
+	};
+	stage.addEventListener("pointerdown", (e) => {
+		try {
+			stage.setPointerCapture(e.pointerId);
+		} catch {}
+		pts.set(e.pointerId, [e.clientX, e.clientY]);
+		if (pts.size === 1) start0 = {
+			x: e.clientX,
+			y: e.clientY,
+			tx,
+			ty,
+			t: performance.now()
+		};
+		if (pts.size === 2) {
+			const [a, b] = [...pts.values()];
+			pinch = {
+				d: Math.hypot(a[0] - b[0], a[1] - b[1]),
+				scale
+			};
+		}
+	});
+	stage.addEventListener("pointermove", (e) => {
+		if (!pts.has(e.pointerId)) return;
+		pts.set(e.pointerId, [e.clientX, e.clientY]);
+		if (pts.size === 2 && pinch) {
+			const [a, b] = [...pts.values()];
+			scale = clamp(pinch.scale * Math.hypot(a[0] - b[0], a[1] - b[1]) / pinch.d, 1, 6);
+			clampPan();
+			place();
+		} else if (pts.size === 1 && start0) {
+			const dx = e.clientX - start0.x;
+			const dy = e.clientY - start0.y;
+			if (scale > 1) {
+				tx = start0.tx + dx;
+				ty = start0.ty + dy;
+				clampPan();
+				place();
+			} else place(dx);
+		}
+	});
+	const up = (e) => {
+		if (!pts.has(e.pointerId)) return;
+		pts.delete(e.pointerId);
+		if (pts.size) {
+			pinch = null;
+			start0 = null;
+			return;
+		}
+		if (!start0) {
+			if (scale <= 1) {
+				scale = 1;
+				tx = ty = 0;
+				place();
+			}
+			return;
+		}
+		const dx = e.clientX - start0.x;
+		const dy = e.clientY - start0.y;
+		const still = Math.hypot(dx, dy) < 10;
+		if (still) {
+			const now = performance.now();
+			if (now - lastTap < 300) {
+				scale = scale > 1 ? 1 : 2.5;
+				tx = ty = 0;
+				place();
+				lastTap = 0;
+			} else lastTap = now;
+		} else if (scale === 1) {
+			if (Math.abs(dx) > 50) go(dx < 0 ? 1 : -1);
+			else place();
+		}
+		start0 = null;
+	};
+	stage.addEventListener("pointerup", up);
+	stage.addEventListener("pointercancel", up);
+	const key = (e) => {
+		if (!el.isConnected) return document.removeEventListener("keydown", key);
+		if (sheetIsOpen() || [...document.querySelectorAll(".viewer")].pop() !== el) return;
+		if (e.key === "ArrowRight") go(1);
+		else if (e.key === "ArrowLeft") go(-1);
+		else if (e.key === "Escape") close();
+	};
+	document.addEventListener("keydown", key);
+	show();
+	return { close };
+}
+function openColorPage(hex, onBack) {
+	const el = document.createElement("div");
+	el.className = "viewer color-page";
+	let list = [];
+	const draw = () => {
+		list = photosOfColor(hex);
+		el.innerHTML = `
+      <header class="band band-short">
+        <button type="button" class="ring-btn" data-back aria-label="Back to the photo"><span>${BACK}</span></button>
+        <p class="band-line"><span class="color-swatch" style="background:${esc(hex)}"></span><b class="count">${list.length} ${list.length === 1 ? "photo" : "photos"}</b></p>
+        <span class="ring-btn" aria-hidden="true"></span>
+      </header>
+      <div class="scroll"><div class="grid">
+        ${list.map((p, n) => `<button type="button" class="tile" data-i="${n}" aria-label="${esc(p.name)}"><img src="${thumbUrl(p)}" alt="" decoding="async" draggable="false" /></button>`).join("")}
+      </div></div>`;
+	};
+	draw();
+	document.body.append(el);
+	el.addEventListener("click", (e) => {
+		if (e.target.closest("[data-back]")) {
+			el.remove();
+			onBack();
+			return;
+		}
+		const t = e.target.closest("[data-i]");
+		if (t) openViewer(list.map((p) => p.id), +t.dataset.i, draw);
+	});
+}
+
+// pages/folder.js
+const SORT_ICON = "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" aria-hidden=\"true\"><line x1=\"4\" y1=\"7\" x2=\"20\" y2=\"7\"/><line x1=\"7\" y1=\"12\" x2=\"17\" y2=\"12\"/><line x1=\"10\" y1=\"17\" x2=\"14\" y2=\"17\"/></svg>";
+const TICK = "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><polyline points=\"5 12.5 10 17 19 7\"/></svg>";
+const filterMemory = {};
+let stopListening = null;
+function folderScreen(view, id) {
+	const folder = folderById(id);
+	if (!folder) {
+		location.hash = "#/folders";
+		return;
+	}
+	const incoming = id === "incoming";
+	let selecting = false;
+	let current = [];
+	const sel = new Set();
+	const on = () => filterMemory[id] ||= [];
+	const shown = () => sortList(photosIn(id).filter((p) => matches(p, on())), sortOf(id));
+	async function bringIn(files) {
+		if (!files.length) return;
+		try {
+			await navigator.storage?.persist?.();
+		} catch {}
+		const r = await importFiles(files, (n, total) => toast(`Bringing in ${n} of ${total}`, { ms: 6e4 }));
+		await refresh();
+		toast(r.failed.length ? `${r.photos.length} added, ${r.failed.length} could not be read` : `${r.photos.length} ${r.photos.length === 1 ? "photo" : "photos"} added`);
+		draw();
+		carryOn();
+	}
+	const openPhone = () => pickFiles().then(bringIn);
+	const chipsHtml = () => chipsFor(photosIn(id), on(), id).map((c) => `<button type="button" class="chip kind-${c.kind}${on().includes(c.key) ? " on" : ""}" data-filter="${esc(c.key)}">${esc(c.label)}</button>`).join("");
+	const gridHtml = () => {
+		const total = photosIn(id).length;
+		if (!total && incoming) return `
+      <button type="button" class="open-phone" data-phone>
+        <span class="big-plus">${ICONS.plus}</span>
+        <span class="big-words">Open your phone's photos</span>
+        <span class="row-meta">Pick the ones you want to use. They wait here until you file them.</span>
+      </button>
+      ${isIOS() && !isStandalone() ? "<p class=\"note\">Add this to your Home Screen to keep your photos safe. Safari can clear what sites have saved if they go unused.</p>" : ""}`;
+		if (!total) return `<p class="note center">${id === "favorites" ? "Tap the heart on a photo to keep it here." : "Nothing here yet. File photos in from Incoming."}</p>`;
+		return `<div class="grid">
+      ${incoming && !selecting ? `<button type="button" class="tile add" data-phone aria-label="Add from your phone">${ICONS.plus}<span>Add from<br />your phone</span></button>` : ""}
+      ${current.map((p, i) => `<button type="button" class="tile${sel.has(p.id) ? " sel" : ""}" data-i="${i}" aria-label="${esc(p.name)}"><img src="${thumbUrl(p)}" alt="" decoding="async" draggable="false" />${p.favorite ? `<span class="fav">${ICONS.heartOn}</span>` : ""}${selecting ? `<span class="tile-tick">${TICK}</span>` : ""}</button>`).join("")}
+    </div>`;
+	};
+	const countText = () => {
+		const total = photosIn(id).length;
+		const sort = SORTS.find((s) => s.key === sortOf(id)).label;
+		return `${current.length === total ? "" : `${current.length} of `}${total} ${total === 1 ? "photo" : "photos"} · ${sort}`;
+	};
+	const scanHtml = () => {
+		if (!photosIn(id).length) return "";
+		if (scan.state === "failed") return "<button type=\"button\" class=\"scan-btn\" data-scan>This phone couldn't read them. Try again</button>";
+		const line = (pct, words) => `<p class="scan-line"><span class="scan-bar" aria-hidden="true"><span style="width:${Math.max(0, Math.min(100, pct))}%"></span></span>${words}</p>`;
+		if (scan.state === "loading") return line(scan.pct, `Getting ready, ${scan.pct}%`);
+		if (scan.state === "working") return line(scan.total ? scan.done / scan.total * 100 : 0, `Looking at your photos, ${scan.done} of ${scan.total}`);
+		return "";
+	};
+	function paintList() {
+		current = shown();
+		const chips = view.querySelector(".chips");
+		if (chips) {
+			const x = chips.scrollLeft;
+			chips.innerHTML = chipsHtml();
+			chips.scrollLeft = x;
+		}
+		const scroll = view.querySelector(".scroll");
+		if (scroll) {
+			const y = scroll.scrollTop;
+			scroll.innerHTML = gridHtml();
+			scroll.scrollTop = y;
+		}
+		const count = view.querySelector(".count");
+		if (count) count.textContent = countText();
+	}
+	const paintScan = () => {
+		const el = view.querySelector(".scan");
+		if (el) {
+			el.innerHTML = scanHtml();
+			el.hidden = !el.innerHTML;
+		}
+	};
+	const paintUndo = () => {
+		const b = view.querySelector("[data-undo]");
+		if (b) b.disabled = !canUndo();
+	};
+	function draw() {
+		const oldScroll = view.querySelector(".scroll")?.scrollTop || 0;
+		const oldChips = view.querySelector(".chips")?.scrollLeft || 0;
+		const stay = view.querySelector(".screen")?.dataset.folder === id;
+		current = shown();
+		const empty = !photosIn(id).length;
+		view.innerHTML = `
+      <div class="screen in-tag${stay ? " still" : ""}" data-folder="${esc(id)}">
+        ${shortBandHtml({
+			name: folder.name,
+			back: "#/folders",
+			backLabel: "Back to tags",
+			more: isSpecial(id) ? "" : "Tag options"
+		})}
+        ${empty ? "" : `
+          <div class="bar">
+            <span class="count">${countText()}</span>
+            <span class="bar-btns">
+              <button type="button" class="bar-icon" data-sort aria-label="Sort">${SORT_ICON}</button>
+              <button type="button" class="bar-icon" data-undo aria-label="Undo"${canUndo() ? "" : " disabled"}>${ICONS.undo}</button>
+              <button type="button" class="bar-text" data-select>${selecting ? "Done" : "Select"}</button>
+            </span>
+          </div>
+          <div class="chips">${chipsHtml()}</div>`}
+        <div class="scan"${scanHtml() ? "" : " hidden"}>${scanHtml()}</div>
+        <div class="scroll photos">${gridHtml()}</div>
+        ${selecting ? `
+          <nav class="tools" aria-label="Selection">
+            <span class="sel-count">${sel.size} picked</span>
+            <button type="button" class="tool" data-act="file"${sel.size ? "" : " disabled"}>${ICONS.file}<span>Tag</span></button>
+            <button type="button" class="tool" data-act="fav"${sel.size ? "" : " disabled"}>${ICONS.heart}<span>Favorite</span></button>
+            <button type="button" class="tool" data-act="delete"${sel.size ? "" : " disabled"}>${ICONS.trash}<span>Delete</span></button>
+          </nav>` : ""}
+      </div>`;
+		const sc = view.querySelector(".scroll");
+		if (sc) sc.scrollTop = oldScroll;
+		const ch = view.querySelector(".chips");
+		if (ch) ch.scrollLeft = oldChips;
+		wire();
+	}
+	function wire() {
+		view.querySelector("[data-select]")?.addEventListener("click", () => {
+			selecting = !selecting;
+			sel.clear();
+			draw();
+		});
+		view.querySelector("[data-undo]")?.addEventListener("click", async () => {
+			await undoLast();
+			draw();
+		});
+		view.querySelector("[data-sort]")?.addEventListener("click", async () => {
+			const key = await choiceSheet({
+				title: "Sort by",
+				options: SORTS.map((s) => ({
+					key: s.key,
+					label: s.label,
+					current: s.key === sortOf(id)
+				}))
+			});
+			if (key) {
+				setSort(id, key);
+				paintList();
+			}
+		});
+		view.querySelector(".chips")?.addEventListener("click", (e) => {
+			const b = e.target.closest("[data-filter]");
+			if (!b) return;
+			const k = b.dataset.filter;
+			if (!k) filterMemory[id] = [];
+			else filterMemory[id] = on().includes(k) ? on().filter((x) => x !== k) : [...on(), k];
+			paintList();
+		});
+		view.querySelector(".scan")?.addEventListener("click", (e) => {
+			if (e.target.closest("[data-scan]")) turnOnTags();
+		});
+		view.querySelector(".scroll")?.addEventListener("click", (e) => {
+			if (e.target.closest("[data-phone]")) {
+				openPhone();
+				return;
+			}
+			const t = e.target.closest("[data-i]");
+			if (!t) return;
+			const p = current[+t.dataset.i];
+			if (selecting) {
+				if (sel.has(p.id)) sel.delete(p.id);
+				else sel.add(p.id);
+				t.classList.toggle("sel", sel.has(p.id));
+				view.querySelector(".sel-count").textContent = `${sel.size} picked`;
+				view.querySelectorAll("[data-act]").forEach((b) => {
+					b.disabled = !sel.size;
+				});
+			} else openViewer(current.map((x) => x.id), +t.dataset.i, draw);
+		});
+		view.querySelectorAll("[data-act]").forEach((b) => b.addEventListener("click", async () => {
+			const ids = [...sel];
+			try {
+				if (b.dataset.act === "file") {
+					if (!await fileSheet(ids)) return;
+				} else if (b.dataset.act === "fav") {
+					const turnOn = !ids.every((x) => photoById(x).favorite);
+					await changePhotos(ids.map(photoById), () => ({ favorite: turnOn }), "favorites");
+				} else {
+					const ok = await confirmSheet({
+						title: `Delete ${ids.length} ${ids.length === 1 ? "photo" : "photos"}?`,
+						message: "They leave this notebook and any boards they're on. Ref Notebook keeps its own copies, so any that are no longer on your phone will be gone for good.",
+						confirmLabel: "Delete",
+						danger: true
+					});
+					if (!ok) return;
+					const kept = await keepForUndo(ids);
+					await deletePhotos(ids);
+					await refresh();
+					remember("deleting", () => putBack(kept));
+				}
+			} catch (err) {
+				console.error(err);
+				toast("Could not save that. Try once more.");
+				return;
+			}
+			selecting = false;
+			sel.clear();
+			draw();
+		}));
+		view.querySelector("[data-band-more]")?.addEventListener("click", async () => {
+			const key = await choiceSheet({
+				title: folder.name,
+				options: [{
+					key: "rename",
+					label: "Rename"
+				}, {
+					key: "delete",
+					label: "Delete tag",
+					danger: true
+				}]
+			});
+			if (key === "rename") {
+				const name = await promptSheet({
+					title: "Rename tag",
+					value: folder.name
+				});
+				if (name) {
+					await saveFolder({
+						...folder,
+						name
+					});
+					await refresh();
+					folder.name = name;
+					draw();
+				}
+			} else if (key === "delete") {
+				if (await confirmSheet({
+					title: "Delete this tag?",
+					message: `<b>${esc(folder.name)}</b> will be gone. Its photos stay in the notebook.`,
+					confirmLabel: "Delete",
+					danger: true
+				})) {
+					const had = photosIn(id).map((p) => p.id);
+					const copy = { ...folder };
+					await deleteFolder(id);
+					await refresh();
+					remember("deleting a tag", () => restoreFolder(copy, had));
+					location.hash = "#/folders";
+					toast("Tag deleted", { action: {
+						label: "Undo",
+						run: () => undoLast().then(() => {
+							location.hash = `#/folder/${encodeURIComponent(id)}`;
+						})
+					} });
+				}
+			}
+		});
+	}
+	stopListening?.();
+	const onScan = (e) => {
+		paintScan();
+		if (e.detail?.tagged && !selecting) paintList();
+	};
+	window.addEventListener("ref-scan", onScan);
+	window.addEventListener("ref-undo", paintUndo);
+	stopListening = () => {
+		window.removeEventListener("ref-scan", onScan);
+		window.removeEventListener("ref-undo", paintUndo);
+	};
+	draw();
+}
+
+// components/option-card.js
+function cardHtml({ attr, on, picture = "", name, blurb = "" }) {
+	return `<button type="button" class="opt-card" role="radio" aria-checked="${on}" ${attr}>${picture}<span class="opt-name">${esc(name)}</span>${blurb ? `<span class="opt-blurb">${esc(blurb)}</span>` : ""}</button>`;
+}
+
+// pages/newboard-parts.js
+function marksHtml(names, at) {
+	const last = names.length - 1;
+	const marks = names.map((_, i) => {
+		const line = i ? `<span class="guide-line${i <= at ? " inked" : ""}"></span>` : "";
+		return `${line}<span class="guide-mark${i === at ? " now" : i < at ? " done" : ""}"></span>`;
+	}).join("");
+	const words = names.map((n, i) => {
+		const where = i === 0 ? "left:0" : i === last ? "right:0" : `left:${i / last * 100}%`;
+		return `<span class="guide-mark-name${i <= at ? " reached" : ""}${i && i < last ? " mid" : ""}" style="${where}">${esc(n)}</span>`;
+	}).join("");
+	return `<div class="guide-marks" role="img" aria-label="Step ${at + 1} of ${names.length}: ${esc(names[at])}"><div class="guide-mark-row">${marks}</div><div class="guide-mark-names" aria-hidden="true">${words}</div></div>`;
+}
+function miniPage(shape, tid, w) {
+	const s = SHAPES$1[shape];
+	const t = templateFor(shape, tid);
+	const W = 60;
+	const H = 60 * s.H / s.W;
+	const r = (t?.slots || []).map((b) => `<rect x="${b.x * W}" y="${b.y * H}" width="${b.w * W}" height="${b.h * H}"/>`).join("");
+	return `<svg viewBox="0 0 ${W} ${H}" style="width:${w}px" aria-hidden="true"><rect class="paper-r" width="${W}" height="${H}"/>${r}</svg>`;
 }
 
 // pages/newboard.js
@@ -5372,7 +5516,7 @@ const held = {
 	drag: null,
 	raf: 0,
 	last: 0,
-	ended: 0
+	ended: -Infinity
 };
 const showTurn = () => {
 	book$1.style.setProperty("--spin", `${held.spin * 180 / Math.PI}deg`);
@@ -5762,7 +5906,7 @@ bar.innerHTML = `<div class="sec-row">${SECTIONS.map((s, i) => `<a class="sec se
 const links = [...bar.querySelectorAll(".sec")];
 let at = 0;
 let busy = false;
-let swiped = 0;
+let swiped = -Infinity;
 let onList = false;
 let puller = null;
 let landed = null;
@@ -6084,10 +6228,13 @@ async function route() {
 	}
 }
 window.addEventListener("hashchange", route);
+const client = suite && suite.get("client");
 if (suite && suite.get("board")) history.replaceState(null, "", `#/board/${encodeURIComponent(suite.get("board"))}`);
+else if (client) history.replaceState(null, "", "#/boards");
 else if (suite && (location.hash || "#/") === "#/") history.replaceState(null, "", suite.at === "tags" ? "#/folders" : "#/boards");
 else if (!suite && startPage() && (location.hash || "#/") === "#/") history.replaceState(null, "", startPage());
 route().then(() => {
+	if (client) startClientBoard(client, defaultShape()).catch(console.error);
 	setTimeout(carryOn, 2500);
 	setTimeout(() => keepUp(), 4e3);
 });

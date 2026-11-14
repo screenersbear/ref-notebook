@@ -6,7 +6,9 @@ const book = document.getElementById('book');
 const SPIN_AWAY = 0.75, SPIN_TOWARD = 0.95, TILT = 0.42;
 const softSpin = (raw) => (raw < 0 ? SPIN_AWAY * Math.tanh(raw / SPIN_AWAY) : SPIN_TOWARD * Math.tanh(raw / SPIN_TOWARD));
 const softTilt = (raw) => TILT * Math.tanh(raw / TILT);
-const held = { spin: 0, spinV: 0, spinGoal: 0, tilt: 0, tiltV: 0, tiltGoal: 0, drag: null, raf: 0, last: 0, ended: 0 };
+// ended: when a turn by hand last ended (never, to start: a tap just after
+// the notebook opens isn't one to swallow).
+const held = { spin: 0, spinV: 0, spinGoal: 0, tilt: 0, tiltV: 0, tiltGoal: 0, drag: null, raf: 0, last: 0, ended: -Infinity };
 const showTurn = () => {
   book.style.setProperty('--spin', `${(held.spin * 180) / Math.PI}deg`);
   book.style.setProperty('--tilt', `${(held.tilt * 180) / Math.PI}deg`);

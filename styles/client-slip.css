@@ -1,0 +1,12 @@
+/* A yes from Rounds on Mood boards (connect/06): the shared slip
+   (styles/shared/connect.css) with Ref's main button in the band colour and
+   its small-text colour, and who it is: their photo (44 x 54), handle and
+   pitch day. A client's board shows their handle as a flag, as typed. */
+:root { --df-slip-main: var(--band); --df-slip-main-text: var(--band-small); }
+.ref-slip-who { display: flex; align-items: center; gap: 12px; margin-top: 12px; }
+.ref-slip-photo { flex: none; display: block; width: 44px; height: 54px; border-radius: 4px; overflow: hidden; background: var(--step4); }
+.ref-slip-photo img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.ref-slip-words { display: flex; flex-direction: column; min-width: 0; }
+.ref-slip-handle { font-size: 16px; line-height: 21px; overflow-wrap: anywhere; }
+.ref-slip-when { font-size: 14px; line-height: 19px; color: #5C666D; }
+.flag.flag-handle { text-transform: none; letter-spacing: .02em; }

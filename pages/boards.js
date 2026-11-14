@@ -1,5 +1,8 @@
 // Mood boards: every mood board on one page that scrolls, each a big cover
-// (its first photo) with its name, pages, date and the shoots it's on.
+// (its first photo) with its name, pages, date and the shoots it's on (or,
+// for a client's board not sent yet, their handle). A yes from Rounds shows
+// as a slip at the top (pages/client-slip.js). Send to shoot is left out
+// while Mood boards is switched off (the shelf's HOW THEY CONNECT).
 import * as db from '../data/db.js';
 import { lib, thumbUrl, photoById } from '../data/library.js';
 import { remember, undoLast } from '../components/undo.js';
@@ -9,15 +12,24 @@ import { toast } from '../components/toast.js';
 import { ICONS } from '../components/icons.js';
 import { esc, shortDate } from '../components/util.js';
 import { bandHtml, wireBand } from '../components/band.js';
+import { clientSlipsHtml, wireClientSlips } from './client-slip.js';
+import { defaultShape } from './options.js';
+
+const sending = () => !window.DFConnect || window.DFConnect.connectOn('moodboards');
+let slipUrls = [];
 
 export async function boardsScreen(view) {
   const boards = await db.listBoards();
   const onShoots = await boardShoots().catch(() => ({})); // inside Documenting Fictions: the shoots each board was sent to
+  slipUrls.forEach((u) => URL.revokeObjectURL(u));
+  slipUrls = [];
+  const slips = await clientSlipsHtml(slipUrls).catch(() => '');
   const firstPhoto = (b) => b.pages.flatMap((p) => p.images).map((im) => im && photoById(im.id)).find(Boolean);
   const card = (b) => {
     const p = firstPhoto(b);
     const href = `#/board/${esc(b.id)}`;
-    const flags = (onShoots[b.id] || []).map((s) => `<span class="flag">For ${esc(s)}</span>`).join('');
+    const shoots = (onShoots[b.id] || []).map((s) => `<span class="flag">For ${esc(s)}</span>`).join('');
+    const flags = shoots || (b.client && b.client.handle ? `<span class="flag flag-handle">@${esc(b.client.handle)}</span>` : '');
     return `
       <div class="board-card" data-b>
         <a class="card-cover" href="${href}" aria-label="Open ${esc(b.name)}">${p ? `<img src="${thumbUrl(p)}" alt="" />` : ''}</a>
@@ -35,6 +47,7 @@ export async function boardsScreen(view) {
     <div class="screen has-band">
       <div class="scroll">
         ${bandHtml({ title: 'Ref', place: 'Mood boards' })}
+        ${slips}
         <div class="list-head"><h2>Boards <span>${boards.length}</span></h2><a class="list-act" href="#/new">${ICONS.plus}New board</a></div>
         <div class="list-rule"></div>
         ${boards.map(card).join('')}
@@ -42,9 +55,10 @@ export async function boardsScreen(view) {
       </div>
     </div>`;
   wireBand(view);
+  wireClientSlips(view, () => boardsScreen(view), defaultShape());
   view.querySelectorAll('[data-more]').forEach((btn) => btn.addEventListener('click', async () => {
     const b = boards.find((x) => x.id === btn.dataset.more);
-    const key = await choiceSheet({ title: b.name, options: [{ key: 'send', label: 'Send to shoot' }, { key: 'rename', label: 'Rename' }, { key: 'delete', label: 'Delete', danger: true }] });
+    const key = await choiceSheet({ title: b.name, options: [...(sending() ? [{ key: 'send', label: 'Send to shoot' }] : []), { key: 'rename', label: 'Rename' }, { key: 'delete', label: 'Delete', danger: true }] });
     if (key === 'send') {
       await sendToShoot(b);
       if ((location.hash || '') === '#/boards') boardsScreen(view);

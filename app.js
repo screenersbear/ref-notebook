@@ -12,7 +12,8 @@ import { folderScreen } from './pages/folder.js';
 import { newBoardScreen } from './pages/newboard.js';
 import { boardScreen } from './pages/board.js';
 import { setBook } from './pages/cover.js';
-import { openOptions, startPage } from './pages/options.js';
+import { openOptions, startPage, defaultShape } from './pages/options.js';
+import { startClientBoard } from './pages/client-slip.js';
 import { introSeen, openIntro } from './pages/intro.js';
 import { welcome } from './pages/welcome.js';
 import { closeAllSheets } from './components/sheet.js';
@@ -70,11 +71,19 @@ async function route() {
 }
 
 window.addEventListener('hashchange', route);
-// ?board=<id>: The Eye's Open in Ref, straight to that board.
+// ?board=<id>: The Eye's Open in Ref, straight to that board. ?client=<link
+// id>: Rounds' OPEN on a yes, to the board for them (started if it isn't).
+const client = suite && suite.get('client');
 if (suite && suite.get('board')) history.replaceState(null, '', `#/board/${encodeURIComponent(suite.get('board'))}`);
+else if (client) history.replaceState(null, '', '#/boards');
 else if (suite && (location.hash || '#/') === '#/') history.replaceState(null, '', suite.at === 'tags' ? '#/folders' : '#/boards');
 else if (!suite && startPage() && (location.hash || '#/') === '#/') history.replaceState(null, '', startPage());
-route().then(() => { setTimeout(carryOn, 2500); setTimeout(() => keepUp(), 4000); }); // once the notebook is on screen; then any sent board changed elsewhere is drawn again
+route().then(() => {
+  if (client) startClientBoard(client, defaultShape()).catch(console.error);
+  // Once the notebook is on screen; then any sent board changed elsewhere is drawn again.
+  setTimeout(carryOn, 2500);
+  setTimeout(() => keepUp(), 4000);
+});
 // The first launch: the cards on how it works. Inside Documenting Fictions,
 // first how to get back to the shelf, and the cards only if they're wanted.
 if (suite) { if (suite.firstVisit) setTimeout(() => { if (!document.querySelector('.sheet-overlay')) welcome('Ref', openIntro); }, 900); }
