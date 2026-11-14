@@ -23,21 +23,20 @@ export function foldersScreen(view) {
   view.innerHTML = `
     <div class="screen has-band">
       <div class="scroll tag-rows">
-        ${bandHtml({ title: 'Tags', place: 'Ref', add: 'New tag' })}
+        ${bandHtml({ title: 'Tags', place: 'Ref' })}
         ${lib.folders.length > 8 ? `<label class="find-box">${SEARCH}<input class="find" type="search" placeholder="Find a tag" autocomplete="off" /></label>` : ''}
         <div class="list-rule tag-top"></div>
         ${row(folderById('incoming'), 'special')}
         ${row(folderById('favorites'), 'special')}
         ${row(folderById('all'), 'special')}
-        <div class="list-head tag-mine-head" data-mine><h2>Your tags <span>${lib.folders.length}</span></h2></div>
+        <div class="list-head tag-mine-head" data-mine><h2>Your tags <span>${lib.folders.length}</span></h2><button type="button" class="list-act" data-new>${ICONS.plus}New tag</button></div>
         <div class="list-rule" data-mine></div>
         ${lib.folders.map((f) => row(f, 'mine')).join('')}
-        ${lib.folders.length ? '' : `<button type="button" class="list-act tag-new" data-new>${ICONS.plus}New tag</button>`}
       </div>
     </div>`;
   const rows = [...view.querySelectorAll('[data-t]')];
   const make = async () => { if (await newFolder()) foldersScreen(view); };
-  wireBand(view, make);
+  wireBand(view);
   view.querySelector('[data-new]')?.addEventListener('click', make);
   // Finding shows only the tags that match.
   view.querySelector('.find')?.addEventListener('input', (e) => {

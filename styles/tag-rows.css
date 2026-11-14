@@ -15,4 +15,3 @@
 .tag-count { font: 400 15px/20px var(--ui); color: var(--dim); font-variant-numeric: tabular-nums; }
 .chevron { flex: none; width: 16px; height: 16px; fill: none; stroke: #9AA3A8; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 .tag-mine-head { margin-top: 20px; }
-.tag-new { margin-top: 8px; }

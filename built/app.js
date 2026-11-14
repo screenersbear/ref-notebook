@@ -1867,7 +1867,7 @@ function promptSheet({ title, label = "Name", value = "", confirmLabel = "Save",
 
 // components/shoot-picker.js
 const line$1 = /* @__PURE__ */ __name((d) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`, "line");
-const PLUS$2 = line$1("<line x1=\"12\" y1=\"5\" x2=\"12\" y2=\"19\"/><line x1=\"5\" y1=\"12\" x2=\"19\" y2=\"12\"/>");
+const PLUS$1 = line$1("<line x1=\"12\" y1=\"5\" x2=\"12\" y2=\"19\"/><line x1=\"5\" y1=\"12\" x2=\"19\" y2=\"12\"/>");
 const CAMERA = line$1("<path d=\"M4 8h3l1.5-2h7L17 8h3a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z\"/><circle cx=\"12\" cy=\"13\" r=\"3.5\"/>");
 function pickShoot({ boardName, shoots }) {
 	return new Promise((resolve) => {
@@ -1886,7 +1886,7 @@ function pickShoot({ boardName, shoots }) {
         <p class="send-lead">"${esc(boardName)}" goes to the shoot and stays live until the shoot happens.</p>
         ${shoots.length ? "<span class=\"field-label choice-heading\">Upcoming in The Eye</span>" : "<p class=\"send-lead\">No shoots coming up in The Eye.</p>"}
         <div class="send-list" role="radiogroup" aria-label="Shoot">${shoots.map(row).join("")}</div>
-        <button type="button" class="send-new" data-new><span class="send-plus">${PLUS$2}</span>New shoot from this board</button>
+        <button type="button" class="send-new" data-new><span class="send-plus">${PLUS$1}</span>New shoot from this board</button>
         ${shoots.length ? "<div class=\"sheet-actions one\"><button type=\"button\" class=\"btn primary\" data-send></button></div>" : ""}`,
 			onClose: () => resolve(answer)
 		});
@@ -2234,28 +2234,26 @@ const ICONS = {
 const ring = (label, attr, svg) => `<button type="button" class="ring-btn" ${attr} aria-label="${label}"><span>${svg}</span></button>`;
 const line = (d) => `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
 const BOOKS = "<svg viewBox=\"0 0 24 24\" width=\"19\" height=\"19\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><rect x=\"3\" y=\"5\" width=\"4.5\" height=\"14\" rx=\"1\"/><rect x=\"9.5\" y=\"3\" width=\"4.5\" height=\"16\" rx=\"1\"/><path d=\"M16 6.2l3.6-1 3 12.6-3.6 1z\"/></svg>";
-const PLUS$1 = line("<line x1=\"12\" y1=\"5\" x2=\"12\" y2=\"19\"/><line x1=\"5\" y1=\"12\" x2=\"19\" y2=\"12\"/>");
 const MENU = line("<line x1=\"4\" y1=\"7\" x2=\"20\" y2=\"7\"/><line x1=\"4\" y1=\"12\" x2=\"20\" y2=\"12\"/><line x1=\"4\" y1=\"17\" x2=\"20\" y2=\"17\"/>");
-const MARK = "<svg class=\"band-mark\" viewBox=\"0 0 40 40\" aria-hidden=\"true\"><rect width=\"20\" height=\"20\" class=\"mk-p\"/><rect x=\"20\" width=\"20\" height=\"20\" class=\"mk-w\"/><rect y=\"20\" width=\"20\" height=\"20\" class=\"mk-w\"/><rect x=\"20\" y=\"20\" width=\"20\" height=\"20\" class=\"mk-p\"/></svg>";
+const MARK = "<svg class=\"band-mark\" viewBox=\"0 0 80 40\" aria-hidden=\"true\"><g transform=\"translate(40 40) rotate(45) scale(1.41) translate(-20 -20)\"><rect width=\"20\" height=\"20\" class=\"mk-p\"/><rect x=\"20\" width=\"20\" height=\"20\" class=\"mk-w\"/><rect y=\"20\" width=\"20\" height=\"20\" class=\"mk-w\"/><rect x=\"20\" y=\"20\" width=\"20\" height=\"20\" class=\"mk-p\"/></g></svg>";
 const bandDate = (d = new Date()) => d.toLocaleDateString("en-GB", {
 	weekday: "short",
 	day: "numeric",
 	month: "short"
 }).replace(",", "");
-function bandHtml({ title, place, add }) {
+function bandHtml({ title, place }) {
 	return `
     <header class="band">
       <h1 class="band-title">${esc(title)}</h1>
-      <div class="band-btns">${ring("Back to your notebooks", "data-books", BOOKS)}${ring(add, "data-band-add", PLUS$1)}${ring("Options", "data-app-menu", MENU)}</div>
+      <div class="band-btns">${ring("Back to your notebooks", "data-books", BOOKS)}${ring("Options", "data-app-menu", MENU)}</div>
       ${MARK}
       <p class="band-line"><b>${esc(place)}</b><span class="band-rule"></span><span class="band-date">${bandDate()}</span></p>
     </header>`;
 }
-function wireBand(view, onAdd) {
+function wireBand(view) {
 	view.querySelector("[data-books]")?.addEventListener("click", () => {
 		location.hash = "#/";
 	});
-	view.querySelector("[data-band-add]")?.addEventListener("click", onAdd);
 }
 const BACK = line("<polyline points=\"15 5 8 12 15 19\"/>");
 const CLOSE = line("<line x1=\"6\" y1=\"6\" x2=\"18\" y2=\"18\"/><line x1=\"18\" y1=\"6\" x2=\"6\" y2=\"18\"/>");
@@ -2299,8 +2297,7 @@ async function boardsScreen(view) {
       <div class="scroll">
         ${bandHtml({
 		title: "Ref",
-		place: "Mood boards",
-		add: "New board"
+		place: "Mood boards"
 	})}
         <div class="list-head"><h2>Boards <span>${boards.length}</span></h2><a class="list-act" href="#/new">${ICONS.plus}New board</a></div>
         <div class="list-rule"></div>
@@ -2308,9 +2305,7 @@ async function boardsScreen(view) {
         ${!lib.photos.length ? "<p class=\"note\">Start in <a href=\"#/folder/incoming\">Incoming</a>: bring in the photos you want to work with, then make a board from them.</p>" : ""}
       </div>
     </div>`;
-	wireBand(view, () => {
-		location.hash = "#/new";
-	});
+	wireBand(view);
 	view.querySelectorAll("[data-more]").forEach((btn) => btn.addEventListener("click", async () => {
 		const b = boards.find((x) => x.id === btn.dataset.more);
 		const key = await choiceSheet({
@@ -2503,25 +2498,23 @@ function foldersScreen(view) {
       <div class="scroll tag-rows">
         ${bandHtml({
 		title: "Tags",
-		place: "Ref",
-		add: "New tag"
+		place: "Ref"
 	})}
         ${lib.folders.length > 8 ? `<label class="find-box">${SEARCH}<input class="find" type="search" placeholder="Find a tag" autocomplete="off" /></label>` : ""}
         <div class="list-rule tag-top"></div>
         ${row(folderById("incoming"), "special")}
         ${row(folderById("favorites"), "special")}
         ${row(folderById("all"), "special")}
-        <div class="list-head tag-mine-head" data-mine><h2>Your tags <span>${lib.folders.length}</span></h2></div>
+        <div class="list-head tag-mine-head" data-mine><h2>Your tags <span>${lib.folders.length}</span></h2><button type="button" class="list-act" data-new>${ICONS.plus}New tag</button></div>
         <div class="list-rule" data-mine></div>
         ${lib.folders.map((f) => row(f, "mine")).join("")}
-        ${lib.folders.length ? "" : `<button type="button" class="list-act tag-new" data-new>${ICONS.plus}New tag</button>`}
       </div>
     </div>`;
 	const rows = [...view.querySelectorAll("[data-t]")];
 	const make = async () => {
 		if (await newFolder()) foldersScreen(view);
 	};
-	wireBand(view, make);
+	wireBand(view);
 	view.querySelector("[data-new]")?.addEventListener("click", make);
 	view.querySelector(".find")?.addEventListener("input", (e) => {
 		const q = e.target.value.trim().toLowerCase();
@@ -5630,81 +5623,120 @@ function welcome(name, openTour) {
 // components/spread.js
 const frame$2 = document.getElementById("frame");
 const view$1 = document.getElementById("view");
-const TURN_MS = 560;
+const SLIDE_MS = 240;
+const FADE_MS = 150;
+const EASE = "cubic-bezier(.4, 0, .2, 1)";
 const sideOf = (i) => i === 1 ? "right" : "left";
+const still = () => window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+const at$1 = /* @__PURE__ */ __name((x) => `translate3d(${x}px, 0px, 0px)`, "at");
+const slideOffset = (x, dir, width) => dir > 0 ? Math.max(-width, Math.min(0, x)) : Math.min(width, Math.max(0, x));
+let beside = null;
+async function drawBeside(i, dir) {
+	if (beside && beside.i === i && beside.dir === dir) return beside.ready;
+	dropBeside();
+	const leaf = document.createElement("div");
+	leaf.className = "slide-leaf";
+	leaf.setAttribute("aria-hidden", "true");
+	leaf.inert = true;
+	leaf.style.transform = `translate3d(${dir * 100}%, 0px, 0px)`;
+	leaf.innerHTML = "<div class=\"paper\"></div>";
+	frame$2.append(leaf);
+	const page = leaf.firstChild;
+	const ready = (i === 0 ? boardsScreen(page) : Promise.resolve(foldersScreen(page))).then(() => page.querySelector(".screen")?.classList.add("still"));
+	beside = {
+		leaf,
+		i,
+		dir,
+		ready
+	};
+	return ready;
+}
+function dropBeside() {
+	beside?.leaf.remove();
+	beside = null;
+}
 let settling = null;
 const dragFrame = (x) => {
 	settling?.cancel();
 	settling = null;
-	frame$2.style.transform = x ? `translate3d(${x}px, 0, 0)` : "";
+	frame$2.style.transform = x ? at$1(x) : "";
 };
 function settleFrame(from) {
 	frame$2.style.transform = "";
 	settling?.cancel();
-	settling = from ? frame$2.animate([{ transform: `translate3d(${from}px, 0, 0)` }, { transform: "none" }], {
-		duration: 180,
-		easing: "ease-out"
-	}) : null;
+	settling = null;
+	if (!from) {
+		dropBeside();
+		return;
+	}
+	settling = frame$2.animate([{ transform: at$1(from) }, { transform: at$1(0) }], {
+		duration: SLIDE_MS,
+		easing: EASE
+	});
+	const done = settling;
+	done.onfinish = () => {
+		if (settling === done) {
+			settling = null;
+			dropBeside();
+		}
+	};
 }
 let turning = false;
 const isTurning = () => turning;
-async function turnTo(i, dir, go) {
+const ended = (a, ms) => new Promise((done) => {
+	let gone = false;
+	const off = () => {
+		if (!gone) {
+			gone = true;
+			done();
+		}
+	};
+	a.onfinish = off;
+	setTimeout(off, ms + 300);
+});
+async function turnTo(i, dir, go, from = 0) {
 	if (turning) return;
-	const still = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-	if (still) {
-		await go();
-		return;
-	}
 	turning = true;
-	const leaf = document.createElement("div");
-	leaf.className = "turn-leaf";
-	const shade = document.createElement("i");
-	if (dir > 0) {
-		const old = view$1.firstElementChild;
-		if (old) leaf.append(old.cloneNode(true));
-		leaf.append(shade);
-		frame$2.append(leaf);
-		const from = old ? [...old.querySelectorAll(".scroll")] : [];
-		leaf.querySelectorAll(".scroll").forEach((el, k) => {
-			el.scrollTop = from[k]?.scrollTop || 0;
+	settling?.cancel();
+	settling = null;
+	if (still()) await crossfade(go);
+	else {
+		await drawBeside(i, dir);
+		const a = frame$2.animate([{ transform: at$1(from) }, { transform: at$1(-dir * frame$2.offsetWidth) }], {
+			duration: SLIDE_MS,
+			easing: EASE,
+			fill: "forwards"
 		});
-		leaf.querySelector(".screen")?.classList.add("still");
+		await ended(a, SLIDE_MS);
 		await go();
-	} else {
-		if (i === 0) await boardsScreen(leaf);
-		else foldersScreen(leaf);
-		leaf.querySelector(".screen")?.classList.add("still");
-		leaf.append(shade);
-		leaf.style.transform = "perspective(1500px) rotateY(-180deg)";
-		frame$2.append(leaf);
+		a.cancel();
+		frame$2.style.transform = "";
+		dropBeside();
 	}
-	const flat = "perspective(1500px) rotateY(0deg)";
-	const over = "perspective(1500px) rotateY(-180deg)";
-	const a = leaf.animate(dir > 0 ? [{ transform: flat }, { transform: over }] : [{ transform: over }, { transform: flat }], {
-		duration: TURN_MS,
-		easing: "cubic-bezier(.45,.05,.3,1)",
-		fill: "forwards"
-	});
-	shade.animate([
-		{ opacity: 0 },
-		{ opacity: .25 },
-		{ opacity: 0 }
-	], { duration: TURN_MS });
-	await new Promise((done) => {
-		let gone = false;
-		const off = () => {
-			if (!gone) {
-				gone = true;
-				done();
-			}
-		};
-		a.onfinish = off;
-		setTimeout(off, TURN_MS + 300);
-	});
-	if (dir < 0) await go();
 	view$1.querySelector(".screen")?.classList.add("still");
-	leaf.remove();
 	turning = false;
+}
+async function crossfade(go) {
+	dropBeside();
+	frame$2.style.transform = "";
+	const leaf = document.createElement("div");
+	leaf.className = "slide-leaf slide-fade";
+	leaf.setAttribute("aria-hidden", "true");
+	leaf.innerHTML = "<div class=\"paper\"></div>";
+	const old = view$1.firstElementChild;
+	if (old) leaf.firstChild.append(old.cloneNode(true));
+	frame$2.append(leaf);
+	const from = old ? [...old.querySelectorAll(".scroll")] : [];
+	leaf.querySelectorAll(".scroll").forEach((el, k) => {
+		el.scrollTop = from[k]?.scrollTop || 0;
+	});
+	await go();
+	await ended(leaf.animate([{ opacity: 1 }, { opacity: 0 }], {
+		duration: FADE_MS,
+		easing: "linear",
+		fill: "forwards"
+	}), FADE_MS);
+	leaf.remove();
 }
 
 // components/navbar.js
@@ -5778,8 +5810,7 @@ async function go(dir, from = 0) {
 	const t = SECTIONS[target];
 	if (!t) return settle(from);
 	busy = true;
-	dragFrame(0);
-	await turnTo(target, Math.sign(dir), () => navigate(t.href));
+	await turnTo(target, Math.sign(dir), () => navigate(t.href), from);
 	busy = false;
 }
 const settle = (from) => settleFrame(from);
@@ -5825,11 +5856,17 @@ function wire(el, fromPage) {
 			} catch {}
 			const dir = dx < 0 ? 1 : -1;
 			d.dir = dir;
-			if (SECTIONS[at + dir]) d.kind = "turn";
-			else if (dir < 0 && at === 0) d.kind = "shut";
+			if (SECTIONS[at + dir]) {
+				d.kind = "turn";
+				drawBeside(at + dir, dir);
+			} else if (dir < 0 && at === 0) d.kind = "shut";
 			else d.kind = "stop";
 		}
 		d.x = dx;
+		if (d.kind === "turn") {
+			d.x = slideOffset(dx, d.dir, frame$1.offsetWidth);
+			dragFrame(d.x);
+		}
 		if (d.kind === "shut") {
 			d.x = Math.max(0, dx);
 			dragFrame(Math.min(d.x * .3, 60));
@@ -5844,7 +5881,8 @@ function wire(el, fromPage) {
 		const up = e.type === "pointerup";
 		const w = frame$1.offsetWidth;
 		if (g.kind === "turn") {
-			if (up && g.x * g.dir < 0 && Math.abs(g.x) > Math.min(60, w * .15)) go(g.dir);
+			if (up && g.x * g.dir < 0 && Math.abs(g.x) > Math.min(60, w * .15)) go(g.dir, g.x);
+			else settle(g.x);
 		} else if (g.kind === "shut") {
 			if (up && g.x > 50) {
 				dragFrame(0);

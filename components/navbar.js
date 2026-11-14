@@ -1,8 +1,9 @@
 // The section bar (round 2, as The Eye's): each section's mark over its
 // name, Mood boards first, then Tags. Tap one, or swipe along the bar, and
-// the notebook turns to it with a page turn; swiping right on Mood boards
-// shuts the notebook. A swipe on the page does the same as one on the bar.
-import { dragFrame, settleFrame, turnTo, isTurning } from './spread.js';
+// the notebook slides over to it (14 Nov: a plain slide, the page under the
+// finger); swiping right on Mood boards shuts the notebook. A swipe on the
+// page does the same as one on the bar.
+import { dragFrame, settleFrame, turnTo, isTurning, drawBeside, slideOffset } from './spread.js';
 
 // The marks: a board in quarters, and a half circle over a dot (styles/section-bar.css colours them).
 const q = (d, cls) => `<path class="${cls}" d="M12 12 ${d} Z"/>`;
@@ -50,8 +51,7 @@ async function go(dir, from = 0) {
   const t = SECTIONS[target];
   if (!t) return settle(from);
   busy = true;
-  dragFrame(0);
-  await turnTo(target, Math.sign(dir), () => navigate(t.href));
+  await turnTo(target, Math.sign(dir), () => navigate(t.href), from);
   busy = false;
 }
 const settle = (from) => settleFrame(from);
@@ -82,11 +82,12 @@ function wire(el, fromPage) {
       try { el.setPointerCapture(e.pointerId); } catch {}
       const dir = dx < 0 ? 1 : -1;
       d.dir = dir;
-      if (SECTIONS[at + dir]) d.kind = 'turn';
+      if (SECTIONS[at + dir]) { d.kind = 'turn'; drawBeside(at + dir, dir); } // the section beside, drawn a page along
       else if (dir < 0 && at === 0) d.kind = 'shut';
       else d.kind = 'stop';
     }
     d.x = dx;
+    if (d.kind === 'turn') { d.x = slideOffset(dx, d.dir, frame.offsetWidth); dragFrame(d.x); } // the page follows the finger
     if (d.kind === 'shut') { d.x = Math.max(0, dx); dragFrame(Math.min(d.x * 0.3, 60)); } // a little give, then it shuts all the way
   });
   const end = (e) => {
@@ -96,7 +97,7 @@ function wire(el, fromPage) {
     if (!g.moved) return;
     swiped = performance.now();
     const up = e.type === 'pointerup', w = frame.offsetWidth;
-    if (g.kind === 'turn') { if (up && g.x * g.dir < 0 && Math.abs(g.x) > Math.min(60, w * 0.15)) go(g.dir); } // the page turns when you let go
+    if (g.kind === 'turn') { if (up && g.x * g.dir < 0 && Math.abs(g.x) > Math.min(60, w * 0.15)) go(g.dir, g.x); else settle(g.x); } // on to it, or back
     else if (g.kind === 'shut') { if (up && g.x > 50) { dragFrame(0); location.hash = '#/'; } else settle(Math.min(g.x * 0.3, 60)); }
     // nowhere to go that way: the page stays put
   };

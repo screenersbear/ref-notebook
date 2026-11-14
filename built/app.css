@@ -48,8 +48,8 @@ a { color: inherit; text-decoration: none; }
 svg { display: block; }
 
 /* ---- styles/spread.css ---- */
-/* The notebook, open: its plain pages, the page turn between sections,
-   and the cover coming in as you swipe it shut. */
+/* The notebook, open: its plain pages, the slide between sections, and
+   the cover coming in as you swipe it shut. */
 /* ---------- The notebook, open: plain white pages the size of the screen ---------- */
 .frame {
   position: fixed; top: var(--nb-top); height: calc(var(--app-h) - var(--nb-top) - var(--nb-bar));
@@ -57,9 +57,11 @@ svg { display: block; }
   z-index: 1; /* above the bar, so a screen's own tools show over it */
 }
 .frame[data-swipe="1"] #view { touch-action: pan-y; }
-/* Going between Mood boards and Tags: the page turns over at its left edge. */
-.turn-leaf { position: absolute; z-index: 1; inset: 0; background: #fff; overflow: hidden; transform-origin: 0 50%; backface-visibility: hidden; -webkit-backface-visibility: hidden; box-shadow: 0 0 18px rgba(0, 0, 0, .12); }
-.turn-leaf > i { position: absolute; inset: 0; background: #000; opacity: 0; pointer-events: none; }
+/* Going between Mood boards and Tags (components/spread.js): the other
+   section a page along, sliding with this one, on its own paper, with the
+   band's colour above it behind the clock as the frame has; with Reduce
+   Motion, a picture of the old page fading out over the new one. */
+.slide-leaf { position: absolute; z-index: 1; inset: 0; pointer-events: none; }
 .paper { position: absolute; inset: 0; background: #fff; overflow: hidden; }
 #view { position: absolute; inset: 0; outline: none; }
 /* The cover, coming in from the right edge as you swipe to shut the notebook. */
@@ -496,7 +498,7 @@ html.settled .nb.closed:not(.placing) .nb-sun { opacity: 1; pointer-events: auto
 :root { --ui: "Figtree", "Helvetica Neue", Arial, sans-serif; --display: "Archivo Black", "Arial Black", "Helvetica Neue", Arial, sans-serif; --hand: var(--ui); --head: var(--display); }
 .page, .nb-side-tabs { font-family: "Klee One", "Bradley Hand", "Noteworthy", cursive; }
 /* the band: from the top of the screen, past the screen's padding, to its sides */
-.frame::before { content: ''; position: absolute; left: 0; right: 0; bottom: 100%; height: calc(var(--nb-top) + 1px); background: var(--ink); }
+.frame::before, .slide-leaf::before { content: ''; position: absolute; left: 0; right: 0; bottom: 100%; height: calc(var(--nb-top) + 1px); background: var(--ink); }
 .screen > .head, .screen > .folder-head { margin: -8px -16px 6px; background: var(--ink); color: var(--on-ink); border-bottom: none; }
 .screen > .head { padding: 12px 16px; font: 400 24px/32px var(--display); letter-spacing: .02em; }
 .screen > .head.head-add { padding-left: 60px; padding-right: 60px; }
@@ -537,24 +539,25 @@ html.settled .nb.closed:not(.placing) .nb-sun { opacity: 1; pointer-events: auto
 /* The round 2 look, as in The Eye (DESIGN.md 9.1): paper behind every
    screen, and on Mood boards and Tags the band of the notebook's colour
    from the top of the screen, 92px under the safe area, with its grain; the
-   title (34px light capitals) and the ring buttons on one line; the rising
-   mark (a 2 x 2 board) at its foot; the label line (the place, a hairline,
+   title (34px light capitals) and its two ring buttons on one line; the
+   rising mark (the 2 x 2 board turned 45 degrees, cut by the band's foot:
+   a peak 80 wide and 40 tall) at its foot; the label line (the place, a hairline,
    the date); then four steps fading into the paper. The page starts 53px
    under the band. (components/band.js draws it.) */
-html, body, .paper, .turn-leaf { background: var(--paper); }
+html, body, .paper { background: var(--paper); }
 .band {
   position: relative; flex: none; display: flex; align-items: flex-start; gap: 8px; box-sizing: border-box;
   height: 92px; padding: 8px 8px 0 16px;
   background: var(--grain) 0 0 / 160px 160px, var(--band); background-blend-mode: overlay, normal; color: var(--partner);
 }
 /* the band reaches up past the safe area (the frame starts under it) */
-.frame::before { background: var(--grain) 0 0 / 160px 160px, var(--band); background-blend-mode: overlay, normal; }
+.frame::before, .slide-leaf::before { background: var(--grain) 0 0 / 160px 160px, var(--band); background-blend-mode: overlay, normal; }
 .band::after { content: ''; position: absolute; left: 0; right: 0; top: 100%; height: 41.4px; pointer-events: none;
   background: linear-gradient(var(--step1) 0 14px, var(--step2) 14px 25.2px, var(--step3) 25.2px 34.2px, var(--step4) 34.2px); }
 .band-title { flex: 1; min-width: 0; margin: 0; padding: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: left;
   font: 300 34px/40px var(--ui); letter-spacing: .04em; text-transform: uppercase; color: var(--partner); }
 .band-btns { display: flex; flex: none; }
-.band-mark { position: absolute; left: 16px; bottom: 0; width: 40px; height: 40px; pointer-events: none; }
+.band-mark { position: absolute; left: 16px; bottom: 0; width: 80px; height: 40px; pointer-events: none; }
 .band-mark .mk-p { fill: var(--partner); }
 .band-mark .mk-w { fill: #FFFFFF; }
 .band-line { position: absolute; left: 108px; right: 16px; top: 68px; display: flex; align-items: center; gap: 10px; margin: 0;
@@ -574,7 +577,7 @@ html:not(.df-suite) [data-books] { display: none; }
 .list-head h2 { margin: 0; font: 700 13px/16px var(--ui); letter-spacing: .12em; text-transform: uppercase; color: var(--text); }
 .list-head h2 span { font-weight: 500; color: var(--dim); font-variant-numeric: tabular-nums; }
 .list-act { display: inline-flex; align-items: center; gap: 6px; height: 44px; padding: 0 8px; margin-right: -8px; font: 700 13px/16px var(--ui); letter-spacing: .12em; text-transform: uppercase; color: var(--band-on-paper, var(--ink)); }
-.list-act svg { width: 14px; height: 14px; stroke-width: 2.4; }
+.list-act svg { width: 16px; height: 16px; stroke-width: 2; }
 .list-rule { flex: none; border-top: 1px solid var(--text); }
 
 /* A screen with the band: the band scrolls with the page, which runs to
@@ -653,7 +656,6 @@ html.is-short { --nb-foot: max(11px, calc(var(--safe-b) - 13px - var(--short-by,
 .tag-count { font: 400 15px/20px var(--ui); color: var(--dim); font-variant-numeric: tabular-nums; }
 .chevron { flex: none; width: 16px; height: 16px; fill: none; stroke: #9AA3A8; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 .tag-mine-head { margin-top: 20px; }
-.tag-new { margin-top: 8px; }
 
 /* ---- styles/folder-grid.css ---- */
 /* Inside a tag (round 2, 04-inside-incoming): under the short band, how
