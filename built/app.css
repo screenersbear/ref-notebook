@@ -1,31 +1,27 @@
 /* Made by tools/join.mjs from the files listed in files.txt. Never edit it: change those files, then run node tools/join.mjs. */
 
 /* ---- styles/base.css ---- */
-/* Ref's basics: fonts, colours, and the page itself. The other
-   stylesheets in this folder are listed in index.html, in the order they apply. */
-/* ref, do something as a phone notebook: floating shut on white, open in a frame with white around it. */
-@font-face { font-family: "Klee One"; src: url("../fonts/klee-one-latin.woff") format("woff"); font-display: swap; } /* Klee One, resized inside the file to Mansalva's width and line height (Safari has no ascent-override), so no layout moved */
-@font-face { font-family: "Kaisei Decol"; src: url("../fonts/kaisei-decol-500-latin.woff2") format("woff2"); font-weight: 500; font-display: swap; size-adjust: 85.4%; } /* the headers, in capitals: Kaisei Decol Medium, sized so its capitals stand as tall as Klee One's */
-
+@font-face { font-family: "Klee One"; src: url("../fonts/klee-one-latin.woff") format("woff"); font-display: swap; }
+@font-face { font-family: "Kaisei Decol"; src: url("../fonts/kaisei-decol-500-latin.woff2") format("woff2"); font-weight: 500; font-display: swap; size-adjust: 85.4%; }
 :root {
-  --ink: #175ba9;      /* the notebook's color */
-  --on-ink: #fff;
-  --book-cover: url(../art/ocean-cover.webp);
-  --book-block: url(../art/ocean-block.webp);
-  --mango: #ffd103;
-  --text: #313d45;     /* berry blade black */
-  --dim: #5c666d;
-  --line: #d6dadd;
-  --hand: "Klee One", "Bradley Hand", "Noteworthy", cursive;
-  --head: "Kaisei Decol", "Klee One", Georgia, serif; /* headers, always in capitals */
-  --mono: "Courier New", Courier, monospace;
-  --safe-t: env(safe-area-inset-top, 0px);
-  --safe-b: env(safe-area-inset-bottom, 0px);
-  --nb-top: max(var(--safe-t), 10px);
-  --nb-rim: 10px; /* the slot Contact Sheet's notebook edge is drawn in; the line itself is about half */
-  --nb-pad: max(5px, calc(var(--safe-b) - 19px)); /* the bar's icon 25px + this above the screen's edge: where an iPhone's home button used to be (the safe area + 6px, 30px at least; user, 11-12), the same in all four notebooks and on the shelf */
-  --nb-bar: calc(50px + var(--nb-pad));
-  --app-h: 100vh;      /* set from the real height in ui.js */
+--ink: #175ba9;
+--on-ink: #fff;
+--book-cover: url(../art/ocean-cover.webp);
+--book-block: url(../art/ocean-block.webp);
+--mango: #ffd103;
+--text: #313d45;
+--dim: #5c666d;
+--line: #d6dadd;
+--hand: "Klee One", "Bradley Hand", "Noteworthy", cursive;
+--head: "Kaisei Decol", "Klee One", Georgia, serif;
+--mono: "Courier New", Courier, monospace;
+--safe-t: env(safe-area-inset-top, 0px);
+--safe-b: env(safe-area-inset-bottom, 0px);
+--nb-top: max(var(--safe-t), 10px);
+--nb-rim: 10px;
+--nb-pad: max(5px, calc(var(--safe-b) - 19px));
+--nb-bar: calc(50px + var(--nb-pad));
+--app-h: 100vh;
 }
 :root[data-book="orange"] { --ink: #d9641a; --book-cover: url(../art/orange-cover.webp); --book-block: url(../art/orange-block.webp); }
 :root[data-book="mango"] { --ink: #e0b012; --on-ink: #313d45; --book-cover: url(../art/mango-cover.webp); --book-block: url(../art/mango-block.webp); }
@@ -36,11 +32,10 @@
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 [hidden] { display: none !important; }
 html, body { height: 100%; margin: 0; background: #fff; color: var(--text); font-family: var(--hand); font-weight: 400; font-synthesis: none; overscroll-behavior: none; }
-/* The other page and the book's art reach past the screen's sides: never let them widen the page. */
 html, body { overflow-x: clip; }
 body { overflow: hidden; -webkit-text-size-adjust: 100%; }
 html.ios-nudge body, html.ios-hold body { min-height: calc(var(--screen-h, 100vh) + 160px); overflow-x: clip; overflow-y: visible; }
-html.is-short { --nb-pad: max(5px, calc(var(--safe-b) - 19px - var(--short-by, 0px))); } /* the bottom edge is already --short-by above the screen's: the icon ends up at the same height as everywhere else */
+html.is-short { --nb-pad: max(5px, calc(var(--safe-b) - 19px - var(--short-by, 0px))); }
 button, input, textarea { font: inherit; color: inherit; }
 button { background: none; border: 0; padding: 0; cursor: pointer; }
 button:disabled { opacity: .35; cursor: default; }
@@ -48,15 +43,8 @@ a { color: inherit; text-decoration: none; }
 svg { display: block; }
 
 /* ---- styles/shared/connect.css ---- */
-/* How the notebooks connect, the looks every notebook shares (round 2,
-   connect/NOTES.md): the two minis with an arrow, a slip at the top of a
-   list ("FROM THE EYE"), and the rows of what passed on and came in.
-   The markup comes from shared/data/connect.js. This is the master copy:
-   tools/sync.py shared copies it into each notebook's styles/shared/. */
 .df-pair { flex: none; display: inline-flex; align-items: center; gap: 4px; color: #313D45; }
 .df-mini { flex: none; display: inline-flex; width: 20px; height: 20px; border-radius: 4px; }
-
-/* PASSED ON and CAME IN: a record, each row opening the other notebook. */
 .df-record { margin-top: 8px; border-top: 1px solid #313D45; }
 .df-record-row { display: flex; align-items: center; gap: 12px; width: 100%; padding: 14px 0; border: 0; border-bottom: 1px solid #E1E1DC; background: none; color: #313D45; font: inherit; text-align: left; text-decoration: none; cursor: pointer; }
 .df-record-row[aria-disabled="true"] { cursor: default; }
@@ -65,11 +53,6 @@ svg { display: block; }
 .df-record-line { display: block; margin-top: 2px; font-size: 14px; line-height: 19px; color: #5C666D; }
 .df-record-chev { flex: none; display: inline-flex; color: #9AA3A8; }
 .df-record-chev svg { width: 18px; height: 18px; }
-
-/* A slip at the top of a notebook's list (connect/03, 05, 06): white, the
-   Rounds card shadow, a notched FROM tag in the sender's colours, a light
-   title, one dim line, what it brought, then the main button (in the
-   receiving notebook's colour: --df-slip-main, --df-slip-main-text) and NOT NOW. */
 .df-slip { margin-top: 12px; padding: 14px 14px 10px; border-radius: 8px; background: #FFFFFF; color: #313D45; box-shadow: 0 1px 0 #E1E1DC, 0 10px 24px rgba(49, 61, 69, .10); }
 .df-slip-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .df-slip-tag { display: inline-flex; align-items: center; gap: 6px; height: 24px; padding: 0 20px 0 4px; border-radius: 3px 0 0 3px; clip-path: polygon(0 0, calc(100% - 12px) 0, 100% 50%, calc(100% - 12px) 100%, 0 100%); font-size: 11px; font-weight: 700; letter-spacing: .12em; line-height: 14px; text-transform: uppercase; white-space: nowrap; }
@@ -82,35 +65,25 @@ svg { display: block; }
 .df-slip-later { height: 44px; padding: 0 12px; border: 0; background: none; color: #5C666D; font: inherit; font-size: 12px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; cursor: pointer; }
 
 /* ---- styles/spread.css ---- */
-/* The notebook, open: its plain pages, the slide between sections, and
-   the cover coming in as you swipe it shut. */
-/* ---------- The notebook, open: plain white pages the size of the screen ---------- */
 .frame {
-  position: fixed; top: var(--nb-top); height: calc(var(--app-h) - var(--nb-top) - var(--nb-bar));
-  left: max(0px, calc(50% - 310px)); right: max(0px, calc(50% - 310px));
-  z-index: 1; /* above the bar, so a screen's own tools show over it */
+position: fixed; top: var(--nb-top); height: calc(var(--app-h) - var(--nb-top) - var(--nb-bar));
+left: max(0px, calc(50% - 310px)); right: max(0px, calc(50% - 310px));
+z-index: 1;
 }
 .frame[data-swipe="1"] #view { touch-action: pan-y; }
-/* Going between Mood boards and Tags (components/spread.js): the other
-   section a page along, sliding with this one, on its own paper, with the
-   band's colour above it behind the clock as the frame has; with Reduce
-   Motion, a picture of the old page fading out over the new one. */
 .slide-leaf { position: absolute; z-index: 1; inset: 0; pointer-events: none; }
 .paper { position: absolute; inset: 0; background: #fff; overflow: hidden; }
 #view { position: absolute; inset: 0; outline: none; }
-/* The cover, coming in from the right edge as you swipe to shut the notebook. */
 .pull { position: fixed; left: 0; top: var(--nb-top); height: calc(var(--app-h) - var(--nb-top) - var(--nb-bar)); width: 0; z-index: 15; background: var(--ink) var(--book-cover) right center / auto 100% no-repeat; border-radius: 0 12px 12px 0; box-shadow: 6px 0 18px rgba(30, 50, 80, .25); }
 .pull.back { transition: width .18s ease-out; }
 
 /* ---- styles/cover.css ---- */
-/* The shut notebook, floating on white. */
-/* ---------- The notebook, shut: floating on white ---------- */
 .nb { position: fixed; left: 0; right: 0; top: 0; height: var(--book-h, 100vh); z-index: 20; background: #fff; perspective: 1100px; perspective-origin: 50% 28%; overflow: hidden; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; touch-action: manipulation; }
 .nb.no-anim, .nb.no-anim * { transition: none !important; }
 .nb.closed { touch-action: none; }
 .nb-hit { position: absolute; left: calc(50% - var(--W) / 2); top: calc(50% - var(--H) / 2); width: var(--W); height: var(--H); z-index: 3; }
 .nb.placing .nb-hit { display: none; }
-.nb-sun { position: absolute; left: 50%; top: calc(var(--app-h) - var(--nb-pad) - 49px); /* centred where the bar's icon is once the notebook is open */ width: 48px; height: 48px; margin-left: -24px; padding: 10px; z-index: 5; color: var(--text); opacity: 0; pointer-events: none; transition: opacity .25s; }
+.nb-sun { position: absolute; left: 50%; top: calc(var(--app-h) - var(--nb-pad) - 49px);  width: 48px; height: 48px; margin-left: -24px; padding: 10px; z-index: 5; color: var(--text); opacity: 0; pointer-events: none; transition: opacity .25s; }
 .nb-sun svg { width: 28px; height: 28px; display: block; }
 html.settled .nb.closed:not(.placing) .nb-sun { opacity: 1; pointer-events: auto; }
 .nb.placing .nb-float, .nb.placing .nb-ground::before { animation: none; }
@@ -152,16 +125,16 @@ html.settled .nb.closed:not(.placing) .nb-sun { opacity: 1; pointer-events: auto
 .nb-float { position: absolute; left: 50%; top: 50%; width: 0; height: 0; transform-style: preserve-3d; }
 .nb.closed .nb-float { animation: nb-float 5.2s ease-in-out infinite; }
 @keyframes nb-float {
-  0%, 100% { transform: translateY(-7px) rotateZ(-0.7deg) rotateY(-2deg); }
-  50% { transform: translateY(7px) rotateZ(0.7deg) rotateY(2deg); }
+0%, 100% { transform: translateY(-7px) rotateZ(-0.7deg) rotateY(-2deg); }
+50% { transform: translateY(7px) rotateZ(0.7deg) rotateY(2deg); }
 }
 .nb-ground { position: absolute; left: 50%; top: 50%; width: var(--W); height: calc(var(--W) * 0.36); transform-origin: 0 0; transform: rotateY(calc(-20deg + var(--spin, 0deg))) translate3d(calc(var(--W) / -2 + var(--shut-x, 0px)), calc(var(--H) / 2 + var(--W) * 0.11), calc(var(--W) * -0.26)) rotateX(90deg); pointer-events: none; transition: opacity .4s; }
 .nb-ground::before { content: ''; position: absolute; inset: 6% 3%; border-radius: 10px; background: rgba(40, 42, 48, .36); filter: blur(calc(var(--W) * 0.04)); animation: nb-ground 5.2s ease-in-out infinite; }
 .nb.opened .nb-ground { opacity: 0; }
 .nb.opened .nb-ground::before { animation: none; }
 @keyframes nb-ground {
-  0%, 100% { transform: scale(1.04); opacity: .62; }
-  50% { transform: scale(.97); opacity: .92; }
+0%, 100% { transform: scale(1.04); opacity: .62; }
+50% { transform: scale(.97); opacity: .92; }
 }
 .nb-book { position: absolute; left: 0; top: calc(var(--H) / -2); width: var(--W); height: var(--H); transform-origin: 0 50%; transform-style: preserve-3d; transition: transform .72s cubic-bezier(.45,.05,.25,1); }
 .nb.closed .nb-book { transform: rotateY(-20deg) translate(calc(var(--W) / -2 + var(--shut-x, 0px)), 0) scale(1); }
@@ -195,8 +168,6 @@ html.settled .nb.closed:not(.placing) .nb-sun { opacity: 1; pointer-events: auto
 .nb.opened .nb-stack i, .nb.opened .nb-stack b { transform: translateZ(-1px); visibility: hidden; }
 
 /* ---- styles/screen.css ---- */
-/* The page every screen is drawn on: its heading and the part that scrolls. */
-/* ---------- Screens ---------- */
 .screen { position: absolute; inset: 0; display: flex; flex-direction: column; padding: 8px 16px; animation: page-in .16s ease-out; }
 .screen.still { animation: none; }
 @keyframes page-in { from { opacity: 0; } }
@@ -204,25 +175,17 @@ html.settled .nb.closed:not(.placing) .nb-sun { opacity: 1; pointer-events: auto
 .head-add { position: relative; padding-left: 44px; padding-right: 44px; }
 .head-plus { position: absolute; right: -4px; top: 50%; margin-top: -27px; width: 44px; height: 44px; display: grid; place-items: center; color: var(--text); }
 .head-plus svg { width: 26px; height: 26px; stroke-width: 2.2; }
-.head-menu { right: auto; left: -4px; } /* inside Documenting Fictions: Options, at the top of Mood boards */
+.head-menu { right: auto; left: -4px; }
 .head-menu svg { stroke-width: 1.9; }
 .scroll { flex: 1; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; scrollbar-width: none; }
 .scroll::-webkit-scrollbar { display: none; }
 
 /* ---- styles/navbar.css ---- */
-/* The bottom bars (the board tools and the section bar), and the row of
-   every section a held finger opens. */
 .tools { position: fixed; left: 0; right: 0; top: calc(var(--app-h) - var(--nb-bar)); height: var(--nb-bar); max-width: 620px; margin: 0 auto; display: flex; justify-content: space-evenly; align-items: center; padding: 0 0 var(--nb-pad); background: #fff; z-index: 3; }
 .nav-bar { position: fixed; left: 0; right: 0; top: calc(var(--app-h) - var(--nb-bar)); height: var(--nb-bar); max-width: 620px; margin: 0 auto; padding: 0 0 var(--nb-pad); background: #fff; z-index: 0; touch-action: none; user-select: none; -webkit-user-select: none; }
-/* Held, the bar's icon swells into a row of every section (navbar.js). No card
-   around it (user, 11-12): just the icons and the name, on a soft white haze. */
 .nav-bar { -webkit-touch-callout: none; }
-.nav-bar.is-docked { z-index: 2; } /* over the page while the row is up */
-/* A line along the bar's top, so a page scrolling under it is cut off by
-   something (user, 11-12). Drawn inside, so nothing moves. */
+.nav-bar.is-docked { z-index: 2; }
 :is(.tools, .nav-bar) { box-shadow: inset 0 2px 0 var(--line); }
-/* Installed, the bars show once iOS has its height right (ui.js adds
-   .settled), so they never show high and then drop. */
 @media (display-mode: standalone) { html:not(.settled) :is(.tools, .nav-bar) { visibility: hidden; } }
 .nav-dock { position: absolute; bottom: calc(100% + 8px); left: 0; z-index: 3; display: flex; align-items: flex-end; padding: 8px 10px; border-radius: 26px; background: #fff; box-shadow: 0 0 14px 10px #fff; pointer-events: none; opacity: 0; visibility: hidden; transform: translateY(8px) scale(.9); transition: opacity .14s ease, transform .16s ease, visibility 0s linear .16s; }
 .nav-dock.is-open { opacity: 1; visibility: visible; transform: none; transition: opacity .14s ease, transform .16s ease, visibility 0s; }
@@ -235,7 +198,6 @@ html.settled .nb.closed:not(.placing) .nb-sun { opacity: 1; pointer-events: auto
 .tool, .icon-btn { display: flex; align-items: center; justify-content: center; width: 46px; height: 46px; flex: none; }
 
 /* ---- styles/buttons.css ---- */
-/* Icon buttons (on the bars and in headings), the handwriting, and notes. */
 .tool svg, .icon-btn svg { width: 27px; height: 27px; }
 .tool.on svg { stroke-width: 2.8; }
 .sel-count { font: 400 21px var(--hand); }
@@ -245,8 +207,6 @@ html.settled .nb.closed:not(.placing) .nb-sun { opacity: 1; pointer-events: auto
 .note.center { text-align: center; margin-top: 40%; }
 
 /* ---- styles/lists.css ---- */
-/* Lists of rows: boards and folders, and the find box. */
-/* rows */
 .rows { display: flex; flex-direction: column; }
 .rows > .row-open { flex: none; }
 .page-foot { flex: none; height: 26px; line-height: 28px; text-align: center; font-size: 16px; color: var(--dim); }
@@ -266,12 +226,9 @@ html.settled .nb.closed:not(.placing) .nb-sun { opacity: 1; pointer-events: auto
 .row-meta { font-size: 16px; color: var(--dim); }
 .marked .row-name { background: linear-gradient(transparent 72%, var(--mango) 72%, var(--mango) 94%, transparent 94%); align-self: flex-start; }
 .find { display: block; width: 100%; margin: 10px 0 2px; padding: 9px 2px; border: 0; border-bottom: 2px solid var(--ink); border-radius: 0; font-size: 19px; background: none; outline: none; -webkit-appearance: none; flex: none; }
-
 .row-shoots { font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
 /* ---- styles/folder.css ---- */
-/* One folder: its heading and its grid of photos. */
-/* a folder */
 .folder-head { display: flex; align-items: center; gap: 4px; flex: none; }
 .folder-head h1 { flex: 1; min-width: 0; margin: 0; padding: 0 6px; text-align: center; font-family: var(--head); font-weight: 500; text-transform: uppercase; letter-spacing: .08em; font-size: 30px; line-height: 1.3; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .under { background: linear-gradient(transparent 74%, var(--mango) 74%, var(--mango) 94%, transparent 94%); }
@@ -301,8 +258,6 @@ html.settled .nb.closed:not(.placing) .nb-sun { opacity: 1; pointer-events: auto
 .big-plus svg { width: 56px; height: 56px; }
 
 /* ---- styles/newboard.css ---- */
-/* New mood board: the form and the step-by-step wizard. */
-/* new board */
 .form-page { padding: 12px 0 10px; display: flex; flex-direction: column; gap: 16px; }
 .group { display: block; flex: none; }
 .row-group { display: flex; align-items: center; justify-content: space-between; }
@@ -326,7 +281,6 @@ html.settled .nb.closed:not(.placing) .nb-sun { opacity: 1; pointer-events: auto
 .stepper { display: flex; align-items: center; gap: 8px; }
 .stepper button { width: 40px; height: 40px; border: 2px solid var(--ink); font-size: 22px; }
 .stepper b { font: 400 24px var(--hand); width: 30px; text-align: center; }
-/* The new board wizard. */
 .wz-step { margin: 6px 0 4px; text-align: center; font-size: 17px; color: var(--dim); flex: none; }
 .wz-cards { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-top: 8px; }
 .wz-card { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 10px 8px 9px; border: 2px solid var(--line); text-align: center; font-size: 15px; line-height: 1.2; color: var(--dim); }
@@ -354,8 +308,6 @@ html.settled .nb.closed:not(.placing) .nb-sun { opacity: 1; pointer-events: auto
 .cta { flex: 1; height: 48px; background: var(--mango); font-size: 21px; }
 
 /* ---- styles/board.css ---- */
-/* A board open to work on: its tray, tools, text boxes and page turns. */
-/* board editor */
 .board-name { flex: 1; min-width: 0; padding-right: 8px; line-height: 1.3; font-family: var(--head); font-weight: 500; text-transform: uppercase; letter-spacing: .08em; font-size: 24px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: left; padding-left: 2px; }
 .editor .folder-head .count { margin-left: 0; padding-right: 2px; }
 .stage { flex: 1; min-height: 0; display: flex; align-items: center; justify-content: center; touch-action: none; user-select: none; -webkit-user-select: none; perspective: 1200px; }
@@ -389,8 +341,6 @@ html.settled .nb.closed:not(.placing) .nb-sun { opacity: 1; pointer-events: auto
 @keyframes turn-back { from { transform: rotateY(-38deg); opacity: .4; } }
 
 /* ---- styles/board-page.css ---- */
-/* A mood board page itself: plain and white, same as the Mac app. */
-/* the board page itself: plain and white, same as the Mac app */
 .page { position: relative; background: #fff; overflow: hidden; container-type: inline-size; font-family: var(--hand); color: #000; box-shadow: 0 0 0 1px var(--line), 0 6px 18px rgba(30, 50, 80, .16); }
 .slot { position: absolute; overflow: hidden; background: #f0f1f1; }
 .slot.filled { background: none; }
@@ -417,8 +367,6 @@ html.settled .nb.closed:not(.placing) .nb-sun { opacity: 1; pointer-events: auto
 .pt-palette span { width: 2.2em; height: 2.2em; display: block; }
 
 /* ---- styles/viewer.css ---- */
-/* The photo viewer, full screen. */
-/* ---------- The viewer ---------- */
 .viewer { position: fixed; inset: 0; z-index: 30; background: var(--text); color: #fff; display: flex; flex-direction: column; }
 .v-stage { flex: 1; min-height: 0; overflow: hidden; touch-action: none; display: flex; align-items: center; justify-content: center; }
 .v-img { width: 100%; height: 100%; object-fit: contain; display: block; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; pointer-events: none; }
@@ -438,8 +386,6 @@ html.settled .nb.closed:not(.placing) .nb-sun { opacity: 1; pointer-events: auto
 .v-tools svg { width: 28px; height: 28px; }
 
 /* ---- styles/sheet.css ---- */
-/* Sheets: confirmations, choices and their buttons. */
-/* ---------- Sheets ---------- */
 .sheet-overlay { position: fixed; left: 0; right: 0; top: var(--vv-top, 0px); height: var(--vv-height, 100%); background: rgba(49, 61, 69, .42); display: flex; align-items: flex-end; justify-content: center; }
 .sheet { width: 100%; max-width: 620px; max-height: calc(var(--vv-height, 100svh) * .9); background: #fff; display: flex; flex-direction: column; outline: none; border-radius: 14px 14px 0 0; }
 .sheet-header { display: flex; align-items: center; justify-content: space-between; padding: 12px 10px 10px 18px; border-bottom: 1px solid var(--line); flex: none; }
@@ -465,7 +411,6 @@ html.settled .nb.closed:not(.placing) .nb-sun { opacity: 1; pointer-events: auto
 .choice-detail { font-size: 16px; color: var(--dim); }
 
 /* ---- styles/options.css ---- */
-/* Options' colours and the cover's stickers. */
 .opt-colors { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px 8px; margin-top: 10px; }
 .opt-color { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 8px 0; font-size: 17px; }
 .opt-book { width: 48px; height: 65px; border-radius: 0 5px 5px 0; background: center / 100% 100% no-repeat; }
@@ -489,7 +434,6 @@ html.settled .nb.closed:not(.placing) .nb-sun { opacity: 1; pointer-events: auto
 .sticker-pick img { width: 100%; height: 100%; object-fit: cover; display: block; }
 
 /* ---- styles/forms.css ---- */
-/* Form pieces: fields, text sizes, tick lists. */
 .form, .field { display: block; }
 .field { margin-bottom: 12px; }
 .size-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; margin: -4px 0 16px; }
@@ -505,14 +449,11 @@ html.settled .nb.closed:not(.placing) .nb-sun { opacity: 1; pointer-events: auto
 .tick.add { color: var(--ink); border-bottom: 0; }
 
 /* ---- styles/toast.css ---- */
-/* The toast at the bottom of the screen. */
 .toast { position: fixed; left: 50%; bottom: calc(70px + var(--safe-b)); transform: translateX(-50%); z-index: 90; max-width: 86vw; padding: 10px 16px; background: var(--text); color: #fff; font-size: 18px; display: flex; gap: 12px; align-items: center; white-space: nowrap; }
 .toast.show { animation: page-in .2s ease-out; }
 .toast-action { color: var(--mango); }
 
 /* ---- styles/showboard.css ---- */
-/* A mood board full screen. */
-/* A mood board full screen. */
 .show { position: fixed; inset: 0; z-index: 40; background: #1f272c; color: #fff; display: flex; flex-direction: column; touch-action: none; user-select: none; -webkit-user-select: none; }
 .show-top, .show-foot { flex: none; display: flex; align-items: center; justify-content: space-between; padding: 0 10px; }
 .show-top { padding-top: calc(var(--safe-t) + 4px); }
@@ -526,12 +467,10 @@ html.settled .nb.closed:not(.placing) .nb-sun { opacity: 1; pointer-events: auto
 .show-page { position: absolute; box-shadow: none; }
 
 /* ---- styles/header-band.css ---- */
-/* ===== Archivo Black capitals over Inter, under a band of the notebook's colour with its title in white (user, 11-12; The Eye's band is berry blade black). Levels: 1 the band's title, Archivo 24px; 2 sheet titles, Archivo 18px; 3 labels, Inter semibold spaced capitals. The board's own pages keep Klee One, as their pictures are drawn in it. ===== */
 @font-face { font-family: "Figtree"; src: url("../fonts/figtree-latin.woff2") format("woff2"); font-weight: 300 900; font-display: swap; size-adjust: 96.5%; }
 @font-face { font-family: "Archivo Black"; src: url("../fonts/archivo-black-latin.woff2") format("woff2"); font-weight: 400; font-display: swap; }
 :root { --ui: "Figtree", "Helvetica Neue", Arial, sans-serif; --display: "Archivo Black", "Arial Black", "Helvetica Neue", Arial, sans-serif; --hand: var(--ui); --head: var(--display); }
 .page, .nb-side-tabs { font-family: "Klee One", "Bradley Hand", "Noteworthy", cursive; }
-/* the band: from the top of the screen, past the screen's padding, to its sides */
 .frame::before, .slide-leaf::before { content: ''; position: absolute; left: 0; right: 0; bottom: 100%; height: calc(var(--nb-top) + 1px); background: var(--ink); }
 .screen > .head, .screen > .folder-head { margin: -8px -16px 6px; background: var(--ink); color: var(--on-ink); border-bottom: none; }
 .screen > .head { padding: 12px 16px; font: 400 24px/32px var(--display); letter-spacing: .02em; }
@@ -550,15 +489,9 @@ html.settled .nb.closed:not(.placing) .nb-sun { opacity: 1; pointer-events: auto
 .tpanel .size-row .label { font-size: 13px; }
 
 /* ---- styles/band-colors.css ---- */
-/* The notebook colours on the band (DESIGN.md 4.2), the same seven as The
-   Eye: the band itself, its partner (the title, ring buttons, hairline and
-   mark), the colour of small text on it, and the four steps under it (75,
-   50, 25 and 10% on paper). Picked in Options (data-book on <html>); ocean
-   when nothing is picked. Buttons, chips and ticks (--ink) take the band
-   colour with its small-text colour. */
 :root {
-  --paper: #FAFAF7;
-  --grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23g)' opacity='.14'/%3E%3C/svg%3E");
+--paper: #FAFAF7;
+--grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23g)' opacity='.14'/%3E%3C/svg%3E");
 }
 :root[data-book="mango"] { --band: #FFD100; --partner: #313D45; --band-small: #313D45; --step1: #FEDB3E; --step2: #FCE67C; --step3: #FBF0B9; --step4: #FAF6DE; }
 :root[data-book="orange"] { --band: #FF8A3D; --partner: #313D45; --band-small: #313D45; --step1: #FEA66C; --step2: #FCC29A; --step3: #FBDEC8; --step4: #FAEFE4; }
@@ -570,60 +503,39 @@ html.settled .nb.closed:not(.placing) .nb-sun { opacity: 1; pointer-events: auto
 :root, :root[data-book] { --ink: var(--band); --on-ink: var(--band-small); }
 
 /* ---- styles/band.css ---- */
-/* The round 2 look, as in The Eye (DESIGN.md 9.1): paper behind every
-   screen, and on Mood boards and Tags the band of the notebook's colour
-   from the top of the screen, 92px under the safe area, with its grain; the
-   title (34px light capitals) and its two ring buttons on one line; the
-   rising mark (the 2 x 2 board turned 45 degrees, cut by the band's foot:
-   a peak 80 wide and 40 tall) at its foot; the label line (the place, a hairline,
-   the date); then four steps fading into the paper. The page starts 53px
-   under the band. (components/band.js draws it.) */
 html, body, .paper { background: var(--paper); }
 .band {
-  position: relative; flex: none; display: flex; align-items: flex-start; gap: 8px; box-sizing: border-box;
-  height: 92px; padding: 8px 8px 0 16px;
-  background: var(--grain) 0 0 / 160px 160px, var(--band); background-blend-mode: overlay, normal; color: var(--partner);
+position: relative; flex: none; display: flex; align-items: flex-start; gap: 8px; box-sizing: border-box;
+height: 92px; padding: 8px 8px 0 16px;
+background: var(--grain) 0 0 / 160px 160px, var(--band); background-blend-mode: overlay, normal; color: var(--partner);
 }
-/* the band reaches up past the safe area (the frame starts under it) */
 .frame::before, .slide-leaf::before { background: var(--grain) 0 0 / 160px 160px, var(--band); background-blend-mode: overlay, normal; }
 .band::after { content: ''; position: absolute; left: 0; right: 0; top: 100%; height: 41.4px; pointer-events: none;
-  background: linear-gradient(var(--step1) 0 14px, var(--step2) 14px 25.2px, var(--step3) 25.2px 34.2px, var(--step4) 34.2px); }
+background: linear-gradient(var(--step1) 0 14px, var(--step2) 14px 25.2px, var(--step3) 25.2px 34.2px, var(--step4) 34.2px); }
 .band-title { flex: 1; min-width: 0; margin: 0; padding: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: left;
-  font: 300 34px/40px var(--ui); letter-spacing: .04em; text-transform: uppercase; color: var(--partner); }
+font: 300 34px/40px var(--ui); letter-spacing: .04em; text-transform: uppercase; color: var(--partner); }
 .band-btns { display: flex; flex: none; }
 .band-mark { position: absolute; left: 16px; bottom: 0; width: 80px; height: 40px; pointer-events: none; }
 .band-mark .mk-p { fill: var(--partner); }
 .band-mark .mk-w { fill: #FFFFFF; }
 .band-line { position: absolute; left: 108px; right: 16px; top: 68px; display: flex; align-items: center; gap: 10px; margin: 0;
-  font: 500 11px/14px var(--ui); letter-spacing: .14em; text-transform: uppercase; white-space: nowrap; color: var(--band-small); }
+font: 500 11px/14px var(--ui); letter-spacing: .14em; text-transform: uppercase; white-space: nowrap; color: var(--band-small); }
 .band-line b { font-weight: 700; }
 .band-rule { flex: 1; height: 1px; background: var(--partner); }
 .band-date { font-variant-numeric: tabular-nums; }
-/* A ring button (DESIGN.md 8): a 44px target, a 40px ring 1.5px thick. */
 .ring-btn { display: flex; align-items: center; justify-content: center; flex: none; width: 44px; height: 44px; color: inherit; }
 .ring-btn > span { display: flex; align-items: center; justify-content: center; width: 40px; height: 40px; border-radius: 50%; box-shadow: inset 0 0 0 1.5px currentColor; }
-/* The notebooks button is the suite's: Ref on its own has no shelf to go back to. */
 html:not(.df-suite) [data-books] { display: none; }
-
-/* A list's heading on the page: its name in small capitals, a count, an
-   action at the right, a navy rule under it. */
 .list-head { flex: none; display: flex; align-items: center; justify-content: space-between; min-height: 44px; }
 .list-head h2 { margin: 0; font: 700 13px/16px var(--ui); letter-spacing: .12em; text-transform: uppercase; color: var(--text); }
 .list-head h2 span { font-weight: 500; color: var(--dim); font-variant-numeric: tabular-nums; }
 .list-act { display: inline-flex; align-items: center; gap: 6px; height: 44px; padding: 0 8px; margin-right: -8px; font: 700 13px/16px var(--ui); letter-spacing: .12em; text-transform: uppercase; color: var(--band-on-paper, var(--ink)); }
 .list-act svg { width: 16px; height: 16px; stroke-width: 2; }
 .list-rule { flex: none; border-top: 1px solid var(--text); }
-
-/* A screen with the band: the band scrolls with the page, which runs to
-   the screen's sides. */
 .screen.has-band { padding: 0; }
 .screen.has-band > .scroll { padding: 0 16px 24px; }
 .screen.has-band > .scroll > .band { margin: 0 -16px 53px; }
 .screen.has-band .note { font: 400 17px/24px var(--ui); color: var(--dim); }
-
-/* The short band on a page inside a section (a tag): 56px under the safe
-   area, back and the ... menu as rings, the name on the hairline between
-   them, then two steps. The page starts 8px under them. */
 .band.band-short { height: 56px; justify-content: space-between; padding: 6px 8px 0; }
 .band-short::after { height: 18px; background: linear-gradient(var(--step1) 0 10px, var(--step3) 10px); }
 .band-short .band-line { left: 64px; right: 64px; top: 21px; }
@@ -631,33 +543,24 @@ html:not(.df-suite) [data-books] { display: none; }
 .screen.in-tag > .band-short { flex: none; margin: 0 -16px 26px; }
 
 /* ---- styles/section-bar.css ---- */
-/* The section bar (DESIGN.md 9.4), as The Eye's: on paper, a 1px line on
-   top, each section's mark (28px) over its name (10px capitals). The one
-   you're on is in berry blade black and the notebook's colour, its name
-   bold; the other in two greys. 64px over the foot. Swiping along it or
-   holding it: components/navbar.js. */
 :root {
-  --nb-foot: max(11px, calc(var(--safe-b) - 13px));
-  --nb-bar: calc(64px + var(--nb-foot));
+--nb-foot: max(11px, calc(var(--safe-b) - 13px));
+--nb-bar: calc(64px + var(--nb-foot));
 }
 html.is-short { --nb-foot: max(11px, calc(var(--safe-b) - 13px - var(--short-by, 0px))); }
 .nav-bar { padding: 8px 12px var(--nb-foot); background: var(--paper); box-shadow: none; border-top: 1px solid #E1E1DC; }
 .sec-row { display: flex; justify-content: center; align-items: flex-start; gap: 48px; }
 .sec { --mk-1: #9AA3A8; --mk-2: #D6DADD; display: flex; flex-direction: column; align-items: center; gap: 6px; width: 96px; height: 52px;
-  font: 500 10px/14px var(--ui); letter-spacing: .1em; text-transform: uppercase; color: var(--dim); -webkit-touch-callout: none; }
+font: 500 10px/14px var(--ui); letter-spacing: .1em; text-transform: uppercase; color: var(--dim); -webkit-touch-callout: none; }
 .sec[aria-current="page"] { --mk-1: var(--ink); color: var(--text); font-weight: 700; }
-.sec-boards[aria-current="page"] { --mk-2: var(--step3); } /* the board's other quarters, pale */
-.sec-tags[aria-current="page"] { --mk-2: var(--text); }    /* the dot under the half circle */
+.sec-boards[aria-current="page"] { --mk-2: var(--step3); }
+.sec-tags[aria-current="page"] { --mk-2: var(--text); }
 .sec svg, .nav-dock-icon svg { width: 28px; height: 28px; }
 .mk-1 { fill: var(--mk-1, #9AA3A8); }
 .mk-2 { fill: var(--mk-2, #D6DADD); }
-/* The held bar's row of every section shows the marks too. */
 .nav-dock-label { font: 700 11px/22px var(--ui); letter-spacing: .1em; text-transform: uppercase; }
 
 /* ---- styles/board-rows.css ---- */
-/* Mood boards (round 2, 01-mood-boards): each board one big cover (its
-   first photo, 196px tall, full width, radius 8), then its name (20px
-   light), "N pages · date", the shoots it's on as flags, and its ... menu. */
 .board-card { padding: 16px 0 14px; border-bottom: 1px solid #E1E1DC; }
 .card-cover { position: relative; display: block; height: 196px; border-radius: 8px; overflow: hidden; background: #EFEFEA; }
 .card-cover img { display: block; width: 100%; height: 100%; object-fit: cover; }
@@ -666,16 +569,12 @@ html.is-short { --nb-foot: max(11px, calc(var(--safe-b) - 13px - var(--short-by,
 .card-name { font: 300 20px/25px var(--ui); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .card-meta { font: 400 14px/19px var(--ui); color: var(--dim); font-variant-numeric: tabular-nums; }
 .flags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
-/* A flag (DESIGN.md 9.5): a 20px pill with a 1px berry blade black outline. */
 .flag { display: inline-flex; align-items: center; max-width: 100%; height: 20px; padding: 0 7px; border-radius: 10px; box-shadow: inset 0 0 0 1px var(--text);
-  font: 700 10px/12px var(--ui); letter-spacing: .1em; text-transform: uppercase; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+font: 700 10px/12px var(--ui); letter-spacing: .1em; text-transform: uppercase; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .card-more { width: 44px; height: 44px; margin: -8px -10px 0 0; color: var(--text); }
 .card-more svg { width: 22px; height: 22px; }
 
 /* ---- styles/tag-rows.css ---- */
-/* Tags (round 2, 03-tags): the find box (with more than eight tags), then
-   Incoming, Favorites and All photos, then YOUR TAGS; each row its newest
-   photo (52px, radius 8), the name, how many, a chevron. */
 .find-box { flex: none; display: flex; align-items: center; gap: 10px; height: 44px; margin: 8px 0 8px; padding: 0 14px; border-radius: 10px; background: #EFEFEA; color: var(--dim); }
 .find-box svg { flex: none; width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; }
 .find-box .find { flex: 1; min-width: 0; margin: 0; padding: 0; border: 0; background: none; font: 400 16px/20px var(--ui); color: var(--text); outline: none; -webkit-appearance: none; }
@@ -692,12 +591,6 @@ html.is-short { --nb-foot: max(11px, calc(var(--safe-b) - 13px - var(--short-by,
 .tag-mine-head { margin-top: 20px; }
 
 /* ---- styles/folder-grid.css ---- */
-/* Inside a tag (round 2, 04-inside-incoming): under the short band, how
-   many and how they're sorted on one line with Sort, Undo and SELECT; the
-   chips in a row of their own; while photos are read, a line saying so with
-   a small bar; then the photos, three across, square. Picking them (SELECT)
-   rings each in the notebook's colour, and the bar at the foot says how
-   many and what to do with them. */
 .in-tag .bar { flex: none; display: flex; align-items: center; justify-content: space-between; gap: 4px; margin: 4px 0 0; padding: 0; }
 .bar .count { flex: 1; min-width: 0; margin: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 400 15px/20px var(--ui); color: var(--dim); font-variant-numeric: tabular-nums; }
 .bar-btns { flex: none; display: flex; }
@@ -707,7 +600,6 @@ html.is-short { --nb-foot: max(11px, calc(var(--safe-b) - 13px - var(--short-by,
 .in-tag .chips { gap: 8px; margin: 4px -16px 0; padding: 0 16px; -webkit-mask-image: none; mask-image: none; }
 .in-tag .chip { flex: none; height: 32px; padding: 0 12px; border: 0; border-radius: 16px; background: #EFEFEA; color: var(--text); font: 400 13px/16px var(--ui); white-space: nowrap; }
 .in-tag .chip.on { background: var(--ink); color: var(--on-ink); }
-/* Reading the photos: the words in small capitals, a 60px bar of how far. */
 .in-tag .scan { flex: none; margin: 12px 0 0; padding: 0; }
 .scan-line { display: flex; align-items: center; gap: 10px; margin: 0; font: 500 11px/14px var(--ui); letter-spacing: .12em; text-transform: uppercase; color: var(--dim); }
 .scan-bar { flex: 0 0 60px; height: 4px; border-radius: 2px; background: #EFEFEA; overflow: hidden; }
@@ -717,17 +609,15 @@ html.is-short { --nb-foot: max(11px, calc(var(--safe-b) - 13px - var(--short-by,
 .in-tag .grid { gap: 3px; padding-bottom: 0; }
 .in-tag .tile { aspect-ratio: 1; border-radius: 4px; background: #EFEFEA; }
 .in-tag .tile.add { flex-direction: column; gap: 6px; border: 0; box-shadow: inset 0 0 0 1.5px var(--ink); background: none; color: var(--ink);
-  font: 700 11px/14px var(--ui); letter-spacing: .08em; text-transform: uppercase; text-align: center; }
+font: 700 11px/14px var(--ui); letter-spacing: .08em; text-transform: uppercase; text-align: center; }
 .in-tag .tile.add svg { width: 22px; height: 22px; stroke-width: 2; }
 .in-tag .fav { width: 16px; height: 16px; filter: drop-shadow(0 1px 1px rgba(0, 0, 0, .4)); }
 .in-tag .tile.sel::after { border: 0; border-radius: 4px; box-shadow: inset 0 0 0 3px var(--ink); background: none; }
 .tile-tick { position: absolute; z-index: 1; top: 6px; right: 6px; display: flex; align-items: center; justify-content: center; width: 22px; height: 22px; border-radius: 50%; background: var(--ink); color: var(--on-ink); }
 .tile-tick svg { width: 13px; height: 13px; stroke-width: 3; }
-/* Nothing in Incoming yet: the one big way in. */
 .in-tag .open-phone { border: 0; border-radius: 10px; box-shadow: inset 0 0 0 1.5px var(--ink); color: var(--ink); }
 .in-tag .open-phone .big-words { font: 700 13px/16px var(--ui); letter-spacing: .12em; text-transform: uppercase; }
 .in-tag .open-phone .row-meta { font: 400 15px/20px var(--ui); color: var(--dim); }
-/* Picking: how many, then Tag these, Favorite and Delete, labelled. */
 .in-tag .tools { justify-content: space-between; gap: 4px; padding: 8px 12px var(--nb-foot); background: var(--paper); box-shadow: none; border-top: 1px solid #E1E1DC; }
 .in-tag .sel-count { flex: 1; font: 700 13px/16px var(--ui); letter-spacing: .12em; text-transform: uppercase; color: var(--text); }
 .in-tag .tools .tool { flex-direction: column; gap: 4px; width: auto; min-width: 64px; height: 48px; padding: 0 6px; font: 700 10px/12px var(--ui); letter-spacing: .1em; text-transform: uppercase; color: var(--text); }
@@ -735,12 +625,6 @@ html.is-short { --nb-foot: max(11px, calc(var(--safe-b) - 13px - var(--short-by,
 .in-tag .tile:not(.sel) .tile-tick { display: none; }
 
 /* ---- styles/sheets.css ---- */
-/* Sheets in the round 2 look (05-tag-sheet, DESIGN.md 9.5): white, rising
-   from the bottom, the title in small capitals and a ring to close it;
-   rows 52px with a hairline; ticks as 24px boxes in the notebook's colour
-   (a dash for "some of them"); the buttons 48px, radius 8, in button type:
-   the main one in the notebook's colour, the other outlined, Delete in
-   crimson. Every sheet (components/sheet.js) wears it. */
 .sheet-overlay { background: rgba(49, 61, 69, .5); }
 .sheet { border-radius: 20px 20px 0 0; color: var(--text); font-family: var(--ui); }
 .sheet-header { padding: 25px 8px 0 16px; border-bottom: 0; }
@@ -756,35 +640,27 @@ html.is-short { --nb-foot: max(11px, calc(var(--safe-b) - 13px - var(--short-by,
 .btn.primary { background: var(--ink); color: var(--on-ink); }
 .btn.secondary { border: 0; box-shadow: inset 0 0 0 1.5px var(--text); background: none; color: var(--text); }
 .btn.danger { background: #A1062A; color: #FFFFFF; }
-/* Choices (a ... menu, Sort by): rows, the one in use bold, Delete in crimson. */
 .choice { min-height: 52px; padding: 6px 0; border-bottom: 1px solid #E1E1DC; color: var(--text); }
 .choice-label { font: 400 17px/22px var(--ui); }
 .choice.current .choice-label { font-weight: 700; text-decoration: none; }
 .choice.is-danger { color: #A1062A; }
 .choice-detail { font: 400 13px/18px var(--ui); color: var(--dim); }
 .field-label, .label, .choice-heading { font: 500 11px/14px var(--ui); letter-spacing: .12em; color: var(--dim); }
-/* Tick lists (Tag these). */
 .tick { gap: 14px; min-height: 52px; border-bottom: 1px solid #E1E1DC; font: 400 17px/22px var(--ui); color: var(--text); }
 .tick input { -webkit-appearance: none; appearance: none; flex: none; width: 24px; height: 24px; margin: 0; border-radius: 6px; box-shadow: inset 0 0 0 2px var(--text); background: none no-repeat center / 14px; }
 .tick input:checked { box-shadow: none; background-color: var(--ink); background-image: var(--tick-img); }
 .tick input:indeterminate { box-shadow: none; background-color: var(--ink); background-image: var(--dash-img); background-size: 12px 3px; }
 .tick.add { gap: 14px; color: var(--ink); font-weight: 500; }
 :root {
-  --tick-img: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23fff' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='5 12.5 10 17 19 7'/%3E%3C/svg%3E");
-  --dash-img: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 3'%3E%3Crect width='12' height='3' rx='1.5' fill='%23fff'/%3E%3C/svg%3E");
+--tick-img: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23fff' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='5 12.5 10 17 19 7'/%3E%3C/svg%3E");
+--dash-img: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 3'%3E%3Crect width='12' height='3' rx='1.5' fill='%23fff'/%3E%3C/svg%3E");
 }
-/* On the light notebook colours the tick is berry blade black. */
 :root:is([data-book="mango"], [data-book="orange"], [data-book="leaf"]) {
-  --tick-img: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23313D45' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='5 12.5 10 17 19 7'/%3E%3C/svg%3E");
-  --dash-img: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 3'%3E%3Crect width='12' height='3' rx='1.5' fill='%23313D45'/%3E%3C/svg%3E");
+--tick-img: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23313D45' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='5 12.5 10 17 19 7'/%3E%3C/svg%3E");
+--dash-img: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 3'%3E%3Crect width='12' height='3' rx='1.5' fill='%23313D45'/%3E%3C/svg%3E");
 }
 
 /* ---- styles/viewer-dark.css ---- */
-/* The picture viewer in the round 2 look (06-viewer): dark (berry blade
-   black), a ring to close and "4 OF 14" over the photo; under it the tags
-   it's in, what Ref found in it (each can go, and more can be added), its
-   colours as a strip to tap, and the four actions, labelled, at the foot.
-   The photo is never covered. After viewer.css. */
 .viewer:not(.color-page) { --v-rule: #4A565E; --v-quiet: #D6DADD; --v-chip: #44515A; background: #313D45; color: #FAFAF7; font-family: var(--ui); }
 .viewer .v-top { position: static; flex: none; display: flex; align-items: center; justify-content: space-between; padding: calc(var(--nb-top) + 2px) 8px 12px; background: none; pointer-events: auto; }
 .v-close { color: #FAFAF7; }
@@ -808,8 +684,6 @@ html.is-short { --nb-foot: max(11px, calc(var(--safe-b) - 13px - var(--short-by,
 .viewer .v-tools { padding: 0 0 var(--safe-b); border-top: 1px solid var(--v-rule); }
 .viewer .v-tools button { flex: 1; flex-direction: column; gap: 4px; width: auto; height: 56px; color: #FAFAF7; font: 700 10px/12px var(--ui); letter-spacing: .1em; text-transform: uppercase; }
 .viewer .v-tools svg { width: 22px; height: 22px; stroke-width: 1.8; }
-
-/* Every photo with one colour: a page of its own, on paper, under the short band. */
 .color-page { padding: 0; background: var(--paper); }
 .color-page > .band-short { flex: none; margin: 0 0 26px; }
 .color-page .band-line .color-swatch { flex: 1; height: 14px; margin: 0; border: 0; border-radius: 7px; box-shadow: 0 0 0 1px var(--partner); }
@@ -821,15 +695,11 @@ html.is-short { --nb-foot: max(11px, calc(var(--safe-b) - 13px - var(--short-by,
 .color-page .band-line .count { flex: none; min-width: 0; margin: 0; padding: 0; font: 700 11px/14px var(--ui); letter-spacing: .14em; color: var(--band-small); }
 
 /* ---- styles/option-cards.css ---- */
-/* Option cards (round 2, 07-new-board-layout): one choice of several, white
-   cards three across (two when they carry a line of words), the picked one
-   ringed in berry blade black. The page drawings are in the notebook's
-   colour. The new board guide and the Layout sheet use them. */
 .opt-cards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-top: 16px; }
 .opt-cards.two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .opt-card {
-  display: flex; flex-direction: column; align-items: center; gap: 10px; min-width: 0; padding: 14px 10px 10px;
-  border: 0; border-radius: 12px; background: #FFFFFF; color: var(--text); text-align: center;
+display: flex; flex-direction: column; align-items: center; gap: 10px; min-width: 0; padding: 14px 10px 10px;
+border: 0; border-radius: 12px; background: #FFFFFF; color: var(--text); text-align: center;
 }
 .opt-card[aria-checked="true"] { box-shadow: inset 0 0 0 2px var(--text); }
 .opt-card svg { display: block; height: auto; fill: var(--ink); }
@@ -838,20 +708,16 @@ html.is-short { --nb-foot: max(11px, calc(var(--safe-b) - 13px - var(--short-by,
 .opt-card[aria-checked="true"] .opt-name { font-weight: 500; }
 .opt-blurb { margin-top: -6px; font: 400 13px/18px var(--ui); color: var(--dim); }
 .opt-cards.two .opt-name { font-size: 15px; }
-/* A page's shape (Tall, Wide) and a start's page, drawn. */
 .opt-shape { display: block; box-shadow: inset 0 0 0 2px var(--ink); background: #FAFAF7; }
 .opt-shape.tall { width: 46px; height: 60px; }
 .opt-shape.wide { width: 80px; height: 45px; margin: 7px 0 8px; }
 .opt-glyph:not(.filled) svg rect:not(.paper-r) { fill: none; stroke: var(--ink); stroke-width: 1.2; stroke-dasharray: 2 2; }
 
 /* ---- styles/switch.css ---- */
-/* A switch row (round 2, 07-new-board-layout and 09-options): the words at
-   the left, the switch at the right, 52px tall. The switch is a checkbox
-   drawn as a 51 x 31 track, in the notebook's colour when on. */
 .switch-row { display: flex; align-items: center; justify-content: space-between; gap: 16px; min-height: 52px; margin-top: 14px; font: 400 17px/22px var(--ui); color: var(--text); }
 .switch {
-  -webkit-appearance: none; appearance: none; position: relative; flex: none; width: 51px; height: 31px; margin: 0;
-  border-radius: 16px; background: #D6DADD; transition: background .15s ease; cursor: pointer;
+-webkit-appearance: none; appearance: none; position: relative; flex: none; width: 51px; height: 31px; margin: 0;
+border-radius: 16px; background: #D6DADD; transition: background .15s ease; cursor: pointer;
 }
 .switch::after { content: ''; position: absolute; left: 2px; top: 2px; width: 27px; height: 27px; border-radius: 50%; background: #FFFFFF; box-shadow: 0 1px 3px rgba(49, 61, 69, .25); transition: transform .15s ease; }
 .switch:checked { background: var(--ink); }
@@ -859,16 +725,9 @@ html.is-short { --nb-foot: max(11px, calc(var(--safe-b) - 13px - var(--short-by,
 .switch:focus-visible { outline: 2px solid var(--text); outline-offset: 2px; }
 
 /* ---- styles/new-board-guide.css ---- */
-/* The new board guide (round 2, 07-new-board-layout): the short band with
-   Back and Close, the step marks named underneath (as in The Eye's guide),
-   the step's title and question, its choices, and Back / Next at the foot
-   where the section bar would be. After newboard.css, which it reframes. */
 .screen.new-board { padding: 0 16px; }
 .screen.new-board > .band-short { flex: none; margin: 0 -16px 38px; }
 .new-board .form-page { display: block; padding: 0 0 24px; }
-
-/* The marks: done = solid 14px, this one = 22px with a dot, still to come =
-   an open 13px ring. The line is inked up to this step. */
 .guide-marks { position: relative; height: 50px; margin-top: 2px; }
 .guide-mark-row { display: flex; align-items: center; height: 28px; }
 .guide-mark { flex: none; box-sizing: border-box; width: 13px; height: 13px; border: 1.5px solid #9AA3A8; border-radius: 50%; background: var(--paper); }
@@ -881,30 +740,22 @@ html.is-short { --nb-foot: max(11px, calc(var(--safe-b) - 13px - var(--short-by,
 .guide-mark-name { position: absolute; top: 0; font: 700 10px/12px var(--ui); letter-spacing: .12em; text-transform: uppercase; white-space: nowrap; color: var(--dim); }
 .guide-mark-name.reached { color: var(--text); }
 .guide-mark-name.mid { transform: translateX(-50%); }
-
-/* The step's own words. */
 .guide-title { margin: 16px 0 0; font: 300 30px/36px var(--ui); color: var(--text); }
 .guide-ask { margin: 6px 0 0; font: 400 17px/24px var(--ui); color: var(--dim); }
 .guide-small { margin: 12px 0 0; font: 400 15px/21px var(--ui); color: var(--dim); }
 .guide-label { display: block; margin: 22px 0 8px; font: 700 12px/16px var(--ui); letter-spacing: .12em; text-transform: uppercase; color: var(--text); }
 .guide-field { display: block; }
 .guide-label + .opt-cards { margin-top: 0; }
-
-/* Fields: white, 52px, a hairline, ringed while typing. */
 .guide-input {
-  display: block; width: 100%; height: 52px; margin: 0; padding: 0 14px; border: 0; border-radius: 8px;
-  background: #FFFFFF; box-shadow: inset 0 0 0 1px #E1E1DC; font: 400 17px/22px var(--ui); color: var(--text); outline: none; -webkit-appearance: none;
+display: block; width: 100%; height: 52px; margin: 0; padding: 0 14px; border: 0; border-radius: 8px;
+background: #FFFFFF; box-shadow: inset 0 0 0 1px #E1E1DC; font: 400 17px/22px var(--ui); color: var(--text); outline: none; -webkit-appearance: none;
 }
 .guide-input:focus { box-shadow: inset 0 0 0 2px var(--text); }
 .guide-input::placeholder { color: #9AA3A8; }
-
-/* A number with − and +. */
 .guide-stepper { display: flex; align-items: center; justify-content: space-between; min-height: 52px; margin-top: 14px; font: 400 17px/22px var(--ui); color: var(--text); }
 .new-board .stepper { gap: 6px; }
 .new-board .stepper button { width: 44px; height: 40px; border: 0; border-radius: 8px; box-shadow: inset 0 0 0 1.5px var(--text); background: none; font: 400 20px/1 var(--ui); color: var(--text); }
 .new-board .stepper b { width: 36px; font: 300 22px/28px var(--ui); text-align: center; font-variant-numeric: tabular-nums; }
-
-/* Fill in sections: a white card each, its number, name, tags and count. */
 .guide-section { margin-top: 12px; padding: 12px; border-radius: 12px; background: #FFFFFF; }
 .guide-sechead { display: flex; align-items: center; gap: 10px; }
 .guide-secnum { flex: none; display: grid; place-items: center; width: 28px; height: 28px; border-radius: 50%; background: var(--ink); color: var(--on-ink); font: 700 13px/1 var(--ui); }
@@ -916,49 +767,35 @@ html.is-short { --nb-foot: max(11px, calc(var(--safe-b) - 13px - var(--short-by,
 .new-board .pick.on { background: var(--ink); color: var(--on-ink); }
 .guide-section .switch-row { margin-top: 8px; font-size: 15px; }
 .guide-add { width: 100%; margin-top: 12px; }
-
-/* Which photos: what each section will get. */
 .guide-summary { margin-top: 14px; border-top: 1px solid #E1E1DC; }
 .guide-sumrow { display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 52px; border-bottom: 1px solid #E1E1DC; font: 400 17px/22px var(--ui); }
 .guide-sumcount { flex: none; font: 400 15px/20px var(--ui); color: var(--dim); }
-
-/* Back (outlined) and Next (the notebook's colour), at the foot. */
 .new-board .guide-foot {
-  position: fixed; left: 0; right: 0; top: calc(var(--app-h) - var(--nb-bar)); z-index: 3; height: var(--nb-bar); max-width: 620px;
-  box-sizing: border-box; display: flex; align-items: flex-start; gap: 8px; margin: 0 auto; padding: 12px 16px 0;
-  border-top: 1px solid #E1E1DC; background: var(--paper);
+position: fixed; left: 0; right: 0; top: calc(var(--app-h) - var(--nb-bar)); z-index: 3; height: var(--nb-bar); max-width: 620px;
+box-sizing: border-box; display: flex; align-items: flex-start; gap: 8px; margin: 0 auto; padding: 12px 16px 0;
+border-top: 1px solid #E1E1DC; background: var(--paper);
 }
 .guide-foot .btn { flex: 1 1 0; min-width: 0; white-space: nowrap; }
 .guide-foot .btn.primary { flex-grow: 1.3; }
 
 /* ---- styles/board-editor.css ---- */
-/* The board editor (round 2, 08-board-editor): the short band with Back and
-   Full screen, the board's name and PAGE 3 OF 8, the page on paper, the tray
-   of photos under a hairline, and the labelled tools where the section bar
-   would be. After board.css and board-page.css, which it reframes. */
 .screen.editor { padding: 0 16px; }
 .screen.editor > .band-short { flex: none; margin: 0 -16px 25px; }
 .board-head { flex: none; display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
 .editor .board-name {
-  flex: 1; min-width: 0; padding: 0; font: 300 20px/24px var(--ui); letter-spacing: 0; text-transform: none; text-align: left;
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--text);
+flex: 1; min-width: 0; padding: 0; font: 300 20px/24px var(--ui); letter-spacing: 0; text-transform: none; text-align: left;
+white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--text);
 }
 .editor .board-head .count { flex: none; margin: 0; padding: 0; font: 500 11px/14px var(--ui); letter-spacing: .12em; text-transform: uppercase; color: var(--dim); font-variant-numeric: tabular-nums; }
-
-/* The page, with room around it. */
 .editor .stage { margin: 16px 0; }
 .editor .stage .page { box-shadow: 0 2px 10px rgba(49, 61, 69, .15); }
 .editor .slot:not(.filled) { background: #EFEFEA; }
 .slot-hint { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; padding: 4px; text-align: center; font: 400 12px/16px var(--ui); color: var(--dim); pointer-events: none; }
-/* The picked spot: a ring just outside it, and the x to take its photo off
-   on its corner (board.js places it), neither over the photo itself. */
 .editor .slot.sel { outline: 2px solid var(--ink); outline-offset: 0; }
 .editor .slot.sel::after { content: none; }
 .editor .slot-x { right: auto; transform: translate(-50%, -50%); width: 28px; height: 28px; background: var(--ink); color: var(--on-ink); }
 .editor .slot-x svg { width: 14px; height: 14px; stroke-width: 2.5; }
 .editor .page-text .pt-title.empty { color: #9AA3A8; }
-
-/* The tray: where the photos come from, then the photos. */
 .tray-box { flex: none; margin: 0 -16px; padding: 8px 16px 10px; border-top: 1px solid #E1E1DC; }
 .tray-box[hidden] { display: none; }
 .editor .tray-head { gap: 8px; padding: 0; }
@@ -969,23 +806,16 @@ html.is-short { --nb-foot: max(11px, calc(var(--safe-b) - 13px - var(--short-by,
 .editor .tray-photo.used { opacity: .35; }
 .editor .tray .note { margin: 0; font: 400 15px/56px var(--ui); color: var(--dim); }
 .editor .tpanel { padding-top: 10px; border-top: 1px solid #E1E1DC; margin: 0 -16px; padding-left: 16px; padding-right: 16px; }
-
-/* The tools, each with its name under it. */
 .editor .tools { align-items: flex-start; justify-content: stretch; padding: 4px 4px var(--nb-foot); background: var(--paper); box-shadow: none; border-top: 1px solid #E1E1DC; }
 .editor .tools .tool {
-  flex: 1 1 0; min-width: 0; width: auto; height: 56px; flex-direction: column; gap: 4px; padding: 0;
-  font: 700 9.5px/12px var(--ui); letter-spacing: .08em; text-transform: uppercase; color: var(--text); white-space: nowrap;
+flex: 1 1 0; min-width: 0; width: auto; height: 56px; flex-direction: column; gap: 4px; padding: 0;
+font: 700 9.5px/12px var(--ui); letter-spacing: .08em; text-transform: uppercase; color: var(--text); white-space: nowrap;
 }
 .editor .tools .tool svg { width: 22px; height: 22px; stroke-width: 2; }
 .editor .tools .tool:disabled { color: #9AA3A8; }
-
-/* The Layout sheet: the option cards. */
 .sheet .opt-cards { margin-top: 4px; }
-
-/* A text box picked: its outline and corners in the notebook's colour. */
 .editor .tbox-sel { outline-color: var(--ink); }
 .editor .tbox-sel i::after { border-color: var(--ink); }
-/* The text menu, in place of the tray: the words, their sizes, Done. */
 .editor .tpanel :is(textarea, input[type=text]) { padding: 10px 12px; border: 0; border-radius: 8px; background: #FFFFFF; box-shadow: inset 0 0 0 1px #E1E1DC; font: 400 17px/22px var(--ui); color: var(--text); }
 .editor .tpanel :is(textarea, input[type=text]):focus { box-shadow: inset 0 0 0 2px var(--text); }
 .editor .tpanel .stepper button { width: 40px; height: 32px; border: 0; border-radius: 8px; box-shadow: inset 0 0 0 1.5px var(--text); background: none; font: 400 14px/1 var(--ui); color: var(--text); }
@@ -996,17 +826,9 @@ html.is-short { --nb-foot: max(11px, calc(var(--safe-b) - 13px - var(--short-by,
 .editor .tpanel .check { font: 400 15px/20px var(--ui); }
 
 /* ---- styles/options-sheet.css ---- */
-/* Options (round 2, 09-options): the notebook colours as swatches (the band
-   with its partner's line and half circle, ticked when picked; the same
-   seven as The Eye), then rows in groups under small quiet names: a name, a
-   quiet line under it, a chevron or a switch. On its own, Always start is a
-   segmented switch with the picked part in the notebook's colour. After
-   options.css and sheets.css, which it reframes. */
 .opt-sheet .opt-label { display: block; margin: 0 0 10px; font: 500 11px/14px var(--ui); letter-spacing: .12em; text-transform: uppercase; color: var(--dim); }
 .opt-sheet .opt-label.opt-gap { margin-top: 24px; }
 .opt-sheet .opt-label.opt-gap:has(+ .opt-rows) { margin-bottom: 0; }
-
-/* The notebook colours. */
 .opt-sheet .opt-colors { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px 12px; margin: 0; }
 .opt-sheet .opt-color { display: flex; flex-direction: column; align-items: stretch; gap: 6px; padding: 0; color: var(--text); }
 .opt-swatch { position: relative; display: block; height: 52px; border-radius: 8px; overflow: hidden; background: var(--sw); }
@@ -1024,17 +846,13 @@ html.is-short { --nb-foot: max(11px, calc(var(--safe-b) - 13px - var(--short-by,
 [data-swatch="ocean"] { --sw: #0A4FD6; --sw-p: #FFAFAB; }
 [data-swatch="leaf"] { --sw: #14BFA0; --sw-p: #A1062A; }
 [data-swatch="ink"] { --sw: #313D45; --sw-p: #FFD100; }
-
-/* Always start: a track, the picked part in the notebook colour. */
 .opt-sheet .opt-seg { display: flex; height: 44px; margin: 0; padding: 3px; box-sizing: border-box; border-radius: 10px; background: #EFEFEA; }
 .opt-sheet .opt-seg button { flex: 1 1 0; min-width: 0; height: auto; padding: 0 6px; border: 0; border-radius: 8px; background: none; font: 400 15px/18px var(--ui); color: var(--dim); white-space: nowrap; }
 .opt-sheet .opt-seg button.on { background: var(--band); color: var(--band-small); font-weight: 500; }
-
-/* Rows: a name, a quiet line under it, a chevron (or a switch). */
 .opt-rows { margin: 0; }
 .opt-row {
-  display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%; min-height: 52px; margin: 0; padding: 6px 0;
-  box-sizing: border-box; border: 0; border-bottom: 1px solid #E1E1DC; background: none; color: var(--text); text-align: left; cursor: pointer;
+display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%; min-height: 52px; margin: 0; padding: 6px 0;
+box-sizing: border-box; border: 0; border-bottom: 1px solid #E1E1DC; background: none; color: var(--text); text-align: left; cursor: pointer;
 }
 .opt-row-words { display: flex; flex-direction: column; min-width: 0; }
 .opt-row-name { font: 400 17px/22px var(--ui); }
@@ -1042,16 +860,11 @@ html.is-short { --nb-foot: max(11px, calc(var(--safe-b) - 13px - var(--short-by,
 .opt-chevron { flex: none; width: 16px; height: 16px; fill: none; stroke: #9AA3A8; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 
 /* ---- styles/send-sheet.css ---- */
-/* The Send to shoot sheet (round 2, 02-send-to-shoot): rows 68px with the
-   shoot's photo 40 x 50, its name, the day and status in quiet type, and a
-   radio (filled berry blade black with a dot in the partner colour when
-   picked); New shoot from this board with a + ring; the full-width button
-   naming the pick. After sheets.css. */
 .send-sheet .send-lead { margin: 4px 0 0; font: 400 15px/21px var(--ui); color: var(--dim); }
 .send-sheet .choice-heading { display: block; margin: 18px 0 2px; text-transform: uppercase; }
 .send-shoot {
-  display: flex; align-items: center; gap: 12px; width: 100%; min-height: 68px; padding: 10px 0;
-  border: 0; border-bottom: 1px solid #E1E1DC; background: none; color: var(--text); text-align: left;
+display: flex; align-items: center; gap: 12px; width: 100%; min-height: 68px; padding: 10px 0;
+border: 0; border-bottom: 1px solid #E1E1DC; background: none; color: var(--text); text-align: left;
 }
 .send-thumb { flex: none; display: flex; align-items: center; justify-content: center; width: 40px; height: 50px; border-radius: 6px; overflow: hidden; background: #EFEFEA; color: #9AA3A8; }
 .send-thumb img { display: block; width: 100%; height: 100%; object-fit: cover; }
@@ -1062,7 +875,6 @@ html.is-short { --nb-foot: max(11px, calc(var(--safe-b) - 13px - var(--short-by,
 .send-radio { position: relative; flex: none; width: 22px; height: 22px; border-radius: 50%; box-shadow: inset 0 0 0 2px var(--text); }
 .send-shoot[aria-checked="true"] .send-radio { box-shadow: none; background: var(--text); }
 .send-shoot[aria-checked="true"] .send-radio::after { content: ''; position: absolute; inset: 7px; border-radius: 50%; background: var(--partner); }
-/* On mango and orange the partner is berry blade black too: the dot takes the band. */
 :root:is([data-book="mango"], [data-book="orange"]) .send-shoot[aria-checked="true"] .send-radio::after { background: var(--band); }
 .send-shoot[aria-disabled="true"] { cursor: default; }
 .send-shoot[aria-disabled="true"] .send-radio { box-shadow: inset 0 0 0 2px #D6DADD; }
@@ -1074,10 +886,6 @@ html.is-short { --nb-foot: max(11px, calc(var(--safe-b) - 13px - var(--short-by,
 .send-sheet [data-send]:disabled { opacity: .4; }
 
 /* ---- styles/client-slip.css ---- */
-/* A yes from Rounds on Mood boards (connect/06): the shared slip
-   (styles/shared/connect.css) with Ref's main button in the band colour and
-   its small-text colour, and who it is: their photo (44 x 54), handle and
-   pitch day. A client's board shows their handle as a flag, as typed. */
 :root { --df-slip-main: var(--band); --df-slip-main-text: var(--band-small); }
 .ref-slip-who { display: flex; align-items: center; gap: 12px; margin-top: 12px; }
 .ref-slip-photo { flex: none; display: block; width: 44px; height: 54px; border-radius: 4px; overflow: hidden; background: var(--step4); }
