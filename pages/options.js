@@ -9,7 +9,7 @@ import { openSheet } from '../components/sheet.js';
 import { choiceSheet } from '../components/dialogs.js';
 import { tagsOn, turnOnTags, turnOffTags } from '../data/tagger.js';
 import { openIntro } from './intro.js';
-import { saveBackup, restoreBackup } from './options-backup.js';
+import { backUp, restoreBackup } from './options-backup.js';
 import { stickerSheet } from './options-stickers.js';
 import { clientOffers, startClientBoard } from './client-slip.js';
 import { esc } from '../components/util.js';
@@ -68,7 +68,7 @@ export function openOptions() {
       </div>
       ${alone ? `<span class="opt-label opt-gap">Cover</span><div class="opt-rows">${row('data-stickers', 'Stickers')}</div>` : ''}
       <span class="opt-label opt-gap">Backups</span>
-      <div class="opt-rows">${row('data-save-backup', 'Save a backup')}${row('data-restore-backup', 'Restore a backup')}</div>
+      <div class="opt-rows">${row('data-backup', 'Back up')}${row('data-restore-backup', 'Restore a backup')}</div>
       <span class="opt-label opt-gap">Help</span>
       <div class="opt-rows">${row('data-intro', 'How it works')}</div>`,
   });
@@ -88,7 +88,7 @@ export function openOptions() {
     if (offer) { s.close(); startClientBoard(offer.dataset.offer, defaultShape()); }
     if (e.target.closest('[data-stickers]')) stickerSheet(s);
     if (e.target.closest('[data-intro]')) { s.close(); openIntro(); }
-    if (e.target.closest('[data-save-backup]')) saveBackup();
+    if (e.target.closest('[data-backup]')) backUp();
     if (e.target.closest('[data-restore-backup]')) restoreBackup(() => s.close(), BOOK_KEY);
   });
   clientOffers().then((offers) => {
