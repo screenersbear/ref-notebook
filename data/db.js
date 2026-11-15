@@ -143,9 +143,19 @@ export async function deleteFolder(id) {
     for (const p of photos) t.objectStore('photos').put(stamp({ ...p, folderIds: p.folderIds.filter((x) => x !== id) }));
   });
 }
+// Anything that hears of a board saved or deleted (the one list of people,
+// data/people-out.js).
+const boardWatchers = [];
+export const onBoardsChange = (fn) => { boardWatchers.push(fn); };
+const boardsChanged = (v) => { boardWatchers.forEach((fn) => fn()); return v; };
 export function saveBoard(b) {
   const r = stamp(b);
-  return tx(['boards'], 'readwrite', (t, set) => { t.objectStore('boards').put(r); set(r); });
+  return tx(['boards'], 'readwrite', (t, set) => { t.objectStore('boards').put(r); set(r); }).then(boardsChanged);
+}
+// A board saved as it is, its day left alone: a note kept on it (a board
+// waiting on someone, data/board-for.js), not a change made to it.
+export function keepBoard(b) {
+  return tx(['boards'], 'readwrite', (t, set) => { t.objectStore('boards').put(b); set(b); });
 }
 // Puts a deleted folder back and its photos in it.
 export function restoreFolder(f, photoIds) {
@@ -161,4 +171,4 @@ export function saveSticker(s) {
   return tx(['stickers'], 'readwrite', (t, set) => { t.objectStore('stickers').put(r); set(r); });
 }
 export const deleteSticker = (id) => tx(['stickers'], 'readwrite', (t) => { t.objectStore('stickers').delete(id); });
-export const deleteBoard = (id) => tx(['boards'], 'readwrite', (t) => { t.objectStore('boards').delete(id); });
+export const deleteBoard = (id) => tx(['boards'], 'readwrite', (t) => { t.objectStore('boards').delete(id); }).then(boardsChanged);

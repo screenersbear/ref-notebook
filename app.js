@@ -22,7 +22,11 @@ import { showSection } from './components/navbar.js';
 import { sideOf } from './components/spread.js';
 import { paintStickers } from './components/stickers.js';
 import { esc } from './components/util.js';
+import { tellPeople, tellPeopleFromNowOn } from './data/people-out.js';
 import { keepUp } from './data/sendshoot.js';
+import { attachWaiting } from './data/board-for.js';
+import { takeFinals } from './data/finals-in.js';
+import { toast } from './components/toast.js';
 import './components/pull-shut.js';
 
 const view = document.getElementById('view');
@@ -78,11 +82,24 @@ if (suite && suite.get('board')) history.replaceState(null, '', `#/board/${encod
 else if (client) history.replaceState(null, '', '#/boards');
 else if (suite && (location.hash || '#/') === '#/') history.replaceState(null, '', suite.at === 'tags' ? '#/folders' : '#/boards');
 else if (!suite && startPage() && (location.hash || '#/') === '#/') history.replaceState(null, '', startPage());
+// Ref tells the one list of people its boards, now and after each change.
+tellPeopleFromNowOn();
+tellPeople(3000);
 route().then(() => {
   if (client) startClientBoard(client, defaultShape()).catch(console.error);
-  // Once the notebook is on screen; then any sent board changed elsewhere is drawn again.
+  // Once the notebook is on screen: finals sent from The Eye come in, what's
+  // in new photos is found, then any sent board changed elsewhere is drawn again.
+  setTimeout(() => takeFinals().then(async (n) => {
+    if (!n) return;
+    await refresh();
+    if (/^#\/(folders|folder\/)/.test(location.hash)) route(); // the tags as they are now
+    toast(`${n} ${n === 1 ? 'final' : 'finals'} from The Eye came in`);
+    carryOn();
+  }).catch(console.error), 1200);
   setTimeout(carryOn, 2500);
   setTimeout(() => keepUp(), 4000);
+  // Then boards waiting on someone go on, once that person has a shoot.
+  setTimeout(() => attachWaiting().catch(console.error), 4500);
 });
 // The first launch: the cards on how it works. Inside Documenting Fictions,
 // first how to get back to the shelf, and the cards only if they're wanted.

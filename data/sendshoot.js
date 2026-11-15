@@ -29,7 +29,7 @@ const STATUS = { prospect: 'Prospect', planning: 'Active planning', waiting_to_s
 // ---------- Drawing a board ----------
 // What a board looks like, as a short key: its pictures are drawn again only
 // when this changes (opening a board saves it again, changed or not).
-function boardKey(b) {
+export function boardKey(b) {
   const str = JSON.stringify([b.name, b.shape, b.style, b.pages]);
   let h = 2166136261;
   for (let i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 16777619); }
@@ -65,7 +65,7 @@ async function drawCover(board, firstPage) {
   return toPicture(c, 0.8);
 }
 // Every page as a picture, plus the cover and what the shoot's page shows.
-async function drawBoard(board, say) {
+export async function drawBoard(board, say) {
   const s = SHAPES[board.shape] || SHAPES['letter-portrait'];
   const px = s.W >= s.H ? LONG_EDGE : Math.round((LONG_EDGE * s.W) / s.H);
   const pages = [];

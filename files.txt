@@ -19,6 +19,9 @@ built/shared-data.js smaller
   data/shared/zip-restore.js
   data/shared/links.js
   data/shared/connect.js
+  data/shared/year.js
+  data/shared/people.js
+  data/shared/people-things.js
   data/shared/df-data.js
 
 # How it looks, in the order the rules apply.
@@ -57,6 +60,7 @@ built/app.css smaller
   styles/options-sheet.css
   styles/send-sheet.css
   styles/client-slip.css
+  styles/newboard-who.css
 
 # The scripts: app.js and every ES module it imports (and those import), joined
 # by following the imports, so they aren't listed one by one.

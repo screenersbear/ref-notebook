@@ -6,7 +6,9 @@
 //   4. (filling only) Which photos come first, and how many pages each section gets
 // In the round 2 look (07-new-board-layout): the short band with Back and
 // Close, the step marks, each step's title and question, Back / Next at the
-// foot. Its small pieces are in newboard-parts.js.
+// foot. Its small pieces are in newboard-parts.js. In the suite, the first
+// step asks who it's for too (newboard-who.js): their next-time notes from
+// The Eye go first, and the board goes on their next shoot by itself.
 import * as db from '../data/db.js';
 import { lib, photosIn, sortList, SPECIAL } from '../data/library.js';
 import { STYLES, paginate, makeCover, styleTemplate } from '../data/templates.js';
@@ -18,6 +20,9 @@ import { esc, clamp } from '../components/util.js';
 import { cardHtml } from '../components/option-card.js';
 import { marksHtml, miniPage } from './newboard-parts.js';
 import { defaultShape } from './options.js';
+import { whoHtml, chooseWho } from './newboard-who.js';
+import { notesPage } from '../data/next-time.js';
+import { placeBoard } from '../data/board-for.js';
 
 const SHAPE_INFO = {
   'letter-portrait': { name: 'Tall', blurb: 'For printing and bringing to a shoot.' },
@@ -32,7 +37,7 @@ const ORDERS = [
 
 export function newBoardScreen(view) {
   const W = {
-    step: 0, name: '', shape: defaultShape(), style: 'mosaic', cover: false,
+    step: 0, name: '', who: null, notes: [], shoot: null, shape: defaultShape(), style: 'mosaic', cover: false,
     start: 'blank', blankPages: 3,
     sections: [{ name: '', tags: [], all: true }], order: 'newest', perSection: 3,
   };
@@ -83,6 +88,7 @@ export function newBoardScreen(view) {
     return `
       <label class="guide-field"><span class="guide-label">Name</span>
         <input class="guide-input" data-name value="${esc(W.name)}" placeholder="Name this board" maxlength="80" autocomplete="off" enterkeyhint="next" /></label>
+      ${whoHtml(W)}
       <p class="guide-label">Page size, the same for the whole board</p>
       <div class="opt-cards two" role="radiogroup" aria-label="Page size">${Object.entries(SHAPE_INFO).map(([k, sh]) => cardHtml({
         attr: `data-shape="${k}"`, on: W.shape === k, picture: `<span class="opt-shape ${k === 'wide-16x9' ? 'wide' : 'tall'}"></span>`, name: sh.name, blurb: sh.blurb,
@@ -180,6 +186,7 @@ export function newBoardScreen(view) {
       else if (d.order) W.order = d.order;
       else if (d.tag) { const sec = W.sections[+d.in]; sec.tags = sec.tags.includes(d.tag) ? sec.tags.filter((x) => x !== d.tag) : [...sec.tags, d.tag]; }
       else if (d.drop) W.sections.splice(+d.drop, 1);
+      else if ('who' in d) { chooseWho(W).then((changed) => { if (changed) draw(true); }).catch(console.error); return; }
       else if ('addsec' in d) { W.sections.push({ name: '', tags: [], all: true }); draw(true); const all = view.querySelectorAll('[data-secname]'); all[all.length - 1]?.scrollIntoView({ block: 'center' }); return; }
       else return;
       draw(true);
@@ -188,7 +195,7 @@ export function newBoardScreen(view) {
 
   const shuffle = (list) => { const a = [...list]; for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
   async function make() {
-    const name = W.name.trim() || 'Untitled board';
+    const name = W.name.trim() || (W.who && W.who.name) || 'Untitled board';
     let pages = [];
     if (W.start === 'blank') {
       pages = Array.from({ length: W.blankPages }, (_, n) => ({ template: styleTemplate(W.shape, W.style, n) || paginate(W.shape, W.style, [])[0].template, images: [] }));
@@ -208,10 +215,18 @@ export function newBoardScreen(view) {
         pages.push(...own);
       });
     }
+    if (W.who && W.notes.length) pages.unshift(notesPage(W.notes, W.shape));
     if (W.cover) pages.unshift(makeCover({ shape: W.shape, name }, pages.flatMap((p) => p.images).find(Boolean) || null));
     pages = pages.map((p) => withTextDefaults({ ...p, images: p.images.map((x) => (x ? { id: x } : null)) }));
-    const b = await db.saveBoard({ name, shape: W.shape, style: W.style, pages });
+    // For someone: on their next shoot now, or waiting for one (while Mood boards is connected).
+    const attach = W.who && window.DFConnect.connectOn('moodboards');
+    const client = W.who ? { client: { name: W.who.name, handle: W.who.instagram, personId: W.who.id, waiting: !!attach && !W.shoot } } : {};
+    const b = await db.saveBoard({ name, shape: W.shape, style: W.style, pages, ...client });
     location.hash = `#/board/${b.id}`;
+    if (attach) {
+      const first = (W.who.name || `@${W.who.instagram || W.who.tiktok}`).split(/\s+/)[0];
+      placeBoard(b, W.shoot).then((shoot) => toast(shoot ? `On ${window.DFData.eyeShootName(shoot, 'title')} in The Eye` : `It goes on ${first}'s next shoot in The Eye`)).catch(console.error);
+    }
   }
   draw();
 }

@@ -29,7 +29,9 @@ export async function boardsScreen(view) {
     const p = firstPhoto(b);
     const href = `#/board/${esc(b.id)}`;
     const shoots = (onShoots[b.id] || []).map((s) => `<span class="flag">For ${esc(s)}</span>`).join('');
-    const flags = shoots || (b.client && b.client.handle ? `<span class="flag flag-handle">@${esc(b.client.handle)}</span>` : '');
+    const c = b.client || {};
+    const who = c.handle ? `<span class="flag flag-handle">@${esc(c.handle)}</span>` : c.personId && c.name ? `<span class="flag">For ${esc(c.name)}</span>` : ''; // for someone, on no shoot yet
+    const flags = shoots || who;
     return `
       <div class="board-card" data-b>
         <a class="card-cover" href="${href}" aria-label="Open ${esc(b.name)}">${p ? `<img src="${thumbUrl(p)}" alt="" />` : ''}</a>
