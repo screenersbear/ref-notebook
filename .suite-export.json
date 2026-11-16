@@ -17,7 +17,7 @@
   "art/orange-cover.webp": "c6432866813aba06a94e743c7166f0ac1c432d7d02221d970c6da5770534dcff",
   "built/app.css": "2dd38c252aad5cf0dfc00c81c2f24fcc1c9067cd972db38e68a5339e00eeaf45",
   "built/app.js": "f6d7a2d8858403120e7dda6d1257d23c176b92b658a05553a1a8e09f367fd94d",
-  "built/shared-data.js": "5cabc322e3d99e00239dce708b02d3e5b5542a7cf1fde1257ebf823f0490a0d7",
+  "built/shared-data.js": "6e293b8896f95a5c9eae90d7318fdfa7915b6f1ab07854d4ab0cf96da7e65c6f",
   "components/band.js": "9122cf11089fc34bb0e534cff3dfcaa2c2199c955b7f7293b3d6a126a31a511f",
   "components/board-page.js": "0bbc68b192029b12f8168bd4dcd61f61ee42d9db94f8e7afcd412a22c47a8b04",
   "components/dialogs.js": "342322868e722d46ef7286daff515e3e35c8c08944b562342566615b739d941c",
@@ -50,7 +50,7 @@
   "data/people-out.js": "8b0c77e7c21214ee07314fde6f534b064a51bd96a77d681388e2a42487b5d6f5",
   "data/photos.js": "449af7cf960ba1081e812b4a67edaf8aff61b1e04162a7f6499f9bbc5e7c79b2",
   "data/sendshoot.js": "6e4d38cd87a5f1819e3eabed013498420727d2f6ddd01249d86eb49ffed90fbf",
-  "data/shared/asks.js": "9906659371d2b31dd3cfa24b41c21f0186e7a99b23870b0663bc87e6d32bf501",
+  "data/shared/asks.js": "6503bf0132b3b38641c3382b74f3d26b21c55a732122447c7828879acf06a01c",
   "data/shared/backup-books.js": "abd345549aefedf98367eeb55d7222052036a506bc5c4d800cf97c2412eeb912",
   "data/shared/backup-json.js": "70e89992c35cedbb6b2c5cf5fa2740b98b6ad483416871f3f45946d814a71380",
   "data/shared/backups.js": "a877014e7d1a3a41e14c4521dbdb46ff39d0065dba13ff039373d8c95dfa8dad",
@@ -149,7 +149,7 @@
   "styles/toast.css": "d360b90e4206861015c7f595fbebbd09ff9cfa5da866491e25c9474c5c9be2b7",
   "styles/viewer-dark.css": "0d1346cae08201eabc419bef217a3f2d9708e3ab764f7191effc1fcb708e6afb",
   "styles/viewer.css": "509fd883d6320417cdf33d2fd089e93f72857c5e55b34af0bbfe31d1766e3a3c",
-  "sw.js": "0bfff0cdf3c46bcba3ba582fae520b3f7ffc26626f4ba7ffad23a0c03703f6bb"
+  "sw.js": "aa03fb58d65ac18edad333090854517589610fc377c3f7fbfddb527914438975"
  },
  "keep": [
   ".DS_Store",
@@ -166,6 +166,6 @@
  ],
  "name": "Ref",
  "notebook": "ref",
- "suite": "3fa26fc",
+ "suite": "7a8524c",
  "suite_folder": "../Documenting Fictions"
 }
