@@ -5,7 +5,8 @@
 // the shoot is still to come, Ref draws them again whenever the board changes
 // (keepUp); once the shoot is shot, The Eye freezes them. On its own (a Ref
 // installed by itself can't see The Eye's shoots) the board becomes a file
-// to share, which The Eye takes in with + Import board. A client's board
+// to share, which The Eye takes in with FROM REF. The Eye's FROM REF
+// inside the suite comes here to pick a board (pickBoardFor). A client's board
 // (one started from a yes in Rounds) carries the client along, so a new
 // shoot made from it in The Eye has them as its talent.
 import * as db from './db.js';
@@ -15,8 +16,9 @@ import { SHAPES } from './templates.js';
 import { openSheet } from '../components/sheet.js';
 import { confirmSheet } from '../components/dialogs.js';
 import { pickShoot } from '../components/shoot-picker.js';
+import { pickBoard } from '../components/board-picker.js';
 import { toast, hideToast } from '../components/toast.js';
-import { esc, canvasToBlob } from '../components/util.js';
+import { esc, canvasToBlob, shortDate } from '../components/util.js';
 import { boardClient } from './client-board.js';
 
 const D = window.DFData;
@@ -134,22 +136,8 @@ export async function sendToShoot(board) {
     shoots: shoots.map((s) => ({ id: s.id, name: s.name, photo: s.photo, has: has.has(s.id), line: [shootDay(s.date), s.status, has.has(s.id) ? 'Has this board' : ''].filter(Boolean).join(' · ') })),
   });
   if (!key) return;
-  let drawn;
-  try {
-    drawn = await drawBoard(board, (i) => toast(`Getting page ${i + 1} of ${board.pages.length} ready`, { ms: 60000 }));
-  } catch (e) {
-    console.error(e);
-    toast("The board couldn't be sent");
-    return;
-  }
-  hideToast();
-  const link = {
-    fromApp: 'ref', fromId: board.id, toApp: 'the-eye', toId: key === '+new' ? null : key, type: 'moodboard',
-    name: board.name, pageCount: drawn.about.pageCount, photoCount: drawn.about.photoCount,
-    drawnAt: D.nowIso(), drawnOf: boardKey(board), frozenAt: null, importedAt: null, pending: key === '+new',
-    client: boardClient(board),
-  };
-  const saved = await D.saveLink(link, drawn.pictures);
+  const saved = await sendTo(board, key);
+  if (!saved) return;
   // A new shoot is made by The Eye itself, with this board on it.
   if (key === '+new') { location.href = D.notebookUrl('the-eye', { newShootFromBoard: saved.id }); return; }
   const shoot = shoots.find((s) => s.id === key);
@@ -163,7 +151,50 @@ export async function sendToShoot(board) {
   sh.body.querySelector('[data-open]').addEventListener('click', () => { location.href = D.notebookUrl('the-eye', { shoot: key }); });
 }
 
-// On its own: the board as a file for The Eye's + Import board.
+// The board drawn and put on a shoot (key: the shoot's id, or '+new' for
+// a shoot The Eye makes from it). The link saved, or null if it couldn't be.
+async function sendTo(board, key) {
+  let drawn;
+  try {
+    drawn = await drawBoard(board, (i) => toast(`Getting page ${i + 1} of ${board.pages.length} ready`, { ms: 60000 }));
+  } catch (e) {
+    console.error(e);
+    toast("The board couldn't be sent");
+    return null;
+  }
+  hideToast();
+  const link = {
+    fromApp: 'ref', fromId: board.id, toApp: 'the-eye', toId: key === '+new' ? null : key, type: 'moodboard',
+    name: board.name, pageCount: drawn.about.pageCount, photoCount: drawn.about.photoCount,
+    drawnAt: D.nowIso(), drawnOf: boardKey(board), frozenAt: null, importedAt: null, pending: key === '+new',
+    client: boardClient(board),
+  };
+  return D.saveLink(link, drawn.pictures);
+}
+
+// ---------- FROM REF, from a shoot in The Eye ----------
+// The Eye's FROM REF opens Ref with the shoot (?pickFor=, app.js): a board
+// to pick for it, sent as Send to shoot sends it, then back to the shoot.
+export async function pickBoardFor(shootId) {
+  if (!D || !D.inSuite()) return;
+  const { shoots, mode } = eyeShoots();
+  const shoot = shoots.find((s) => s.id === shootId);
+  if (!shoot) return;
+  const has = new Set((await D.linksWhere({ fromApp: 'ref', toApp: 'the-eye', toId: shootId, type: 'moodboard' })).map((l) => l.fromId));
+  const boards = await db.listBoards();
+  const firstPhoto = (b) => b.pages.flatMap((p) => p.images).map((im) => im && photoById(im.id)).find(Boolean);
+  const id = await pickBoard({
+    shootName: D.eyeShootName(shoot, mode),
+    boards: boards.map((b) => {
+      const p = firstPhoto(b);
+      return { id: b.id, name: b.name, photo: p ? thumbUrl(p) : '', has: has.has(b.id), line: [`${b.pages.length} ${b.pages.length === 1 ? 'page' : 'pages'}`, shortDate(b.updatedAt), has.has(b.id) ? 'On this shoot' : ''].filter(Boolean).join(' · ') };
+    }),
+  });
+  const board = id && boards.find((b) => b.id === id);
+  if (board && (await sendTo(board, shootId))) location.href = D.notebookUrl('the-eye', { shoot: shootId });
+}
+
+// On its own: the board as a file for The Eye's FROM REF.
 async function sendAsFile(board) {
   let file;
   try {
@@ -181,7 +212,7 @@ async function sendAsFile(board) {
   const sh = openSheet({
     title: 'Send to a shoot',
     className: 'sheet-small',
-    body: `<p class="sheet-message">${board.pages.length} ${board.pages.length === 1 ? 'page' : 'pages'}, ${mb} MB. In The Eye, open the shoot and tap <b>+ Import board</b>.</p><div class="sheet-actions one"><button type="button" class="btn primary" data-send>Save or share</button></div>`,
+    body: `<p class="sheet-message">${board.pages.length} ${board.pages.length === 1 ? 'page' : 'pages'}, ${mb} MB. In The Eye, open the shoot and tap <b>From Ref</b> by its mood board.</p><div class="sheet-actions one"><button type="button" class="btn primary" data-send>Save or share</button></div>`,
   });
   sh.body.querySelector('[data-send]').addEventListener('click', async () => {
     const how = await D.saveFile(file);

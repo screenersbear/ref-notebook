@@ -127,12 +127,13 @@ export async function importFiles(files, onProgress) {
   return { photos, failed };
 }
 
-// Opens the phone's photos. Must be called straight from a tap.
-export function pickFiles(multiple = true) {
+// Opens the phone's photos (or, with `accept`, other files too). Must be
+// called straight from a tap.
+export function pickFiles(multiple = true, accept = 'image/*') {
   return new Promise((resolve) => {
     const input = document.createElement('input');
     input.type = 'file';
-    input.accept = 'image/*';
+    input.accept = accept;
     input.multiple = multiple;
     input.style.display = 'none';
     input.addEventListener('change', () => { const f = [...(input.files || [])]; input.remove(); resolve(f); });

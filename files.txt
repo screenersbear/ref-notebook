@@ -66,6 +66,7 @@ built/app.css smaller
   styles/send-sheet.css
   styles/client-slip.css
   styles/newboard-who.css
+  styles/big-buttons.css
 
 # The scripts: app.js and every ES module it imports (and those import), joined
 # by following the imports, so they aren't listed one by one.

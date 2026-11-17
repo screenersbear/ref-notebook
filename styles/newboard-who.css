@@ -22,8 +22,26 @@
 .who-note-text { margin: 8px 0 0; font: 400 15px/21px var(--ui); color: var(--text); white-space: pre-line; }
 .who-note-foot { margin: 10px 0 0; font: 400 13px/18px var(--ui); color: var(--dim); }
 
-/* The sheet: find, then everyone, Add someone new and its two fields. */
-.who-sheet .who-find { margin: 4px 0 0; }
-.who-sheet .who-pick[aria-current="true"] .send-name { font-weight: 700; }
+/* The sheet (round 3, ref/09-who-its-for): ADD A NEW PERSON (and its two
+   fields), the search, RECENT and its rows, then "No one, it's just for me". */
+.who-sheet .who-add-btn { margin-top: 8px; }
 .who-sheet .who-add { margin-top: 8px; }
-.who-sheet .who-nobody { width: 100%; margin-top: 16px; }
+.who-search {
+  display: flex; align-items: center; gap: 8px; height: 44px; margin: 12px 0 0; padding: 0 12px;
+  border-radius: 10px; background: #FFFFFF; box-shadow: inset 0 0 0 1px var(--line); color: var(--dim);
+}
+.who-search svg { flex: none; width: 18px; height: 18px; }
+.who-search input {
+  flex: 1; min-width: 0; height: 100%; margin: 0; padding: 0; border: 0; background: none; box-shadow: none; outline: none;
+  font: 400 16px/20px var(--ui); color: var(--text); -webkit-appearance: none; appearance: none;
+}
+.who-search input::placeholder { color: #9AA3A8; }
+.who-search:focus-within { box-shadow: inset 0 0 0 1.5px var(--text); }
+.who-sheet .who-recent { margin: 18px 0 2px; font: 500 11px/14px var(--ui); letter-spacing: .12em; text-transform: uppercase; color: var(--dim); }
+.who-sheet .who-recent[hidden] { display: none; }
+.who-sheet .who-pick[aria-current="true"] .send-name { font-weight: 700; }
+.who-sheet .send-line { font-size: 13px; line-height: 17px; }
+.who-sheet .who-nobody {
+  display: block; width: 100%; min-height: 52px; margin: 0; padding: 0; border: 0; background: none; box-shadow: none;
+  font: 400 16px/20px var(--ui); letter-spacing: 0; text-transform: none; color: var(--text); text-align: left; cursor: pointer;
+}

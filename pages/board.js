@@ -142,7 +142,7 @@ export async function boardScreen(view, id) {
   });
   view.querySelector('[data-rename]').addEventListener('click', async () => {
     const name = await promptSheet({ title: 'Rename board', value: board.name });
-    if (name) { board.name = name; persist(); drawPage(); }
+    if (name) { board.name = name; board.fromPdf = false; persist(); drawPage(); }
   });
   const onResize = () => { const el = stage.querySelector('.page'); if (el) fit(el); };
   window.addEventListener('ref-layout', onResize);

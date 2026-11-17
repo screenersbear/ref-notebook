@@ -23,7 +23,7 @@ import { sideOf } from './components/spread.js';
 import { paintStickers } from './components/stickers.js';
 import { esc } from './components/util.js';
 import { tellPeople, tellPeopleFromNowOn } from './data/people-out.js';
-import { keepUp } from './data/sendshoot.js';
+import { keepUp, pickBoardFor } from './data/sendshoot.js';
 import { attachWaiting } from './data/board-for.js';
 import { takeFinals } from './data/finals-in.js';
 import { toast } from './components/toast.js';
@@ -77,9 +77,11 @@ async function route() {
 window.addEventListener('hashchange', route);
 // ?board=<id>: The Eye's Open in Ref, straight to that board. ?client=<link
 // id>: Rounds' OPEN on a yes, to the board for them (started if it isn't).
+// ?pickFor=<shoot id>: The Eye's FROM REF, a board to pick for that shoot.
 const client = suite && suite.get('client');
+const pickFor = suite && suite.get('pickFor');
 if (suite && suite.get('board')) history.replaceState(null, '', `#/board/${encodeURIComponent(suite.get('board'))}`);
-else if (client) history.replaceState(null, '', '#/boards');
+else if (client || pickFor) history.replaceState(null, '', '#/boards');
 else if (suite && (location.hash || '#/') === '#/') history.replaceState(null, '', suite.at === 'tags' ? '#/folders' : '#/boards');
 else if (!suite && startPage() && (location.hash || '#/') === '#/') history.replaceState(null, '', startPage());
 // Ref tells the one list of people its boards, now and after each change.
@@ -87,6 +89,7 @@ tellPeopleFromNowOn();
 tellPeople(3000);
 route().then(() => {
   if (client) startClientBoard(client, defaultShape()).catch(console.error);
+  else if (pickFor) pickBoardFor(pickFor).catch(console.error);
   // Once the notebook is on screen: finals sent from The Eye come in, what's
   // in new photos is found, then any sent board changed elsewhere is drawn again.
   setTimeout(() => takeFinals().then(async (n) => {

@@ -1,5 +1,5 @@
 // Bump CACHE_NAME with every deploy so installed copies pick up new files.
-const CACHE_NAME = 'ref-notebook-v68';
+const CACHE_NAME = 'ref-notebook-v69';
 // The same notebook can live twice on one website (inside the Documenting
 // Fictions suite and as its own app), and both workers see every cache there:
 // each name carries the folder this copy lives in, and each copy only ever
@@ -11,7 +11,7 @@ const mine = (k) => k !== CACHE && (k.endsWith(` ${HERE}`) || (k.startsWith(PREF
 const ASSETS = [
   './', './index.html', './manifest.json',
   './built/shared-data.js', './built/app.css',
-  './built/app.js', './data/tagger-worker.js',
+  './built/app.js', './data/tagger-worker.js', './lib/pdf.min.js', './lib/pdf.worker.min.js',
   ...['orange', 'mango', 'berry', 'fern', 'ocean', 'leaf', 'ink'].flatMap((c) => [`./art/${c}-cover.webp`, `./art/${c}-block.webp`]), './fonts/klee-one-latin.woff', './fonts/kaisei-decol-500-latin.woff2', './fonts/figtree-latin.woff2', './fonts/archivo-black-latin.woff2',
   './icons/icon-180.png', './icons/icon-192.png', './icons/icon-512.png',
 ];

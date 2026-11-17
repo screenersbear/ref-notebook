@@ -9,6 +9,9 @@
 // foot. Its small pieces are in newboard-parts.js. In the suite, the first
 // step asks who it's for too (newboard-who.js): their next-time notes from
 // The Eye go first, and the board goes on their next shoot by itself.
+// IMPORT (pages/import.js, round 3) starts it with the photos brought in:
+// from a PDF it asks only the name (and who), each page a page of the
+// board; from photos, the name and the layout.
 import * as db from '../data/db.js';
 import { lib, photosIn, sortList, SPECIAL } from '../data/library.js';
 import { STYLES, paginate, makeCover, styleTemplate } from '../data/templates.js';
@@ -23,6 +26,8 @@ import { defaultShape } from './options.js';
 import { whoHtml, chooseWho } from './newboard-who.js';
 import { notesPage } from '../data/next-time.js';
 import { placeBoard } from '../data/board-for.js';
+import { takeImport } from './import.js';
+import { baseName, pdfBoardPages } from '../data/import-board.js';
 
 const SHAPE_INFO = {
   'letter-portrait': { name: 'Tall', blurb: 'For printing and bringing to a shoot.' },
@@ -36,18 +41,23 @@ const ORDERS = [
 ];
 
 export function newBoardScreen(view) {
+  const imported = takeImport(); // { ids, pdf, shape } from IMPORT, or null
   const W = {
-    step: 0, name: '', who: null, notes: [], shoot: null, shape: defaultShape(), style: 'mosaic', cover: false,
+    step: 0, name: imported && imported.pdf ? baseName(imported.pdf) : '', who: null, notes: [], shoot: null,
+    shape: (imported && imported.shape) || defaultShape(), style: 'mosaic', cover: false,
     start: 'blank', blankPages: 3,
     sections: [{ name: '', tags: [], all: true }], order: 'newest', perSection: 3,
   };
   const sources = [SPECIAL[0], SPECIAL[1], ...lib.folders];
   const nameOf = (id) => sources.find((f) => f.id === id)?.name || '';
-  const flow = () => (W.start === 'fill' ? [stepName, stepLayout, stepStart, stepPhotos] : [stepName, stepLayout, stepStart]);
-  const TITLES = new Map([[stepName, 'Name and page size'], [stepLayout, 'Layout'], [stepStart, 'Start'], [stepPhotos, 'Which photos']]);
+  const flow = () => {
+    if (imported) return imported.pdf ? [stepName] : [stepName, stepLayout];
+    return W.start === 'fill' ? [stepName, stepLayout, stepStart, stepPhotos] : [stepName, stepLayout, stepStart];
+  };
+  const TITLES = new Map([[stepName, imported && imported.pdf ? 'Name' : 'Name and page size'], [stepLayout, 'Layout'], [stepStart, 'Start'], [stepPhotos, 'Which photos']]);
   const MARKS = new Map([[stepName, 'Name'], [stepLayout, 'Layout'], [stepStart, 'Start'], [stepPhotos, 'Photos']]);
   const ASKS = new Map([
-    [stepName, 'What is it called, and how big are its pages?'],
+    [stepName, imported && imported.pdf ? 'What is it called? Each page of the PDF is a page of the board.' : 'What is it called, and how big are its pages?'],
     [stepLayout, 'How should the pages look? You can change any page later.'],
     [stepStart, 'Empty pages to fill yourself, or pages filled from your tags?'],
     [stepPhotos, 'Which photos come first, and how many pages each section gets.'],
@@ -66,7 +76,7 @@ export function newBoardScreen(view) {
     const steps = flow(), step = steps[W.step], last = W.step === steps.length - 1;
     view.innerHTML = `
       <div class="screen new-board">
-        ${shortBandHtml({ name: 'New board', backAttr: 'data-back', backLabel: W.step ? 'Back a step' : 'Back to mood boards', end: { label: 'Close', attr: 'data-close', svg: CLOSE } })}
+        ${shortBandHtml({ name: imported ? 'Import' : 'New board', backAttr: 'data-back', backLabel: W.step ? 'Back a step' : 'Back to mood boards', end: { label: 'Close', attr: 'data-close', svg: CLOSE } })}
         <div class="scroll form-page">
           ${marksHtml(steps.map((f) => MARKS.get(f)), W.step)}
           <h1 class="guide-title">${TITLES.get(step)}</h1>
@@ -84,15 +94,18 @@ export function newBoardScreen(view) {
   }
 
   // ---------- 1. Name and page size ----------
+  // (A PDF's board takes its page size from the PDF.)
   function stepName() {
-    return `
-      <label class="guide-field"><span class="guide-label">Name</span>
-        <input class="guide-input" data-name value="${esc(W.name)}" placeholder="Name this board" maxlength="80" autocomplete="off" enterkeyhint="next" /></label>
-      ${whoHtml(W)}
+    const sizes = `
       <p class="guide-label">Page size, the same for the whole board</p>
       <div class="opt-cards two" role="radiogroup" aria-label="Page size">${Object.entries(SHAPE_INFO).map(([k, sh]) => cardHtml({
         attr: `data-shape="${k}"`, on: W.shape === k, picture: `<span class="opt-shape ${k === 'wide-16x9' ? 'wide' : 'tall'}"></span>`, name: sh.name, blurb: sh.blurb,
       })).join('')}</div>`;
+    return `
+      <label class="guide-field"><span class="guide-label">Name</span>
+        <input class="guide-input" data-name value="${esc(W.name)}" placeholder="Name this board" maxlength="80" autocomplete="off" enterkeyhint="next" /></label>
+      ${whoHtml(W)}
+      ${imported && imported.pdf ? '' : sizes}`;
   }
 
   // ---------- 2. Layout ----------
@@ -197,7 +210,10 @@ export function newBoardScreen(view) {
   async function make() {
     const name = W.name.trim() || (W.who && W.who.name) || 'Untitled board';
     let pages = [];
-    if (W.start === 'blank') {
+    if (imported) {
+      // The photos brought in: a PDF's one to a page, others in the layout picked.
+      pages = imported.pdf ? pdfBoardPages(W.shape, imported.ids) : paginate(W.shape, W.style, imported.ids);
+    } else if (W.start === 'blank') {
       pages = Array.from({ length: W.blankPages }, (_, n) => ({ template: styleTemplate(W.shape, W.style, n) || paginate(W.shape, W.style, [])[0].template, images: [] }));
     } else {
       const used = new Set();
@@ -221,7 +237,8 @@ export function newBoardScreen(view) {
     // For someone: on their next shoot now, or waiting for one (while Mood boards is connected).
     const attach = W.who && window.DFConnect.connectOn('moodboards');
     const client = W.who ? { client: { name: W.who.name, handle: W.who.instagram, personId: W.who.id, waiting: !!attach && !W.shoot } } : {};
-    const b = await db.saveBoard({ name, shape: W.shape, style: W.style, pages, ...client });
+    const fromPdf = imported && imported.pdf ? { style: 'bleed', fromPdf: true } : {};
+    const b = await db.saveBoard({ name, shape: W.shape, style: W.style, pages, ...client, ...fromPdf });
     location.hash = `#/board/${b.id}`;
     if (attach) {
       const first = (W.who.name || `@${W.who.instagram || W.who.tiktok}`).split(/\s+/)[0];
