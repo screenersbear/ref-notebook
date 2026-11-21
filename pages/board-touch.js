@@ -3,6 +3,7 @@
 import { photoById } from '../data/library.js';
 import { applyCrop, MAX_ZOOM } from '../components/board-page.js';
 import { clamp } from '../components/util.js';
+import { swipeTurns } from '../data/board-nav.js';
 
 export function addTouch(ed) {
   // ---- Touching the page ----
@@ -35,7 +36,7 @@ export function addTouch(ed) {
     const dx = e.clientX - gesture.x, dy = e.clientY - gesture.y;
     if (Math.hypot(dx, dy) > 8) gesture.moved = true;
     if (gesture.text != null) { if (gesture.moved && (gesture.picked || gesture.handle)) ed.dragBox(gesture, dx / gesture.pw, dy / gesture.ph); return; }
-    if (!gesture.crop) return;
+    if (!gesture.crop || gesture.swipe) return;
     const im = ed.page().images[ed.sel];
     const slotEl = ed.stage.querySelector(`.slot[data-index="${ed.sel}"]`);
     const img = slotEl?.querySelector('img');
@@ -48,6 +49,10 @@ export function addTouch(ed) {
       const sw = slotEl.clientWidth, sh = slotEl.clientHeight;
       const scale = Math.max(sw / rec.width, sh / rec.height) * (im.zoom || 1);
       const spareX = rec.width * scale - sw, spareY = rec.height * scale - sh;
+      // A picked photo that can't move sideways (a PDF's page): a sideways swipe turns the page (user, 11-20).
+      if (!gesture.moved) return;
+      if (gesture.swipe == null) gesture.swipe = swipeTurns(dx, dy, spareX);
+      if (gesture.swipe) return;
       const [fx, fy] = gesture.crop.focal || [0.5, 0.5];
       im.focal = [spareX > 0.5 ? clamp(fx - dx / spareX, 0, 1) : fx, spareY > 0.5 ? clamp(fy - dy / spareY, 0, 1) : fy];
     }
@@ -61,6 +66,11 @@ export function addTouch(ed) {
     const g = gesture;
     gesture = null;
     if (g.text != null) return ed.endBoxGesture(g, e);
+    if (g.swipe) {
+      const sx = e.clientX - g.x;
+      if (Math.abs(sx) > 40) ed.goTo(ed.at + (sx < 0 ? 1 : -1), sx < 0 ? 1 : -1);
+      return;
+    }
     if (g.crop) {
       if (g.changed) {
         ed.undo.push(JSON.stringify(ed.board.pages.map((p, i) => (i === ed.at ? { ...p, images: p.images.map((x, n) => (n === ed.sel ? g.crop : x)) } : p))));

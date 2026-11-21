@@ -30,12 +30,21 @@ export const setPuller = (p) => { puller = p; };
 // Called after each route: which section it's in, or -1 for none. list: it's
 // that section's own first screen, where swiping the page moves through the book.
 export function showSection(i, list = false) {
+  markSection(i);
   bar.hidden = i < 0;
   onList = list;
   frame.dataset.swipe = list ? '1' : '';
   if (landed) { landed(); landed = null; }
   if (i < 0) { frame.style.transform = ''; busy = false; return; }
   at = i;
+}
+
+// The bar and its marks as soon as a route starts (user, 11-20: "nav icon
+// didn't appear right away"): not only once the screen is drawn, which waits
+// on the photos. Nothing else changes until showSection.
+export function markSection(i) {
+  if (i < 0) return;
+  bar.hidden = false;
   links.forEach((a, k) => { if (k === i) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current'); });
 }
 

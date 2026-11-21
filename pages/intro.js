@@ -12,9 +12,10 @@ const CARDS = [
 
 export const introSeen = () => { try { return localStorage.getItem(SEEN) === '1'; } catch { return true; } };
 
-export function openIntro() {
+// after: run once the cards are put away (the first visit's walk through Incoming).
+export function openIntro(after) {
   let at = 0;
-  const s = openSheet({ title: CARDS[0][0], className: 'sheet-small intro', onClose: () => { try { localStorage.setItem(SEEN, '1'); } catch {} } });
+  const s = openSheet({ title: CARDS[0][0], className: 'sheet-small intro', onClose: () => { try { localStorage.setItem(SEEN, '1'); } catch {} if (typeof after === 'function') setTimeout(after, 60); } });
   const draw = () => {
     const last = at === CARDS.length - 1;
     s.setTitle(CARDS[at][0]);

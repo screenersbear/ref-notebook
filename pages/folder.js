@@ -12,6 +12,8 @@ import { toast } from '../components/toast.js';
 import { ICONS } from '../components/icons.js';
 import { esc, isIOS, isStandalone } from '../components/util.js';
 import { shortBandHtml } from '../components/band.js';
+import { guideNoteHtml, wireGuideNote, currentGuide, moveGuide } from '../components/guide-note.js';
+import { afterImport } from '../data/first-guide.js';
 
 const SORT_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><line x1="4" y1="7" x2="20" y2="7"/><line x1="7" y1="12" x2="17" y2="12"/><line x1="10" y1="17" x2="14" y2="17"/></svg>';
 const TICK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="5 12.5 10 17 19 7"/></svg>';
@@ -34,6 +36,7 @@ export function folderScreen(view, id) {
     try { await navigator.storage?.persist?.(); } catch {}
     const r = await importFiles(files, (n, total) => toast(`Bringing in ${n} of ${total}`, { ms: 60000 }));
     await refresh();
+    if (incoming) moveGuide(afterImport(currentGuide(), r.photos.length));
     toast(r.failed.length ? `${r.photos.length} added, ${r.failed.length} could not be read` : `${r.photos.length} ${r.photos.length === 1 ? 'photo' : 'photos'} added`);
     draw();
     carryOn();
@@ -104,6 +107,7 @@ export function folderScreen(view, id) {
             </span>
           </div>
           <div class="chips">${chipsHtml()}</div>`}
+        ${incoming ? guideNoteHtml() : ''}
         <div class="scan"${scanHtml() ? '' : ' hidden'}>${scanHtml()}</div>
         <div class="scroll photos">${gridHtml()}</div>
         ${selecting ? `
@@ -120,6 +124,7 @@ export function folderScreen(view, id) {
   }
 
   function wire() {
+    wireGuideNote(view);
     view.querySelector('[data-select]')?.addEventListener('click', () => { selecting = !selecting; sel.clear(); draw(); });
     view.querySelector('[data-undo]')?.addEventListener('click', async () => { await undoLast(); draw(); });
     view.querySelector('[data-sort]')?.addEventListener('click', async () => {
@@ -152,6 +157,7 @@ export function folderScreen(view, id) {
       try {
         if (b.dataset.act === 'file') {
           if (!(await fileSheet(ids))) return;
+          if (currentGuide() === 'tag') moveGuide(''); // the walk's last step, done
         } else if (b.dataset.act === 'fav') {
           const turnOn = !ids.every((x) => photoById(x).favorite);
           await changePhotos(ids.map(photoById), () => ({ favorite: turnOn }), 'favorites');

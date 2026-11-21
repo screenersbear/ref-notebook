@@ -4,6 +4,8 @@
 // - Inside a notebook, a backup of all four asks first: "This backup has
 //   all four notebooks." Just <this notebook> (the main button) restores
 //   only its part and leaves the others as they are; All four, all of it.
+//   A notebook on its own has only itself: it says so, and offers Just
+//   <this notebook> or Cancel (rounds/STANDALONE.md, 21 Nov).
 // In the sheet of backup-sheet.js, loaded before this. What it does:
 // shared/data/backups.js. This is the master copy: tools/sync.py shared
 // copies it into each notebook's components/shared/.
@@ -25,11 +27,12 @@
   // "Restore all four?" or "Restore Ref?": the last word before the
   // notebooks are swapped for the file's, then the restore, with how far
   // it's got. Resolves true once it's done (then done(), or the page is
-  // read fresh), false if cancelled.
-  function confirm(files, { only = null, done = null } = {}) {
+  // read fresh), false if cancelled. alone: the notebook is on its own, with
+  // no other notebooks on this device to stay as they are.
+  function confirm(files, { only = null, done = null, alone = false } = {}) {
     const name = only ? BOOKS[only].name : 'all four';
     const what = only
-      ? `Everything in ${name} on this device is swapped for what's in the file. The other notebooks stay as they are.`
+      ? `Everything in ${name} on this device is swapped for what's in the file.${alone ? '' : ' The other notebooks stay as they are.'}`
       : "Everything in Ref, The Eye, Layouts and Rounds on this device is swapped for what's in the file.";
     return new Promise((resolve) => {
       let busy = false;
@@ -84,12 +87,13 @@
     if (!got || !got.all) return { files };
     const json = !(await D.isZipFile(files[0]));
     const just = async () => ({ files: json ? [await B.partFile(files[0], here)] : files });
-    if (!D.inSuite()) return just(); // on its own, a notebook has only itself
+    const name = BOOKS[here].name;
+    const alone = !D.inSuite(); // on its own, a notebook has only itself
     return new Promise((resolve) => {
       let picked = false;
-      const s = S.frame('Restore', `<p class="dfb-text">This backup has all four notebooks.</p>
-        <button type="button" class="dfb-btn" data-just>Just ${BOOKS[here].name}</button>
-        <button type="button" class="dfb-btn quiet" data-all>All four</button>`, () => { if (!picked) resolve(null); });
+      const s = S.frame('Restore', `<p class="dfb-text">This backup has all four notebooks.${alone ? ` On its own, ${name} puts back only its part.` : ''}</p>
+        <button type="button" class="dfb-btn" data-just>Just ${name}</button>
+        ${alone ? '<button type="button" class="dfb-btn quiet" data-close>Cancel</button>' : '<button type="button" class="dfb-btn quiet" data-all>All four</button>'}`, () => { if (!picked) resolve(null); });
       s.el.addEventListener('click', async (e) => {
         const b = e.target.closest('[data-just], [data-all]');
         if (!b) return;

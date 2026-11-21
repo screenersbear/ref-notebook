@@ -60,3 +60,9 @@
 .editor .tpanel .label-btn:disabled { box-shadow: inset 0 0 0 1.5px #D6DADD; color: #9AA3A8; }
 .editor .tpanel .tp-done { height: 40px; padding: 0 20px; border: 0 !important; background: var(--ink); color: var(--on-ink); box-shadow: none; }
 .editor .tpanel .check { font: 400 15px/20px var(--ui); }
+
+/* PAGES in the tray (user, 11-20): the board's pages in order, numbered, the
+   one you're on ringed in ink; a tap goes to it. */
+.editor .tray-page { position: relative; }
+.editor .tray-page.on::after { content: ''; position: absolute; inset: 0; border-radius: 4px; box-shadow: inset 0 0 0 2px var(--ink); }
+.tray-num { position: absolute; left: 3px; bottom: 3px; min-width: 18px; height: 18px; padding: 0 4px; border-radius: 9px; background: rgba(49, 61, 69, .8); color: #fff; font: 700 11px/18px var(--ui); text-align: center; }

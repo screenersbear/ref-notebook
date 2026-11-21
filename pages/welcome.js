@@ -4,7 +4,8 @@
 // notebooks say the same thing.
 import { openSheet } from '../components/sheet.js';
 
-export function welcome(name, openTour) {
+// skipped: run instead when the tour is turned down.
+export function welcome(name, openTour, skipped) {
   const suite = window.DF_SUITE;
   if (!suite || !suite.firstVisit) return false;
   const w = suite.words(name);
@@ -12,7 +13,7 @@ export function welcome(name, openTour) {
   const s = openSheet({
     title: w.back[0],
     className: 'sheet-small intro',
-    onClose: () => { suite.welcomed(); if (toured) setTimeout(openTour, 60); },
+    onClose: () => { suite.welcomed(); if (toured) setTimeout(openTour, 60); else if (typeof skipped === 'function') setTimeout(skipped, 60); },
   });
   const say = (text) => `<p class="sheet-message">${text}</p>`;
   const one = (label, step) => `<div class="sheet-actions one"><button type="button" class="btn primary" data-step="${step}">${label}</button></div>`;

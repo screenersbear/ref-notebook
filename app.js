@@ -16,9 +16,10 @@ import { openOptions, startPage, defaultShape } from './pages/options.js';
 import { startClientBoard } from './pages/client-slip.js';
 import { introSeen, openIntro } from './pages/intro.js';
 import { welcome } from './pages/welcome.js';
+import { startGuide } from './components/guide-note.js';
 import { closeAllSheets } from './components/sheet.js';
 import { carryOn } from './data/tagger.js';
-import { showSection } from './components/navbar.js';
+import { showSection, markSection } from './components/navbar.js';
 import { sideOf } from './components/spread.js';
 import { paintStickers } from './components/stickers.js';
 import { esc } from './components/util.js';
@@ -55,6 +56,7 @@ async function route() {
   }
   setBook(h !== '/');
   if (h === '/') { showSection(-1); return; }
+  markSection(section);
   try {
     await refresh();
     if (mine !== token) return;
@@ -106,8 +108,9 @@ route().then(() => {
 });
 // The first launch: the cards on how it works. Inside Documenting Fictions,
 // first how to get back to the shelf, and the cards only if they're wanted.
-if (suite) { if (suite.firstVisit) setTimeout(() => { if (!document.querySelector('.sheet-overlay')) welcome('Ref', openIntro); }, 900); }
-else if (!introSeen()) setTimeout(() => { if (!document.querySelector('.sheet-overlay')) openIntro(); }, 1200);
+// Then, with no photos in yet, a walk through bringing them into Incoming (user, 11-20).
+if (suite) { if (suite.firstVisit) setTimeout(() => { if (!document.querySelector('.sheet-overlay')) welcome('Ref', () => openIntro(startGuide), startGuide); }, 900); }
+else if (!introSeen()) setTimeout(() => { if (!document.querySelector('.sheet-overlay')) openIntro(startGuide); }, 1200);
 paintStickers().catch(console.error);
 
 if ('serviceWorker' in navigator && location.protocol !== 'file:') navigator.serviceWorker.register('./sw.js').catch(() => {});

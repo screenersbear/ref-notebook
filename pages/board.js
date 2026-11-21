@@ -3,7 +3,8 @@
 // and the tools bar's sheets are in the board-*.js files beside it.
 import * as db from '../data/db.js';
 import { showBoard } from './showboard.js';
-import { lib, photosIn, thumbUrl, sortList, SPECIAL } from '../data/library.js';
+import { lib, photosIn, thumbUrl, sortList, photoById, SPECIAL } from '../data/library.js';
+import { pageThumbs, pageOf, trayStart } from '../data/board-nav.js';
 import { SHAPES } from '../data/templates.js';
 import { renderPage, pageTemplate } from '../components/board-page.js';
 import { keepUp } from '../data/sendshoot.js';
@@ -21,7 +22,7 @@ export async function boardScreen(view, id) {
   Object.assign(ed, { drawPage, drawTray, goTo });
   let board = await db.getBoard(id); ed.board = board;
   if (!board) { location.hash = '#/boards'; return () => {}; }
-  ed.at = 0; ed.sel = -1; let tray = 'all'; let destroyed = false; let drawToken = 0;
+  ed.at = 0; ed.sel = -1; let tray = trayStart(board); let destroyed = false; let drawToken = 0;
   ed.tsel = null; ed.panel = null; ed.lastTap = null; // the text box picked ('main' or a note's index), its menu
   const undo = []; ed.undo = undo;
   const persist = debounce(() => db.saveBoard(board).then((b) => { board.updatedAt = b.updatedAt; }), 300); ed.persist = persist;
@@ -77,14 +78,26 @@ export async function boardScreen(view, id) {
     const k = Math.min(stage.clientWidth / s.W, stage.clientHeight / s.H);
     el.style.width = `${Math.floor(s.W * k)}px`;
   }
+  // PAGES first (user, 11-20): the board's own pages in order, each tapped
+  // to go to it; then where the photos come from.
   function drawTray() {
-    const sources = [{ id: 'all', name: 'All' }, SPECIAL[0], SPECIAL[1], ...lib.folders];
+    const sources = [{ id: 'pages', name: 'Pages' }, { id: 'all', name: 'All' }, SPECIAL[0], SPECIAL[1], ...lib.folders];
     view.querySelector('[data-tray-head]').innerHTML = sources.map((f) => `<button type="button" class="chip${tray === f.id ? ' on' : ''}" data-source="${esc(f.id)}">${esc(f.name)}</button>`).join('');
+    if (tray === 'pages') return drawPages();
     const list = sortList(photosIn(tray), 'newest');
     const onPage = new Set(page().images.filter(Boolean).map((x) => x.id));
     view.querySelector('[data-tray]').innerHTML = list.length
       ? list.map((p) => `<button type="button" class="tray-photo${onPage.has(p.id) ? ' used' : ''}" data-photo="${esc(p.id)}" aria-label="${esc(p.name)}"><img src="${thumbUrl(p)}" alt="" loading="lazy" draggable="false" /></button>`).join('')
       : '<p class="note">No photos here yet.</p>';
+  }
+
+  function drawPages() {
+    const box = view.querySelector('[data-tray]');
+    const list = pageThumbs(board.pages).map((t) => ({ ...t, photo: photoById(t.id) })).filter((t) => t.photo);
+    box.innerHTML = list.length
+      ? list.map((t) => `<button type="button" class="tray-photo tray-page${t.page === ed.at + 1 ? ' on' : ''}" data-goto="${t.page - 1}" aria-label="Page ${t.page}"><img src="${thumbUrl(t.photo)}" alt="" loading="lazy" draggable="false" /><span class="tray-num">${t.page}</span></button>`).join('')
+      : '<p class="note">No pages with photos yet.</p>';
+    box.querySelector('.tray-page.on')?.scrollIntoView?.({ inline: 'nearest', block: 'nearest' });
   }
 
   function goTo(n, dir) {
@@ -99,7 +112,13 @@ export async function boardScreen(view, id) {
     const t = pageTemplate(board, page());
     let spot = ed.sel;
     if (spot < 0) { for (let i = 0; i < t.slots.length; i++) if (!page().images[i]) { spot = i; break; } }
-    if (spot < 0) { toast('Tap a spot on the page first'); return; }
+    if (spot < 0) {
+      // Every spot is full: a photo that's on another page goes to that page.
+      const on = pageOf(board.pages, photoId, ed.at);
+      if (on >= 0 && on !== ed.at) { goTo(on, on > ed.at ? 1 : -1); return; }
+      toast('Every spot has a photo. Tap one on the page, then a photo here to swap it');
+      return;
+    }
     snapshot();
     while (page().images.length <= spot) page().images.push(null);
     page().images[spot] = { id: photoId };
@@ -137,6 +156,8 @@ export async function boardScreen(view, id) {
     if (b) { tray = b.dataset.source; drawTray(); }
   });
   view.querySelector('[data-tray]').addEventListener('click', (e) => {
+    const to = e.target.closest('[data-goto]');
+    if (to) { const n = +to.dataset.goto; goTo(n, n > ed.at ? 1 : -1); return; }
     const b = e.target.closest('[data-photo]');
     if (b) place(b.dataset.photo);
   });
