@@ -12,7 +12,7 @@
 import * as db from './db.js';
 import { photoById, thumbUrl } from './library.js';
 import { pageToCanvas } from '../components/board-page.js';
-import { SHAPES } from './templates.js';
+import { pageSize } from './page-size.js';
 import { openSheet } from '../components/sheet.js';
 import { confirmSheet } from '../components/dialogs.js';
 import { pickShoot } from '../components/shoot-picker.js';
@@ -68,11 +68,11 @@ async function drawCover(board, firstPage) {
 }
 // Every page as a picture, plus the cover and what the shoot's page shows.
 export async function drawBoard(board, say) {
-  const s = SHAPES[board.shape] || SHAPES['letter-portrait'];
-  const px = s.W >= s.H ? LONG_EDGE : Math.round((LONG_EDGE * s.W) / s.H);
   const pages = [];
   for (let i = 0; i < board.pages.length; i++) {
     if (say) say(i);
+    const s = pageSize(board, board.pages[i]); // an imported page is its own size
+    const px = s.W >= s.H ? LONG_EDGE : Math.round((LONG_EDGE * s.W) / s.H);
     const c = await pageToCanvas(board, board.pages[i], px);
     pages.push(await toPicture(c));
     c.width = c.height = 0;

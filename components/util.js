@@ -26,12 +26,13 @@ export const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
 
 export const clone = (v) => JSON.parse(JSON.stringify(v));
 
-// "Oct 30" this year, "Oct 30, 2025" otherwise.
+// "30 Oct" this year, "30 Oct 2025" otherwise: the day first, as the band and
+// every notebook's hand-offs say it (refining round, 21 Nov).
 export function shortDate(iso) {
   const d = new Date(iso);
   const opts = { month: 'short', day: 'numeric' };
   if (d.getFullYear() !== new Date().getFullYear()) opts.year = 'numeric';
-  return d.toLocaleDateString(undefined, opts);
+  return d.toLocaleDateString('en-GB', opts);
 }
 
 // A file name made from a project name: "Beach day!" becomes "beach-day".

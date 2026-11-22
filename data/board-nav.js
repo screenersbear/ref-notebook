@@ -23,8 +23,9 @@ export function pageOf(pages, id, from = -1) {
   return -1;
 }
 
-// Where the tray starts: a board from a PDF on its pages, any other on All.
-export const trayStart = (board) => (board && board.fromPdf ? 'pages' : 'all');
+// Where the tray starts: a board brought in (from a PDF or photos) on its
+// pages, any other on All.
+export const trayStart = (board) => (board && (board.fromPdf || board.shape === 'own') ? 'pages' : 'all');
 
 // A drag on a picked photo turns the page when it goes more sideways than
 // up or down and the photo has no room to move sideways in its spot (a PDF's

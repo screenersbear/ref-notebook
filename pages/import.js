@@ -1,17 +1,17 @@
 // IMPORT on Mood boards (round 3, ref/08-new-and-import): a board from a PDF
 // (each page a page of the board) or from photos picked on the phone.
 // Everything picked comes in as photos the usual way (data/photos.js: their
-// colours now, what's in them soon after), then New board asks for the
-// rest (pages/newboard.js): a PDF's board its name and who it's for, a
-// board of photos its layout too.
+// colours now, what's in them soon after), then New board asks for its name
+// and who it's for (pages/newboard.js). Each page stays as it was, at its
+// full size (data/page-size.js).
 import { importFiles, pickFiles } from '../data/photos.js';
 import { pdfPageFiles } from '../data/pdf-pages.js';
-import { isPdf, pdfShape, failedWords } from '../data/import-board.js';
+import { isPdf, failedWords } from '../data/import-board.js';
 import { refresh } from '../data/library.js';
 import { carryOn } from '../data/tagger.js';
 import { toast, hideToast } from '../components/toast.js';
 
-let waiting = null; // what New board starts from: { ids, pdf, shape }
+let waiting = null; // what New board starts from: { ids, pdf }
 
 // New board takes what's waiting (once).
 export function takeImport() {
@@ -26,12 +26,10 @@ export async function importBoard() {
   try { await navigator.storage?.persist?.(); } catch {}
   const pdf = files.find(isPdf) || null;
   const photos = [];
-  let wide = false;
   for (const f of files) {
     if (!isPdf(f)) { photos.push(f); continue; }
     try {
       const got = await pdfPageFiles(f, (n, of) => toast(`Getting page ${n} of ${of} ready`, { ms: 60000 }));
-      if (f === pdf) wide = got.wide;
       photos.push(...got.files);
     } catch (e) {
       console.error(e);
@@ -45,6 +43,6 @@ export async function importBoard() {
   else hideToast();
   if (!r.photos.length) return;
   carryOn();
-  waiting = { ids: r.photos.map((p) => p.id), pdf: pdf ? pdf.name : null, shape: pdf ? pdfShape(wide) : null };
+  waiting = { ids: r.photos.map((p) => p.id), pdf: pdf ? pdf.name : null };
   location.hash = '#/new';
 }

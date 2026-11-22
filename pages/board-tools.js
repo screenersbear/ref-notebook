@@ -1,29 +1,40 @@
-// The board's tools bar: the layout sheet, adding a page, the page's menu
-// (move, duplicate, delete) and saving the board as a PDF.
+// The board's tools bar and the page's own buttons: the layout sheet, a new
+// page (its layout picked first, as in Layouts: Starky, 21 Nov), deleting a
+// page (its x, or More), and the page's menu (move, duplicate, delete, and
+// Send to shoot for the whole board, so a board just made goes on from where
+// it was made: refining round, 21 Nov). Export is in board-export.js.
 import { withTextDefaults } from '../components/textsize.js';
-import { TEMPLATES, SHAPES, styleTemplate, defaultTemplate } from '../data/templates.js';
-import { pageToCanvas } from '../components/board-page.js';
-import { makePdf } from '../data/pdf.js';
+import { pageSize, layoutsFor, nextSize } from '../data/page-size.js';
 import { openSheet } from '../components/sheet.js';
 import { choiceSheet, confirmSheet } from '../components/dialogs.js';
-import { toast, hideToast } from '../components/toast.js';
-import { esc, clone, slug, canvasToBlob, downloadBlob } from '../components/util.js';
+import { esc, clone } from '../components/util.js';
 import { cardHtml } from '../components/option-card.js';
+import { sendToShoot } from '../data/sendshoot.js';
+
+// Send to shoot is left out while Mood boards is switched off (the shelf's HOW THEY CONNECT), as on Mood boards.
+const sending = () => !window.DFConnect || window.DFConnect.connectOn('moodboards');
+
+// A layout drawn small, for a page of this size.
+function layoutPicture(size, t) {
+  const W = 60, H = (60 * size.H) / size.W;
+  return `<svg viewBox="0 0 ${W} ${H}" style="width:${size.W > size.H ? 80 : 60}px" aria-hidden="true"><rect class="paper-r" width="${W}" height="${H}"/>${t.slots.map((b) => `<rect x="${b.x * W}" y="${b.y * H}" width="${b.w * W}" height="${b.h * H}"/>`).join('')}</svg>`;
+}
 
 export function addTools(ed) {
-  Object.assign(ed, { layoutSheet, addPage, moreSheet, exportPdf });
+  Object.assign(ed, { layoutSheet, addPage, deletePage, moreSheet });
+  // The layouts for a page as cards (the one it has, on); first, any put
+  // ahead of them ({ id, name, t }), with none on.
+  const cards = (page, on, first = []) => {
+    const size = pageSize(ed.board, page);
+    const list = [...first, ...layoutsFor(ed.board, page).map((t) => ({ id: t.id, name: t.name, t }))];
+    return `<div class="opt-cards" role="radiogroup" aria-label="Layout">${list.map((o, n) => cardHtml({
+      attr: `data-tpl="${esc(o.id)}" data-n="${n}"`, on: !first.length && o.id === on,
+      picture: layoutPicture(size, o.t), name: o.name,
+    })).join('')}</div>`;
+  };
   // ---- Sheets ----
   function layoutSheet() {
-    const s = SHAPES[ed.board.shape], W = 60, H = (60 * s.H) / s.W;
-    const list = TEMPLATES[ed.board.shape].filter((t) => !t.guide);
-    const sh = openSheet({
-      title: 'Layout',
-      body: `<div class="opt-cards" role="radiogroup" aria-label="Layout">${list.map((t) => cardHtml({
-        attr: `data-tpl="${esc(t.id)}"`, on: t.id === ed.page().template,
-        picture: `<svg viewBox="0 0 ${W} ${H}" style="width:${s.W > s.H ? 80 : 60}px" aria-hidden="true"><rect class="paper-r" width="${W}" height="${H}"/>${t.slots.map((b) => `<rect x="${b.x * W}" y="${b.y * H}" width="${b.w * W}" height="${b.h * H}"/>`).join('')}</svg>`,
-        name: t.name,
-      })).join('')}</div>`,
-    });
+    const sh = openSheet({ title: 'Layout', body: cards(ed.page(), ed.page().template) });
     sh.body.addEventListener('click', (e) => {
       const b = e.target.closest('[data-tpl]');
       if (!b) return;
@@ -33,14 +44,34 @@ export function addTools(ed) {
       ed.persist(); sh.close(); ed.drawPage();
     });
   }
+  // ADD A PAGE: which layout first (like this page, or any), then the page,
+  // after the one on screen. An imported board's new page is this page's size.
   function addPage() {
-    ed.snapshot();
+    const cur = ed.page();
+    const size = nextSize(ed.board, cur);
+    const probe = size ? { size, images: [] } : { images: [] };
+    const like = layoutsFor(ed.board, probe).find((t) => t.id === cur.template) || layoutsFor(ed.board, probe)[0];
     const n = ed.at + 1;
-    const tid = styleTemplate(ed.board.shape, ed.board.style, n) || defaultTemplate(ed.board.shape, 1).id;
-    ed.board.pages.splice(n, 0, withTextDefaults({ template: tid, images: [], section: ed.page().section }));
-    ed.persist();
-    ed.goTo(n, 1);
-    ed.drawPage(1);
+    const sh = openSheet({ title: 'New page', body: cards(probe, null, [{ id: like.id, name: 'Like this page', t: like }]) });
+    sh.body.addEventListener('click', (e) => {
+      const b = e.target.closest('[data-tpl]');
+      if (!b) return;
+      ed.snapshot();
+      const page = withTextDefaults({ template: b.dataset.tpl, images: [], section: cur.section, ...(size ? { size } : {}) });
+      ed.board.pages.splice(n, 0, page);
+      ed.persist(); sh.close();
+      ed.goTo(n, 1);
+    });
+  }
+  // The page's x (or More, Delete page): asks first, and Undo brings it back.
+  async function deletePage() {
+    if (ed.board.pages.length < 2) return;
+    if (!(await confirmSheet({ title: `Delete page ${ed.at + 1}?`, message: 'Its photos stay in the notebook.', confirmLabel: 'Delete', danger: true }))) return;
+    ed.snapshot();
+    ed.board.pages.splice(ed.at, 1);
+    ed.at = Math.min(ed.at, ed.board.pages.length - 1);
+    ed.sel = -1; ed.tsel = null; ed.closePanel();
+    ed.persist(); ed.drawPage(); ed.drawTray();
   }
   async function moreSheet() {
     const key = await choiceSheet({
@@ -50,10 +81,12 @@ export function addTools(ed) {
         ...(ed.at < ed.board.pages.length - 1 ? [{ key: 'down', label: 'Move later' }] : []),
         { key: 'dup', label: 'Duplicate page' },
         ...(ed.board.pages.length > 1 ? [{ key: 'delete', label: 'Delete page', danger: true }] : []),
+        ...(sending() ? [{ key: 'send', label: 'Send to shoot' }] : []),
       ],
     });
     if (!key) return;
-    if (key === 'delete' && !(await confirmSheet({ title: 'Delete this page?', message: 'Its photos stay in the notebook.', confirmLabel: 'Delete', danger: true }))) return;
+    if (key === 'send') { await ed.persist.flush(); await sendToShoot(ed.board); return; }
+    if (key === 'delete') { await deletePage(); return; }
     ed.snapshot();
     if (key === 'up' || key === 'down') {
       const j = key === 'up' ? ed.at - 1 : ed.at + 1;
@@ -62,41 +95,8 @@ export function addTools(ed) {
     } else if (key === 'dup') {
       ed.board.pages.splice(ed.at + 1, 0, clone(ed.page()));
       ed.at += 1;
-    } else {
-      ed.board.pages.splice(ed.at, 1);
-      ed.at = Math.min(ed.at, ed.board.pages.length - 1);
     }
     ed.sel = -1;
     ed.persist(); ed.drawPage(); ed.drawTray();
-  }
-  async function exportPdf() {
-    const s = SHAPES[ed.board.shape];
-    const px = ed.board.shape === 'wide-16x9' ? 2000 : 1700;
-    const sheets = [];
-    try {
-      for (let i = 0; i < ed.board.pages.length; i++) {
-        toast(`Making page ${i + 1} of ${ed.board.pages.length}`, { ms: 60000 });
-        const c = await pageToCanvas(ed.board, ed.board.pages[i], px);
-        sheets.push({ w: s.W * 72, h: s.H * 72, pxW: c.width, pxH: c.height, jpeg: await canvasToBlob(c, 'image/jpeg', 0.88) });
-        c.width = c.height = 0;
-      }
-    } catch (e) {
-      console.error(e);
-      toast('Could not make the PDF');
-      return;
-    }
-    hideToast();
-    const blob = makePdf(sheets);
-    const name = `${slug(ed.board.name)}.pdf`;
-    const mb = (blob.size / 1048576).toFixed(1);
-    // A new tap, because iOS won't open the share sheet after a long wait.
-    const sh = openSheet({ title: 'Your PDF is ready', className: 'sheet-small', body: `<p class="sheet-message">${ed.board.pages.length} ${ed.board.pages.length === 1 ? 'page' : 'pages'}, ${mb} MB.</p><div class="sheet-actions one"><button type="button" class="btn primary" data-send>Save or share</button></div>` });
-    sh.body.querySelector('[data-send]').addEventListener('click', async () => {
-      const file = new File([blob], name, { type: 'application/pdf' });
-      if (navigator.canShare?.({ files: [file] })) {
-        try { await navigator.share({ files: [file], title: ed.board.name }); } catch {}
-      } else downloadBlob(blob, name);
-      sh.close();
-    });
   }
 }

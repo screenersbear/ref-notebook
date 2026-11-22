@@ -66,3 +66,20 @@
 .editor .tray-page { position: relative; }
 .editor .tray-page.on::after { content: ''; position: absolute; inset: 0; border-radius: 4px; box-shadow: inset 0 0 0 2px var(--ink); }
 .tray-num { position: absolute; left: 3px; bottom: 3px; min-width: 18px; height: 18px; padding: 0 4px; border-radius: 9px; background: rgba(49, 61, 69, .8); color: #fff; font: 700 11px/18px var(--ui); text-align: center; }
+
+/* ADD A PAGE (Starky, 21 Nov), as Layouts has it: the layouts first, then
+   the page, after this one. */
+.editor .ed-add { flex: none; display: inline-flex; align-items: center; gap: 5px; height: 32px; margin: 0 -8px 0 0; padding: 0 8px; border: 0; background: none; font: 700 11px/14px var(--ui); letter-spacing: .12em; text-transform: uppercase; color: var(--band-on-paper, var(--ink)); white-space: nowrap; }
+.editor .ed-add svg { width: 13px; height: 13px; stroke-width: 2.4; }
+.editor .board-head { align-items: center; }
+/* The x on the page's top left corner: delete the page (it asks first). */
+.editor .page-x { position: absolute; left: 8px; top: 8px; z-index: 3; display: flex; align-items: center; justify-content: center; width: 28px; height: 28px; padding: 0; border: 0; border-radius: 50%; background: var(--text); color: #FFFFFF; box-shadow: 0 1px 4px rgba(49, 61, 69, .3); }
+.editor .page-x svg { width: 13px; height: 13px; stroke-width: 2.5; }
+/* + PHOTOS at the start of the tray: from the phone, into the notebook. */
+.editor .tray-row { display: flex; gap: 6px; margin-top: 8px; }
+.editor .tray-row .tray { flex: 1; min-width: 0; margin-top: 0; }
+.editor .tray-add { flex: none; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; width: 56px; height: 56px; padding: 0; border: 0; border-radius: 4px; background: none; box-shadow: inset 0 0 0 1.5px var(--ink); color: var(--band-on-paper, var(--ink)); font: 700 9px/11px var(--ui); letter-spacing: .06em; text-transform: uppercase; }
+.editor .tray-add svg { width: 18px; height: 18px; stroke-width: 2; }
+.editor .tray-add[hidden] { display: none; }
+/* FONT: the board's, by name, written in it. */
+.editor .tpanel .font-pick { max-width: 62%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 15px; font-weight: 400; letter-spacing: 0; text-transform: none; }

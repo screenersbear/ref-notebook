@@ -1,5 +1,6 @@
 // Touching a board's page: tap a spot, swipe to turn the page, drag or pinch
-// a photo to crop it, drag a text box to move or resize it.
+// a photo to crop it, drag a text box to move or resize it. The page's x
+// (delete the page) and a spot's x (take its photo off) are buttons.
 import { photoById } from '../data/library.js';
 import { applyCrop, MAX_ZOOM } from '../components/board-page.js';
 import { clamp } from '../components/util.js';
@@ -11,7 +12,7 @@ export function addTouch(ed) {
   let gesture = null;
   const slotOf = (target) => target.closest?.('.slot');
   ed.stage.addEventListener('pointerdown', (e) => {
-    if (e.target.closest('.slot-x')) return;
+    if (e.target.closest('.slot-x, .page-x')) return;
     try { ed.stage.setPointerCapture(e.pointerId); } catch {}
     pts.set(e.pointerId, [e.clientX, e.clientY]);
     const handle = e.target.closest('.tbox-sel i'), boxEl = handle ? null : e.target.closest('[data-box]');
@@ -93,6 +94,7 @@ export function addTouch(ed) {
   ed.stage.addEventListener('pointerup', up);
   ed.stage.addEventListener('pointercancel', up);
   ed.stage.addEventListener('click', (e) => {
+    if (e.target.closest('.page-x')) { ed.deletePage(); return; }
     if (!e.target.closest('.slot-x')) return;
     ed.snapshot();
     ed.page().images[ed.sel] = null;

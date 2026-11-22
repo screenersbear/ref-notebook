@@ -3,6 +3,9 @@
 // canvas, in the PDF, and in flat image export.
 //
 // A template: { id, name, slots: [{x,y,w,h}], text: {x,y,w,h, overlay?, size?} }
+// The grids with thin lines or none, and the edge to edge ones, are in
+// tight-templates.js; each shape's list has them after its own.
+import { tallGrids, wideGrids } from './tight-templates.js';
 
 export const SHAPES = {
   'letter-portrait': { W: 8.5, H: 11, label: 'Letter portrait (8.5 × 11)' },
@@ -41,6 +44,7 @@ function lp() {
     // A board's cover (makeCover below): one big image, the name large under it.
     { id: 'lp-cover', name: 'Cover', cover: true, slots: [{ x: M, y: M, w: W - 2 * M, h: 7.4 }], text: { x: M, y: M + 7.4 + 0.4, w: W - 2 * M, h: H - 2 * M - 7.8 } },
     { id: 'lp-text', name: 'One image, long text', slots: [{ x: M, y: M, w: W - 2 * M, h: 5.6 }], text: { x: M, y: M + 5.6 + 0.35, w: W - 2 * M, h: H - 2 * M - 5.95, size: 1.15 } },
+    ...tallGrids(W, H, M, area, text),
   ].map((t) => norm(t, W, H));
 }
 
@@ -64,6 +68,7 @@ function wide() {
     { id: 'w-grid-6', name: 'Grid of six', slots: grid(3, 2, area), text },
     { id: 'w-grid-8', name: 'Grid of eight', slots: grid(4, 2, area), text },
     { id: 'w-grid-10', name: 'Grid of ten', slots: grid(5, 2, area), text },
+    ...wideGrids(W, H, M, area, text),
   ].map((t) => norm(t, W, H));
 }
 
@@ -106,9 +111,9 @@ export function templateFor(shape, id) {
   return list.find((t) => t.id === id) || null;
 }
 
-// Sensible default for a page with n images.
+// Sensible default for a page with n images (never one of the extra grids).
 export function defaultTemplate(shape, n) {
-  const list = TEMPLATES[shape].filter((t) => !t.guide && !t.cover);
+  const list = TEMPLATES[shape].filter((t) => !t.guide && !t.cover && !t.extra);
   return list.find((t) => t.slots.length >= Math.max(1, n) && !t.id.endsWith('bleed')) || list.reduce((a, t) => (t.slots.length > a.slots.length ? t : a));
 }
 
@@ -138,6 +143,10 @@ export const STYLES = [
     seq: { 'letter-portrait': ['lp-text', 'lp-single'], 'wide-16x9': ['w-single-text', 'w-two'] } },
   { id: 'pairs', name: 'Pairs', blurb: 'Two images per page, for comparisons and before/after.',
     seq: { 'letter-portrait': ['lp-two-stack', 'lp-two-side'], 'wide-16x9': ['w-two'] } },
+  { id: 'thin', name: 'Thin lines', blurb: 'Grids with fine lines between the photos.',
+    seq: { 'letter-portrait': ['lp-grid-6-thin', 'lp-grid-4-thin', 'lp-grid-9-thin'], 'wide-16x9': ['w-grid-6-thin', 'w-grid-8-thin', 'w-grid-4-thin'] } },
+  { id: 'seamless', name: 'No lines', blurb: 'Photos side by side, with nothing between them.',
+    seq: { 'letter-portrait': ['lp-grid-4-none', 'lp-grid-6-none', 'lp-edge-9'], 'wide-16x9': ['w-grid-6-none', 'w-edge-8', 'w-grid-4-none'] } },
 ];
 
 export const styleFor = (id) => STYLES.find((s) => s.id === id) || null;

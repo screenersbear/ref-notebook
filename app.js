@@ -27,7 +27,9 @@ import { tellPeople, tellPeopleFromNowOn } from './data/people-out.js';
 import { keepUp, pickBoardFor } from './data/sendshoot.js';
 import { attachWaiting } from './data/board-for.js';
 import { takeFinals } from './data/finals-in.js';
+import { takePeopleEdits } from './data/people-in.js';
 import { toast } from './components/toast.js';
+import { noteReturn, keepReturn } from './data/eye-return.js';
 import './components/pull-shut.js';
 
 const view = document.getElementById('view');
@@ -40,12 +42,14 @@ const suite = window.DF_SUITE;
 document.addEventListener('click', (e) => { if (e.target.closest('[data-app-menu]')) openOptions(); });
 const titleR = document.getElementById('titleR');
 const titleL = document.getElementById('titleL');
+const session = () => { try { return window.sessionStorage; } catch { return null; } };
 
 async function route() {
   const mine = ++token;
   if (destroyCurrent) { destroyCurrent(); destroyCurrent = null; }
   closeAllSheets();
   document.querySelectorAll('.viewer').forEach((v) => v.remove());
+  keepReturn(session(), location.hash || '#/'); // Back to The Eye lasts while that board is open
   const h = (location.hash || '#/').slice(1) || '/';
   if (suite && h === '/') { suite.home(); return; }
   const section = h === '/boards' ? 0 : h === '/folders' || h.startsWith('/folder/') ? 1 : -1;
@@ -77,12 +81,16 @@ async function route() {
 }
 
 window.addEventListener('hashchange', route);
-// ?board=<id>: The Eye's Open in Ref, straight to that board. ?client=<link
+// ?board=<id>: The Eye's Open in Ref, straight to that board (and with
+// &shoot=<id>, its back goes to that shoot, data/eye-return.js). ?client=<link
 // id>: Rounds' OPEN on a yes, to the board for them (started if it isn't).
 // ?pickFor=<shoot id>: The Eye's FROM REF, a board to pick for that shoot.
 const client = suite && suite.get('client');
 const pickFor = suite && suite.get('pickFor');
-if (suite && suite.get('board')) history.replaceState(null, '', `#/board/${encodeURIComponent(suite.get('board'))}`);
+if (suite && suite.get('board')) {
+  noteReturn(session(), suite.get('board'), suite.get('shoot') || '');
+  history.replaceState(null, '', `#/board/${encodeURIComponent(suite.get('board'))}`);
+}
 else if (client || pickFor) history.replaceState(null, '', '#/boards');
 else if (suite && (location.hash || '#/') === '#/') history.replaceState(null, '', suite.at === 'tags' ? '#/folders' : '#/boards');
 else if (!suite && startPage() && (location.hash || '#/') === '#/') history.replaceState(null, '', startPage());
@@ -102,6 +110,13 @@ route().then(() => {
     carryOn();
   }).catch(console.error), 1200);
   setTimeout(carryOn, 2500);
+  // Someone renamed on their person page or in Rounds: their boards follow
+  // (a board on a shoot is drawn again with its new name).
+  setTimeout(() => takePeopleEdits().then((changed) => {
+    changed.forEach((b) => keepUp(b.id));
+    const open = changed.some((b) => (location.hash || '') === `#/board/${encodeURIComponent(b.id)}`);
+    if (open || (changed.length && /^#\/(boards)?$/.test(location.hash || '#/'))) route();
+  }).catch(console.error), 1800);
   setTimeout(() => keepUp(), 4000);
   // Then boards waiting on someone go on, once that person has a shoot.
   setTimeout(() => attachWaiting().catch(console.error), 4500);

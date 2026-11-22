@@ -45,10 +45,13 @@ export function clientBoard(link, shape) {
   return { name, shape, style: CLIENT_STYLE, pages, client: { name, handle: link.handle || '', from: link.id } };
 }
 
-// The client a board passes on to a new shoot (null for a board of your own).
+// The client a board passes on to a new shoot (null for a board of your own),
+// with the yes they came from (from), so The Eye can take their photo from
+// it (refining round, 21 Nov).
 export function boardClient(board) {
   const c = board && board.client;
-  return c && String(c.name ?? '').trim() ? { name: c.name.trim(), handle: c.handle || '' } : null;
+  if (!c || !String(c.name ?? '').trim()) return null;
+  return { name: c.name.trim(), handle: c.handle || '', ...(c.from ? { from: c.from } : {}) };
 }
 
 // Offers waiting in Ref: yeses passed on whose board isn't started yet.

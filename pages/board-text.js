@@ -1,9 +1,13 @@
 // A board page's text boxes: its own title and text, and boxes added with T.
-// Picking one, moving it, and its menu in place of the photos at the bottom.
+// Picking one, moving it, and its menu in place of the photos at the bottom,
+// with the board's font for titles or text (Starky, 21 Nov: the Mac app's
+// fonts, and changing them).
 import { sizeOf, stepSize, useDefault, saveDefault, isDefault, defaultSize } from '../components/textsize.js';
 import { pageTemplate } from '../components/board-page.js';
 import { toast } from '../components/toast.js';
 import { choiceSheet } from '../components/dialogs.js';
+import { fontSheet } from '../components/font-sheet.js';
+import { boardFont, setBoardFont } from '../data/board-fonts.js';
 import { esc, clamp } from '../components/util.js';
 
 export function addTextBoxes(ed) {
@@ -103,11 +107,14 @@ export function addTextBoxes(ed) {
     tpanel.hidden = false;
     tpanel.innerHTML = n ? `
         <textarea rows="2" data-note placeholder="Type here">${esc(n.text)}</textarea>
+        ${fontRow('text')}
         ${sizeRow('note', 'text')}
         <div class="tp-actions"><button type="button" class="label-btn" data-tdel>Delete box</button><button type="button" class="label-btn tp-done" data-tdone>Done</button></div>` : `
         <input type="text" data-title value="${esc(p.title || '')}" placeholder="Title" maxlength="120" autocomplete="off" />
+        ${fontRow('title')}
         ${sizeRow('title', 'title')}
         <textarea rows="2" data-body placeholder="Text">${esc(p.text || '')}</textarea>
+        ${fontRow('text')}
         ${sizeRow('body', 'text')}
         <div class="tp-checks">${t.text.overlay ? `<label class="check"><input type="checkbox" data-fill${p.textFill === false ? '' : ' checked'} /> Background</label>` : ''}
           <label class="check"><input type="checkbox" data-palette${p.palette ? ' checked' : ''} /> Page colors</label></div>
@@ -128,9 +135,18 @@ export function addTextBoxes(ed) {
       row.querySelector('[data-savedef]').disabled = isDefault(o, kind);
     });
     paintSizes();
-    tpanel.onclick = (e) => {
+    tpanel.onclick = async (e) => {
       const b = e.target.closest('button');
       if (!b) return;
+      if (b.dataset.fontpick) {
+        const kind = b.dataset.fontpick;
+        const id = await fontSheet({ title: kind === 'title' ? 'Font for titles' : 'Font for text', current: boardFont(ed.board, kind).id });
+        if (!id || !setBoardFont(ed.board, kind, id)) return;
+        ed.persist(); ed.drawPage();
+        const f = boardFont(ed.board, kind);
+        tpanel.querySelectorAll(`[data-fontpick="${kind}"]`).forEach((x) => { x.textContent = f.name; x.style.fontFamily = f.stack; x.setAttribute('aria-label', `${kind === 'title' ? 'Font for titles' : 'Font for text'}: ${f.name}`); });
+        return;
+      }
       if ('tdone' in b.dataset) { ed.tsel = null; closePanel(); ed.drawPage(); return; }
       if ('tdel' in b.dataset) { ed.snapshot(); p.notes.splice(key, 1); ed.panel = null; ed.tsel = null; closePanel(); tpanel.hidden = true; trayBox.hidden = false; ed.persist(); ed.drawPage(); return; }
       const row = b.closest('[data-size]');
@@ -143,6 +159,15 @@ export function addTextBoxes(ed) {
     };
     ed.drawPage(); // the page refits to the room left
     if (focus) tpanel.querySelector('textarea, input')?.focus();
+  }
+  // The board's font for its titles or its text, by name, written in it.
+  function fontRow(kind) {
+    const f = boardFont(ed.board, kind);
+    return `
+      <div class="size-row font-row">
+        <span class="label">Font</span>
+        <button type="button" class="label-btn font-pick" data-fontpick="${kind}" aria-label="${kind === 'title' ? 'Font for titles' : 'Font for text'}: ${esc(f.name)}" style="font-family:${esc(f.stack)}">${esc(f.name)}</button>
+      </div>`;
   }
   function sizeRow(kind, word) {
     return `

@@ -2,6 +2,7 @@
 // folder is sorted and filtered.
 import * as db from './db.js';
 import { remakeThumb } from './photos.js';
+import { isFound, labelOf, withLabel, foundFolder } from './found-tags.js';
 
 export const lib = { photos: [], folders: [] };
 
@@ -53,10 +54,12 @@ export const SPECIAL = [
   { id: 'all', name: 'All photos' },
 ];
 export const isSpecial = (id) => SPECIAL.some((s) => s.id === id);
-export const folderById = (id) => SPECIAL.find((s) => s.id === id) || lib.folders.find((f) => f.id === id);
+// A found tag ('found:<what>', data/found-tags.js) is one too, while a photo has it.
+export const folderById = (id) => SPECIAL.find((s) => s.id === id) || lib.folders.find((f) => f.id === id) || foundFolder(lib.photos, id) || undefined;
 
 export function photosIn(id) {
   if (id === 'all') return lib.photos;
+  if (isFound(id)) return withLabel(lib.photos, labelOf(id));
   if (id === 'incoming') return lib.photos.filter((p) => !p.folderIds.length);
   if (id === 'favorites') return lib.photos.filter((p) => p.favorite);
   return lib.photos.filter((p) => p.folderIds.includes(id));
@@ -171,7 +174,7 @@ export function chipsFor(photos, on, hereId) {
   const narrowed = photos.filter((p) => matches(p, on));
   const left = new Set(narrowed.flatMap((p) => [...keysOf(p)]));
   return [...counts.entries()]
-    .filter(([k]) => k !== `f:${hereId}` && (on.includes(k) || left.has(k)))
+    .filter(([k]) => k !== `f:${hereId}` && k !== `t:${labelOf(hereId)}` && (on.includes(k) || left.has(k)))
     .filter(([k]) => k[0] !== 'f' || lib.folders.some((f) => f.id === k.slice(2)))
     .sort((a, b) => (RANK[a[0][0]] - RANK[b[0][0]]) || (b[1] - a[1]) || a[0].localeCompare(b[0]))
     .map(([k]) => ({ key: k, kind: k[0], label: k[0] === 'f' ? lib.folders.find((f) => f.id === k.slice(2)).name : k === 'm:b&w' ? 'B&W' : cap(k.slice(2)) }));

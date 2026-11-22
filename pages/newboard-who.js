@@ -1,7 +1,8 @@
 // New board's WHO IT'S FOR (round 2, connect/11), on the first step under
 // Name, in the suite only: the person it's for (their photo, name and
 // Change), the line on what that does, and NEXT TIME, FROM THE EYE (their
-// latest lessons, with the shoot and day, which go first on the board).
+// latest lessons, with the shoot and day, to keep in mind: they don't go on
+// the board, Starky, 21 Nov).
 // Optional. Picking: components/person-picker.js; the notes and their next
 // shoot: data/next-time.js; putting the board on it: data/board-for.js.
 import { esc } from '../components/util.js';
@@ -29,7 +30,7 @@ export function whoHtml(W) {
     ${notes.length ? `<p class="guide-label">Next time, from The Eye</p>
     <div class="who-notes">${notes.map((n) => `<div class="who-note"><p class="who-note-head">${window.DFConnect.miniHtml('the-eye')}<span>${esc(noteSource(n))}</span></p>
       <p class="who-note-text">${esc(n.text)}</p></div>`).join('')}
-      <p class="who-note-foot">Added to the board as its first page. You can take it off.</p></div>` : ''}`;
+      <p class="who-note-foot">To keep in mind as you make it. They don't go on the board.</p></div>` : ''}`;
 }
 
 // Asks who it's for and fills in W.who, W.notes and W.shoot (their next

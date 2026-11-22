@@ -1,11 +1,15 @@
 // A board's pages: swipe to turn, tap a spot, pull a photo in from the tray.
 // This file draws the board and its tray; touching the page, the text boxes
-// and the tools bar's sheets are in the board-*.js files beside it.
+// and the tools bar's sheets are in the board-*.js files beside it. As in
+// Layouts (Starky, 21 Nov): ADD A PAGE beside the board's name, an x on the
+// page to delete it, + PHOTOS at the start of the tray (from the phone,
+// into the notebook too), and Export (images or a PDF).
 import * as db from '../data/db.js';
 import { showBoard } from './showboard.js';
 import { lib, photosIn, thumbUrl, sortList, photoById, SPECIAL } from '../data/library.js';
 import { pageThumbs, pageOf, trayStart } from '../data/board-nav.js';
-import { SHAPES } from '../data/templates.js';
+import { pageSize } from '../data/page-size.js';
+import { returnFor } from '../data/eye-return.js';
 import { renderPage, pageTemplate } from '../components/board-page.js';
 import { keepUp } from '../data/sendshoot.js';
 import { promptSheet } from '../components/dialogs.js';
@@ -16,6 +20,10 @@ import { esc, clamp, debounce } from '../components/util.js';
 import { addTouch } from './board-touch.js';
 import { addTools } from './board-tools.js';
 import { addTextBoxes } from './board-text.js';
+import { addExport } from './board-export.js';
+import { addFromPhone } from './board-phone.js';
+
+const session = () => { try { return window.sessionStorage; } catch { return null; } };
 
 export async function boardScreen(view, id) {
   const ed = { view }; // what this screen's parts share (see the files it adds)
@@ -33,21 +41,28 @@ export async function boardScreen(view, id) {
   // Round 2 (08-board-editor): the short band with Back and Full screen, the
   // board's name (tap to rename) and the page, the tray, the labelled tools.
   const tool = (t, icon, label) => `<button type="button" class="tool" data-t="${t}">${ICONS[icon]}<span>${label}</span></button>`;
+  // Opened from a shoot's Open in Ref: Back goes back to that shoot (Starky, 21 Nov).
+  const eyeShoot = returnFor(session(), board.id);
+  const back = eyeShoot && window.DFData && window.DFData.notebookUrl('the-eye', { shoot: eyeShoot });
   view.innerHTML = `
     <div class="screen editor">
-      ${shortBandHtml({ name: 'Mood boards', back: '#/boards', backLabel: 'Back to mood boards', end: { label: 'Full screen', attr: 'data-show', svg: FULL } })}
+      ${shortBandHtml({ name: back ? 'The Eye' : 'Mood boards', back: back || '#/boards', backLabel: back ? 'Back to The Eye' : 'Back to mood boards', end: { label: 'Full screen', attr: 'data-show', svg: FULL } })}
       <div class="board-head">
         <button type="button" class="board-name" data-rename></button>
         <span class="count" data-at></span>
+        <button type="button" class="ed-add" data-add>${ICONS.plus}Add a page</button>
       </div>
       <div class="stage" data-stage></div>
       <div class="tpanel" data-tpanel hidden></div>
       <div class="tray-box" data-tray-box>
         <div class="tray-head" data-tray-head></div>
-        <div class="tray" data-tray></div>
+        <div class="tray-row">
+          <button type="button" class="tray-add" data-tray-add>${ICONS.plus}<span>Photos</span></button>
+          <div class="tray" data-tray></div>
+        </div>
       </div>
       <nav class="tools" aria-label="Page tools">
-        ${tool('layout', 'layout', 'Layout')}${tool('text', 'text', 'Text')}${tool('add', 'page', 'Add page')}${tool('undo', 'undo', 'Undo')}${tool('more', 'more', 'More')}${tool('pdf', 'download', 'PDF')}
+        ${tool('layout', 'layout', 'Layout')}${tool('text', 'text', 'Text')}${tool('undo', 'undo', 'Undo')}${tool('more', 'more', 'More')}${tool('export', 'download', 'Export')}
       </nav>
     </div>`;
   const stage = view.querySelector('[data-stage]'); ed.stage = stage;
@@ -60,6 +75,12 @@ export async function boardScreen(view, id) {
     const el = await renderPage(board, page(), { selected: ed.sel, editing: true, mainHint: ed.tsel === 'main' });
     if (token !== drawToken || destroyed) return;
     fit(el);
+    // The x on the page's top left corner: delete this page (not the last one).
+    if (board.pages.length > 1) {
+      const del = document.createElement('button');
+      del.type = 'button'; del.className = 'page-x'; del.setAttribute('aria-label', `Delete page ${ed.at + 1}`); del.innerHTML = ICONS.x;
+      el.append(del);
+    }
     if (ed.sel >= 0 && page().images[ed.sel]) {
       const x = document.createElement('button');
       x.type = 'button'; x.className = 'slot-x'; x.setAttribute('aria-label', 'Take this photo off the page'); x.innerHTML = ICONS.x;
@@ -74,7 +95,7 @@ export async function boardScreen(view, id) {
   }
   // As big as the space allows, keeping the page's shape.
   function fit(el) {
-    const s = SHAPES[board.shape];
+    const s = pageSize(board, page());
     const k = Math.min(stage.clientWidth / s.W, stage.clientHeight / s.H);
     el.style.width = `${Math.floor(s.W * k)}px`;
   }
@@ -83,6 +104,7 @@ export async function boardScreen(view, id) {
   function drawTray() {
     const sources = [{ id: 'pages', name: 'Pages' }, { id: 'all', name: 'All' }, SPECIAL[0], SPECIAL[1], ...lib.folders];
     view.querySelector('[data-tray-head]').innerHTML = sources.map((f) => `<button type="button" class="chip${tray === f.id ? ' on' : ''}" data-source="${esc(f.id)}">${esc(f.name)}</button>`).join('');
+    view.querySelector('[data-tray-add]').hidden = tray === 'pages';
     if (tray === 'pages') return drawPages();
     const list = sortList(photosIn(tray), 'newest');
     const onPage = new Set(page().images.filter(Boolean).map((x) => x.id));
@@ -129,6 +151,9 @@ export async function boardScreen(view, id) {
   addTouch(ed);
   addTools(ed);
   addTextBoxes(ed);
+  addExport(ed);
+  addFromPhone(ed);
+  ed.setTray = (id) => { tray = id; drawTray(); };
 
   view.querySelector('.tools').addEventListener('click', (e) => {
     const b = e.target.closest('[data-t]');
@@ -136,9 +161,8 @@ export async function boardScreen(view, id) {
     const k = b.dataset.t;
     if (k === 'layout') ed.layoutSheet();
     else if (k === 'text') ed.textSheet();
-    else if (k === 'add') ed.addPage();
     else if (k === 'more') ed.moreSheet();
-    else if (k === 'pdf') ed.exportPdf();
+    else if (k === 'export') ed.exportBoard();
     else if (k === 'undo' && undo.length) {
       board.pages = JSON.parse(undo.pop());
       ed.at = Math.min(ed.at, board.pages.length - 1);
@@ -151,6 +175,8 @@ export async function boardScreen(view, id) {
     persist.flush?.();
     showBoard(board, ed.at, (n) => { if (!destroyed && n !== ed.at) goTo(n, n > ed.at ? 1 : -1); });
   });
+  view.querySelector('[data-add]').addEventListener('click', () => ed.addPage());
+  view.querySelector('[data-tray-add]').addEventListener('click', () => ed.fromPhone());
   view.querySelector('[data-tray-head]').addEventListener('click', (e) => {
     const b = e.target.closest('[data-source]');
     if (b) { tray = b.dataset.source; drawTray(); }

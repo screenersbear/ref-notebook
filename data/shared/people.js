@@ -41,10 +41,14 @@
   // Two handles that can't both be theirs: the same name, but different handles.
   const clashes = (a, b) => (!!lower(a.instagram) && !!lower(b.instagram) && lower(a.instagram) !== lower(b.instagram))
     || (!!lower(a.tiktok) && !!lower(b.tiktok) && lower(a.tiktok) !== lower(b.tiktok));
+  // Another Rounds person already: Rounds keeps them as two people, so a name
+  // alone never makes them one (pitfalls, 21 Nov: two Alex Kims became one).
+  const otherInRounds = (r, f) => !!f.roundsId && r.sigs.some((s) => s.startsWith('rounds:') && s !== sigOf(f));
 
   // Who in records this is: { match } when sure, else { match: null, maybe }
   // (the people of that name it might be). Found the same way before; then
-  // a handle; then the only person of that name, when no handle says no.
+  // a handle; then the only person of that name, when no handle says no
+  // and it isn't another of Rounds' people.
   function placePerson(records, f) {
     const sig = sigOf(f);
     const before = records.find((r) => r.sigs.includes(sig));
@@ -54,7 +58,7 @@
     if (byHandle) return { match: byHandle, maybe: [] };
     if (!hasText(f.name)) return { match: null, maybe: [] };
     const named = records.filter((r) => r.keys.includes(nameKey(f.name)));
-    if (named.length === 1 && !clashes(named[0], f)) return { match: named[0], maybe: [] };
+    if (named.length === 1 && !clashes(named[0], f) && !otherInRounds(named[0], f)) return { match: named[0], maybe: [] };
     return { match: null, maybe: named.map((r) => r.id) };
   }
   const union = (a, b) => [...new Set([...a, ...b])];

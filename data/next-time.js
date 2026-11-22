@@ -2,11 +2,11 @@
 // FOR picks a person from the one list of people; their latest Lessons for
 // next time from The Eye's reflections come with them (a shoot kept to
 // itself is left out), and, when they have a shoot coming, the latest from
-// another shoot of that kind too: NEXT TIME, FROM THE EYE, the board's first
-// page. The board goes on their next shoot in The Eye; with none yet it
+// another shoot of that kind too: NEXT TIME, FROM THE EYE, shown on New
+// board's first step to keep in mind, never put on the board (Starky, 21
+// Nov). The board goes on their next shoot in The Eye; with none yet it
 // waits on them (data/board-for.js). Plain functions, no storage: The Eye's
 // shoots as it keeps them, and on(shoot), the ids of the people on it.
-import { withTextDefaults } from '../components/textsize.js';
 import { dayWords } from './client-board.js';
 
 const UPCOMING = ['prospect', 'planning', 'waiting_to_shoot', 'rescheduled'];
@@ -34,15 +34,6 @@ export function notesFor(shoots, on, personId, kind, nameOf) {
 
 // "Rooftop portraits, 7 Nov"
 export const noteSource = (n) => [n.title, dayWords(n.day)].filter(Boolean).join(', ');
-
-// The board's first page: NEXT TIME, each note with where it's from, on the
-// layout with room for words (and a photo, if one's put in).
-export function notesPage(notes, shape) {
-  return withTextDefaults({
-    template: shape === 'wide-16x9' ? 'w-single-text' : 'lp-text', images: [], nextTime: true,
-    title: 'Next time', text: notes.map((n) => `${n.text} (${noteSource(n)})`).join('\n\n'),
-  });
-}
 
 // The people to pick from, by name; q finds a name or handle.
 export function peopleMatching(records, q) {

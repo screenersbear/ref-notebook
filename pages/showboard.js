@@ -1,7 +1,7 @@
 // The whole mood board full screen: one page at a time, as big as the screen
 // allows. Swipe (or use the arrows) to go through it; the cross goes back.
 import { renderPage } from '../components/board-page.js';
-import { SHAPES } from '../data/templates.js';
+import { pageSize } from '../data/page-size.js';
 import { ICONS } from '../components/icons.js';
 
 export function showBoard(board, start, onClose) {
@@ -24,7 +24,7 @@ export function showBoard(board, start, onClose) {
 
   async function pageEl(n) {
     const p = await renderPage(board, board.pages[n]);
-    const s = SHAPES[board.shape];
+    const s = pageSize(board, board.pages[n]); // an imported page is its own size
     const k = Math.min(stage.clientWidth / s.W, stage.clientHeight / s.H);
     p.style.width = `${Math.floor(s.W * k)}px`;
     p.classList.add('show-page');

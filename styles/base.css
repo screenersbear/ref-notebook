@@ -3,6 +3,7 @@
 /* ref, do something as a phone notebook: floating shut on white, open in a frame with white around it. */
 @font-face { font-family: "Klee One"; src: url("../fonts/klee-one-latin.woff") format("woff"); font-display: swap; } /* Klee One, resized inside the file to Mansalva's width and line height (Safari has no ascent-override), so no layout moved */
 @font-face { font-family: "Kaisei Decol"; src: url("../fonts/kaisei-decol-500-latin.woff2") format("woff2"); font-weight: 500; font-display: swap; size-adjust: 85.4%; } /* the headers, in capitals: Kaisei Decol Medium, sized so its capitals stand as tall as Klee One's */
+@font-face { font-family: "Michroma"; src: url("../fonts/michroma-latin.ttf") format("truetype"); font-display: swap; } /* one of the board fonts, as the desktop Ref has it (OFL, fonts/Michroma-OFL.txt) */
 
 :root {
   --ink: #175ba9;      /* the notebook's color */

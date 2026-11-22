@@ -9,11 +9,13 @@
 // foot. Its small pieces are in newboard-parts.js. In the suite, the first
 // step asks who it's for too (newboard-who.js): their next-time notes from
 // The Eye go first, and the board goes on their next shoot by itself.
-// IMPORT (pages/import.js, round 3) starts it with the photos brought in:
-// from a PDF it asks only the name (and who), each page a page of the
-// board; from photos, the name and the layout.
+// IMPORT (pages/import.js, round 3) starts it with the photos brought in,
+// and asks only the name (and who): a board made elsewhere keeps its pages
+// as they are, each at its full size (Starky, 21 Nov: no layout to fit it
+// into, nothing cropped). The Eye's next-time notes show on the first step
+// for you to keep in mind; they don't go on the board (Starky, 21 Nov).
 import * as db from '../data/db.js';
-import { lib, photosIn, sortList, SPECIAL } from '../data/library.js';
+import { lib, photosIn, sortList, photoById, SPECIAL } from '../data/library.js';
 import { STYLES, paginate, makeCover, styleTemplate } from '../data/templates.js';
 import { toast } from '../components/toast.js';
 import { withTextDefaults } from '../components/textsize.js';
@@ -24,10 +26,11 @@ import { cardHtml } from '../components/option-card.js';
 import { marksHtml, miniPage } from './newboard-parts.js';
 import { defaultShape } from './options.js';
 import { whoHtml, chooseWho } from './newboard-who.js';
-import { notesPage } from '../data/next-time.js';
 import { placeBoard } from '../data/board-for.js';
 import { takeImport } from './import.js';
-import { baseName, pdfBoardPages } from '../data/import-board.js';
+import { baseName } from '../data/import-board.js';
+import { OWN, ownPages } from '../data/page-size.js';
+import { withNewFonts } from '../data/board-fonts.js';
 
 const SHAPE_INFO = {
   'letter-portrait': { name: 'Tall', blurb: 'For printing and bringing to a shoot.' },
@@ -41,23 +44,23 @@ const ORDERS = [
 ];
 
 export function newBoardScreen(view) {
-  const imported = takeImport(); // { ids, pdf, shape } from IMPORT, or null
+  const imported = takeImport(); // { ids, pdf } from IMPORT, or null
   const W = {
     step: 0, name: imported && imported.pdf ? baseName(imported.pdf) : '', who: null, notes: [], shoot: null,
-    shape: (imported && imported.shape) || defaultShape(), style: 'mosaic', cover: false,
+    shape: imported ? OWN : defaultShape(), style: 'mosaic', cover: false,
     start: 'blank', blankPages: 3,
     sections: [{ name: '', tags: [], all: true }], order: 'newest', perSection: 3,
   };
   const sources = [SPECIAL[0], SPECIAL[1], ...lib.folders];
   const nameOf = (id) => sources.find((f) => f.id === id)?.name || '';
   const flow = () => {
-    if (imported) return imported.pdf ? [stepName] : [stepName, stepLayout];
+    if (imported) return [stepName];
     return W.start === 'fill' ? [stepName, stepLayout, stepStart, stepPhotos] : [stepName, stepLayout, stepStart];
   };
-  const TITLES = new Map([[stepName, imported && imported.pdf ? 'Name' : 'Name and page size'], [stepLayout, 'Layout'], [stepStart, 'Start'], [stepPhotos, 'Which photos']]);
+  const TITLES = new Map([[stepName, imported ? 'Name' : 'Name and page size'], [stepLayout, 'Layout'], [stepStart, 'Start'], [stepPhotos, 'Which photos']]);
   const MARKS = new Map([[stepName, 'Name'], [stepLayout, 'Layout'], [stepStart, 'Start'], [stepPhotos, 'Photos']]);
   const ASKS = new Map([
-    [stepName, imported && imported.pdf ? 'What is it called? Each page of the PDF is a page of the board.' : 'What is it called, and how big are its pages?'],
+    [stepName, imported ? `What is it called? Each ${imported.pdf ? 'page of the PDF' : 'photo'} is a page of the board, at its full size.` : 'What is it called, and how big are its pages?'],
     [stepLayout, 'How should the pages look? You can change any page later.'],
     [stepStart, 'Empty pages to fill yourself, or pages filled from your tags?'],
     [stepPhotos, 'Which photos come first, and how many pages each section gets.'],
@@ -94,7 +97,7 @@ export function newBoardScreen(view) {
   }
 
   // ---------- 1. Name and page size ----------
-  // (A PDF's board takes its page size from the PDF.)
+  // (An imported board's pages are each the size of their picture.)
   function stepName() {
     const sizes = `
       <p class="guide-label">Page size, the same for the whole board</p>
@@ -105,7 +108,7 @@ export function newBoardScreen(view) {
       <label class="guide-field"><span class="guide-label">Name</span>
         <input class="guide-input" data-name value="${esc(W.name)}" placeholder="Name this board" maxlength="80" autocomplete="off" enterkeyhint="next" /></label>
       ${whoHtml(W)}
-      ${imported && imported.pdf ? '' : sizes}`;
+      ${imported ? '' : sizes}`;
   }
 
   // ---------- 2. Layout ----------
@@ -211,8 +214,8 @@ export function newBoardScreen(view) {
     const name = W.name.trim() || (W.who && W.who.name) || 'Untitled board';
     let pages = [];
     if (imported) {
-      // The photos brought in: a PDF's one to a page, others in the layout picked.
-      pages = imported.pdf ? pdfBoardPages(W.shape, imported.ids) : paginate(W.shape, W.style, imported.ids);
+      // The photos brought in, one to a page, each page the size of its photo.
+      pages = ownPages(imported.ids.map(photoById));
     } else if (W.start === 'blank') {
       pages = Array.from({ length: W.blankPages }, (_, n) => ({ template: styleTemplate(W.shape, W.style, n) || paginate(W.shape, W.style, [])[0].template, images: [] }));
     } else {
@@ -231,14 +234,13 @@ export function newBoardScreen(view) {
         pages.push(...own);
       });
     }
-    if (W.who && W.notes.length) pages.unshift(notesPage(W.notes, W.shape));
     if (W.cover) pages.unshift(makeCover({ shape: W.shape, name }, pages.flatMap((p) => p.images).find(Boolean) || null));
     pages = pages.map((p) => withTextDefaults({ ...p, images: p.images.map((x) => (x ? { id: x } : null)) }));
     // For someone: on their next shoot now, or waiting for one (while Mood boards is connected).
     const attach = W.who && window.DFConnect.connectOn('moodboards');
     const client = W.who ? { client: { name: W.who.name, handle: W.who.instagram, personId: W.who.id, waiting: !!attach && !W.shoot } } : {};
-    const fromPdf = imported && imported.pdf ? { style: 'bleed', fromPdf: true } : {};
-    const b = await db.saveBoard({ name, shape: W.shape, style: W.style, pages, ...client, ...fromPdf });
+    const fromImport = imported ? { style: OWN, ...(imported.pdf ? { fromPdf: true } : {}) } : {};
+    const b = await db.saveBoard(withNewFonts({ name, shape: W.shape, style: W.style, pages, ...client, ...fromImport }));
     location.hash = `#/board/${b.id}`;
     if (attach) {
       const first = (W.who.name || `@${W.who.instagram || W.who.tiktok}`).split(/\s+/)[0];

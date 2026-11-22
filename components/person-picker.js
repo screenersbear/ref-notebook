@@ -9,6 +9,7 @@ import { openSheet } from './sheet.js';
 import { esc } from './util.js';
 import { peopleMatching } from '../data/next-time.js';
 import { whoLine, aboutPerson, recentFirst, RECENT_MOST } from '../data/who-lines.js';
+import { eyeFaces } from '../data/eye-faces.js';
 
 const line = (d) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
 const PLUS = line('<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>');
@@ -16,13 +17,17 @@ const SEARCH = line('<circle cx="11" cy="11" r="6.5"/><line x1="16" y1="16" x2="
 const SOMEONE = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="12" cy="8.5" r="4"/><path d="M4.5 21a7.5 7.5 0 0 1 15 0z"/></svg>';
 const D = () => window.DFData;
 
-// Their photos: what Rounds keeps for each person, as addresses.
+// Their photos: what Rounds keeps for each person, as addresses, then for
+// anyone without one, their talent photo in The Eye (data/eye-faces.js).
 async function photosOf(records, things) {
   const out = new Map();
   for (const t of things.filter((x) => x.app === 'rounds' && x.kind === 'person' && x.covers.length)) {
     const r = D().findPerson(records, t.people[0]);
     if (r && !out.has(r.id)) out.set(r.id, D().pictureUrl(t.covers[0]));
   }
+  const st = D().eyeState() || {};
+  const fromEye = await eyeFaces(records, st.shoots, D().findPerson, out).catch(() => new Map());
+  fromEye.forEach((src, id) => out.set(id, src));
   return out;
 }
 
@@ -54,7 +59,7 @@ export async function pickPerson({ picked = null } = {}) {
         <div class="send-list" data-list></div>
         <button type="button" class="who-nobody" data-nobody>No one, it's just for me</button>`,
       onClose: () => {
-        photos.forEach((u, id) => { if (!answer || answer.id !== id) URL.revokeObjectURL(u); });
+        photos.forEach((u, id) => { if (u.startsWith('blob:') && (!answer || answer.id !== id)) URL.revokeObjectURL(u); });
         resolve(answer);
       },
     });

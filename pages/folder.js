@@ -2,12 +2,14 @@
 // and sending them on.
 import * as db from '../data/db.js';
 import { refresh, thumbUrl, photoById, photosIn, folderById, isSpecial, SORTS, sortOf, setSort, sortList, chipsFor, matches } from '../data/library.js';
-import { importFiles, pickFiles } from '../data/photos.js';
+import { pickFiles } from '../data/photos.js';
+import { bringIn as bringInFiles } from '../components/bring-in.js';
 import { fileSheet, changePhotos } from '../components/filing.js';
 import { remember, canUndo, undoLast } from '../components/undo.js';
-import { scan, turnOnTags, carryOn } from '../data/tagger.js';
+import { scan, turnOnTags } from '../data/tagger.js';
 import { openViewer } from './viewer.js';
-import { choiceSheet, confirmSheet, promptSheet } from '../components/dialogs.js';
+import { choiceSheet, confirmSheet } from '../components/dialogs.js';
+import { tagOptions } from './tag-options.js';
 import { toast } from '../components/toast.js';
 import { ICONS } from '../components/icons.js';
 import { esc, isIOS, isStandalone } from '../components/util.js';
@@ -33,13 +35,9 @@ export function folderScreen(view, id) {
 
   async function bringIn(files) {
     if (!files.length) return;
-    try { await navigator.storage?.persist?.(); } catch {}
-    const r = await importFiles(files, (n, total) => toast(`Bringing in ${n} of ${total}`, { ms: 60000 }));
-    await refresh();
+    const r = await bringInFiles(files);
     if (incoming) moveGuide(afterImport(currentGuide(), r.photos.length));
-    toast(r.failed.length ? `${r.photos.length} added, ${r.failed.length} could not be read` : `${r.photos.length} ${r.photos.length === 1 ? 'photo' : 'photos'} added`);
     draw();
-    carryOn();
   }
   const openPhone = () => pickFiles().then(bringIn); // straight from the tap, or iOS blocks it
 
@@ -176,23 +174,7 @@ export function folderScreen(view, id) {
       }
       selecting = false; sel.clear(); draw();
     }));
-    view.querySelector('[data-band-more]')?.addEventListener('click', async () => {
-      const key = await choiceSheet({ title: folder.name, options: [{ key: 'rename', label: 'Rename' }, { key: 'delete', label: 'Delete tag', danger: true }] });
-      if (key === 'rename') {
-        const name = await promptSheet({ title: 'Rename tag', value: folder.name });
-        if (name) { await db.saveFolder({ ...folder, name }); await refresh(); folder.name = name; draw(); }
-      } else if (key === 'delete') {
-        if (await confirmSheet({ title: 'Delete this tag?', message: `<b>${esc(folder.name)}</b> will be gone. Its photos stay in the notebook.`, confirmLabel: 'Delete', danger: true })) {
-          const had = photosIn(id).map((p) => p.id);
-          const copy = { ...folder };
-          await db.deleteFolder(id);
-          await refresh();
-          remember('deleting a tag', () => db.restoreFolder(copy, had));
-          location.hash = '#/folders';
-          toast('Tag deleted', { action: { label: 'Undo', run: () => undoLast().then(() => { location.hash = `#/folder/${encodeURIComponent(id)}`; }) } });
-        }
-      }
-    });
+    view.querySelector('[data-band-more]')?.addEventListener('click', () => tagOptions(folder, (name) => { folder.name = name; draw(); }));
   }
   stopListening?.();
   const onScan = (e) => { paintScan(); if (e.detail?.tagged && !selecting) paintList(); };

@@ -7,6 +7,7 @@
 import * as db from '../data/db.js';
 import { clientSlip, clientBoard, offersOf } from '../data/client-board.js';
 import { esc } from '../components/util.js';
+import { withNewFonts } from '../data/board-fonts.js';
 
 const D = () => window.DFData;
 const C = () => window.DFConnect;
@@ -52,7 +53,7 @@ export async function startClientBoard(linkId, shape) {
   const link = await D().getLink(linkId);
   if (!link) return null;
   const had = link.toId ? await db.getBoard(link.toId) : null;
-  const board = had || (await db.saveBoard(clientBoard(link, shape)));
+  const board = had || (await db.saveBoard(withNewFonts(clientBoard(link, shape))));
   if (!had || !link.openedAt) await D().saveLink({ ...link, toId: board.id, openedAt: link.openedAt || D().nowIso() });
   location.hash = `#/board/${encodeURIComponent(board.id)}`;
   return board;

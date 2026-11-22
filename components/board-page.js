@@ -1,16 +1,17 @@
-// Draws a mood board page: on screen and onto a canvas for the PDF, from the
-// same numbers (the same layouts and crop maths as the Mac app).
-import { templateFor, defaultTemplate, SHAPES } from '../data/templates.js';
+// Draws a mood board page: on screen and onto a canvas for the PDF and the
+// images, from the same numbers (the same layouts and crop maths as the Mac
+// app). A page's size can be its own (an imported board: data/page-size.js);
+// its words are in the board's fonts (data/board-fonts.js).
+import { pageSize, templateOf } from '../data/page-size.js';
+import { fontStack, fontsToLoad } from '../data/board-fonts.js';
 import { photoById, thumbUrl, fullUrl } from '../data/library.js';
 import { loadImage } from './util.js';
 
 export const MAX_ZOOM = 6;
 export const TEXT_SIZE = 0.027; // of the page's width; was 0.0165, too small on a phone (11-11)
-const FONT = '"Klee One", "Bradley Hand", "Noteworthy", cursive';
 const pct = (v) => `${(v * 100).toFixed(4)}%`;
 
-export const pageTemplate = (board, page) =>
-  templateFor(board.shape, page.template) || defaultTemplate(board.shape, page.images.filter(Boolean).length);
+export const pageTemplate = templateOf;
 
 export function applyCrop(img, im) {
   const [fx, fy] = im.focal || [0.5, 0.5];
@@ -38,18 +39,20 @@ export function pagePalette(page, t) {
 }
 
 const textParts = (page) => [
-  { kind: 'title', text: page.title || '', scale: page.titleSize ?? 1.5, bold: true },
-  { kind: 'body', text: page.text || '', scale: page.textSize ?? 1, bold: false },
+  { kind: 'title', font: 'title', text: page.title || '', scale: page.titleSize ?? 1.5, bold: true },
+  { kind: 'body', font: 'text', text: page.text || '', scale: page.textSize ?? 1, bold: false },
 ].filter((p) => p.text.trim());
 
 // editing: the board editor's page (empty spots say what to do); mainHint:
 // the page's own title is being written, so show its box even while empty.
 export async function renderPage(board, page, { selected = -1, editing = false, mainHint = false } = {}) {
-  const shape = SHAPES[board.shape];
+  const shape = pageSize(board, page);
   const t = pageTemplate(board, page);
   const el = document.createElement('div');
   el.className = 'page';
   el.style.aspectRatio = `${shape.W} / ${shape.H}`;
+  el.style.setProperty('--title-font', fontStack(board, 'title'));
+  el.style.setProperty('--text-font', fontStack(board, 'text'));
   await Promise.all(t.slots.map(async (s, i) => {
     const slot = document.createElement('div');
     slot.className = `slot${i === selected ? ' sel' : ''}`;
@@ -69,7 +72,7 @@ export async function renderPage(board, page, { selected = -1, editing = false, 
   const parts = textParts(page);
   const cols = page.palette ? pagePalette(page, t) : [];
   const hint = editing && mainHint && !parts.length;
-  if (hint) parts.push({ kind: 'title empty', text: 'Title', scale: page.titleSize ?? 1.5 });
+  if (hint) parts.push({ kind: 'title empty', font: 'title', text: 'Title', scale: page.titleSize ?? 1.5 });
   if (parts.length || cols.length) {
     const tx = document.createElement('div');
     tx.className = `page-text${t.text.overlay ? ' overlay' : ''}${page.textFill === false ? ' nofill' : ''}`;
@@ -84,6 +87,7 @@ export async function renderPage(board, page, { selected = -1, editing = false, 
       const d = document.createElement('div');
       d.className = `pt-${p.kind}`;
       d.style.fontSize = `${p.scale}em`;
+      d.style.fontFamily = `var(--${p.font}-font)`;
       d.textContent = p.text;
       tx.append(d);
     }
@@ -103,6 +107,7 @@ export async function renderPage(board, page, { selected = -1, editing = false, 
     d.dataset.box = String(i);
     Object.assign(d.style, { left: pct(n.x), top: pct(n.y), width: pct(n.w), height: pct(n.h) });
     d.style.setProperty('--note-scale', n.size || 1.6);
+    d.style.fontFamily = 'var(--text-font)';
     d.textContent = n.text?.trim() ? n.text : 'Text';
     el.append(d);
   });
@@ -131,7 +136,7 @@ function wrapLines(ctx, text, maxW) {
 }
 
 export async function pageToCanvas(board, page, pxWidth) {
-  const shape = SHAPES[board.shape];
+  const shape = pageSize(board, page);
   const W = Math.round(pxWidth), H = Math.round((pxWidth * shape.H) / shape.W);
   const c = document.createElement('canvas');
   c.width = W; c.height = H;
@@ -150,12 +155,12 @@ export async function pageToCanvas(board, page, pxWidth) {
     drawCover(ctx, img, Math.round(s.x * W), Math.round(s.y * H), Math.round(s.w * W), Math.round(s.h * H), fx, fy, im.zoom);
     img.src = '';
   }
-  try { await document.fonts.load('40px "Klee One"'); } catch {} // a canvas won't wait for it
+  try { await Promise.all(fontsToLoad(board).map((f) => document.fonts.load(`40px ${f}`))); } catch {} // a canvas won't wait for them
   ctx.textBaseline = 'top';
   for (const n of page.notes || []) {
     if (!n.text?.trim()) continue;
     const fs = W * TEXT_SIZE * (n.size || 1.6);
-    ctx.font = `${fs}px ${FONT}`;
+    ctx.font = `${fs}px ${fontStack(board, 'text')}`;
     ctx.fillStyle = '#000';
     wrapLines(ctx, n.text, n.w * W).forEach((l, k) => ctx.fillText(l, n.x * W, n.y * H + k * fs * 1.35));
   }
@@ -170,7 +175,7 @@ export async function pageToCanvas(board, page, pxWidth) {
   let total = 0, widest = 0;
   parts.forEach((p, k) => {
     const fs = base * p.scale;
-    const font = `${fs}px ${FONT}`;
+    const font = `${fs}px ${fontStack(board, p.font)}`;
     ctx.font = font;
     for (const l of wrapLines(ctx, p.text, w - pad * 2)) { lines.push({ l, font, y: total }); total += fs * 1.35; widest = Math.max(widest, ctx.measureText(l).width); }
     if (k < parts.length - 1) total += fs * 0.35;
